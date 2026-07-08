@@ -18,11 +18,17 @@ function getLinkNodePosition(link) {
     const start = points[0];
     const end = points[1];
 
+    //----------------------------------
+    // Position on horizontal segment
+    //----------------------------------
+
+    const OFFSET = 80; // Distance from the start node
+
     return {
 
-        x: (start.x + end.x) / 2,
+        x: start.x + Math.sign(end.x - start.x) * Math.min(OFFSET, Math.abs(end.x - start.x) / 2),
 
-        y: (start.y + end.y) / 2
+        y: start.y
 
     };
 

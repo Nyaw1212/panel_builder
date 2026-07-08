@@ -28,7 +28,7 @@ function drawLink(link) {
 
     updateLinkMaterials(link);
 
-    drawSVGLine(link);
+    drawSVGPath(link);
     drawLinkNode(link);
 
     //----------------------------------

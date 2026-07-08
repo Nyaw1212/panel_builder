@@ -156,7 +156,7 @@ function getConnectionCenter(
         y:
             rect.top -
             gridRect.top +
-            (rect.height / 2)
+            (rect.height / 2)+20
 
     };
 

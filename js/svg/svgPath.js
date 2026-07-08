@@ -36,16 +36,10 @@ function drawSVGPath(link) {
         (start.x + end.x) / 2;
 
     const d = [
-
-        `M ${start.x} ${start.y}`,
-
-        `L ${midX} ${start.y}`,
-
-        `L ${midX} ${end.y}`,
-
-        `L ${end.x} ${end.y}`
-
-    ].join(" ");
+    `M ${start.x} ${start.y}`,
+    `L ${end.x} ${start.y}`,
+    `L ${end.x} ${end.y}`
+].join(" ");
 
     //----------------------------------
     // SVG
