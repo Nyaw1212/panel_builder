@@ -187,30 +187,26 @@ function drawPlacedItems() {
         }
 
         //----------------------------------
-        // Remove Button
-        //----------------------------------
+// Remove Button
+//----------------------------------
 
-        if (isSelected) {
+const remove = document.createElement("button");
 
-            const remove = document.createElement("button");
+remove.className = "panel-remove";
 
-            remove.className = "panel-remove";
+remove.innerHTML = "✕";
 
-            remove.innerHTML = "✕";
+remove.onclick = e => {
 
-            remove.onclick = e => {
+    e.stopPropagation();
 
-                e.stopPropagation();
+    removeItem(item.startCell);
 
-                removeItem(item.startCell);
+    drawCanvas();
 
-                drawCanvas();
+};
 
-            };
-
-            card.appendChild(remove);
-
-        }
+card.appendChild(remove);
 
         const img = document.createElement("img");
 
