@@ -21,12 +21,7 @@ async function apiRequest(data) {
 
                 method: "POST",
 
-                headers: {
-
-                    "Content-Type": "application/json"
-
-                },
-
+                
                 body: JSON.stringify(data)
 
             }
@@ -74,25 +69,35 @@ async function apiRequest(data) {
 
 async function saveProject(project) {
 
-    console.log("Testing layout...");
-    JSON.stringify(project.layout);
-    console.log("✔ Layout OK");
+    //----------------------------------
+    // Serialize
+    //----------------------------------
 
-    console.log("Testing links...");
-    JSON.stringify(project.links);
-    console.log("✔ Links OK");
+    const payload = serializeProject(project);
+
+    //----------------------------------
+    // Debug
+    //----------------------------------
+
+    console.log("Payload");
+
+    console.log(payload);
+
+    //----------------------------------
+    // Verify
+    //----------------------------------
+
+    JSON.stringify(payload);
+
+    //----------------------------------
+    // Save
+    //----------------------------------
 
     return await apiRequest({
 
         action: "saveProject",
 
-        jobName: project.jobName,
-
-        address: project.address,
-
-        layout: project.layout,
-
-        links: project.links
+        ...payload
 
     });
 

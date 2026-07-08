@@ -1,4 +1,3 @@
-
 //----------------------------------
 // Serialize Layout
 //----------------------------------
@@ -21,13 +20,15 @@ function serializeLayout() {
 
             id: item.id,
 
-            catalogNumber: item.data.CatalogNumber,
+            catalogNumber: item.data?.CatalogNumber || "",
 
             startCell: item.startCell,
 
             width: item.width,
 
-            height: item.height
+            height: item.height,
+
+            rotation: item.rotation || 0
 
         });
 
@@ -47,23 +48,79 @@ function serializeLinks() {
 
         id: link.id,
 
-        start: link.start,
+        start: {
 
-        end: link.end,
+            panelId: link.start.panelId,
 
-        geometry: link.geometry,
+            connectionId: link.start.connectionId
 
-        length: link.length,
+        },
 
-        conduit: link.conduit,
+        end: {
 
-        assembly: link.assembly,
+            panelId: link.end.panelId,
 
-        materials: link.materials
+            connectionId: link.end.connectionId
+
+        },
+
+        conduit: link.conduit || null,
+
+        assembly: Array.isArray(link.assembly)
+            ? structuredClone(link.assembly)
+            : []
 
     }));
 
 }
 
+//----------------------------------
+// Serialize Material Summary
+//----------------------------------
+
+function serializeMaterialSummary() {
+
+    const bom = generateBOM();
+
+    return bom.fittings.map(item => ({
+
+        CatalogNumber: item.CatalogNumber,
+
+        Qty: item.Qty
+
+    }));
+
+}
+
+//----------------------------------
+// Serialize Project
+//----------------------------------
+
+function serializeProject(project) {
+
+    return {
+
+        version: 1,
+
+        jobName: project.jobName,
+
+        address: project.address,
+
+        layout: serializeLayout(),
+
+        links: serializeLinks(),
+
+        materialSummary: serializeMaterialSummary()
+
+    };
+
+}
+
+//----------------------------------
+// Expose
+//----------------------------------
+
 window.serializeLayout = serializeLayout;
 window.serializeLinks = serializeLinks;
+window.serializeMaterialSummary = serializeMaterialSummary;
+window.serializeProject = serializeProject;
