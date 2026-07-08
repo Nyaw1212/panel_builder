@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="styles/toolbar.css">
+    <meta charset="UTF-8">
+
+    <title>Panel Builder</title>
+
+    <link rel="stylesheet" href="styles/reset.css">
+    <link rel="stylesheet" href="styles/layout.css">
+    <link rel="stylesheet" href="styles/library.css">
+    <link rel="stylesheet" href="styles/canvas.css">
+    <link rel="stylesheet" href="styles/connection.css">
+    <link rel="stylesheet" href="styles/modal.css">
+    <link rel="stylesheet" href="styles/inspector.css">
+    <link rel="stylesheet" href="styles/bom.css">
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <aside class="sidebar">
+
+            <h2>Library</h2>
+
+            <input
+                type="text"
+                id="searchBox"
+                placeholder="🔍 Search equipment..."
+            >
+
+            <div class="library-tabs">
+
+                <button class="tab active">All</button>
+                <button class="tab">Equipment</button>
+                <button class="tab">Materials</button>
+
+            </div>
+
+            <div class="equipment-list">
+
+                <div id="equipmentList"></div>
+
+            </div>
+
+        </aside>
+
+        <main class="workspace">
+
+    <!-- Toolbar -->
+
+    <div class="workspace-toolbar">
+
+        <button id="newProjectButton">
+
+            📄 New
+
+        </button>
+
+        <button id="openProjectButton">
+
+            📂 Open
+
+        </button>
+
+        <button id="saveButton">
+
+            💾 Save
+
+        </button>
+
+    </div>
+
+    <h2>Layout</h2>
+
+    <div id="canvasContainer">
+
+        <div id="grid"></div>
+
+        <svg id="svgLayer"></svg>
+
+    </div>
+
+</main>
+
+    </div>
+
+    <!-- BOM -->
+
+    <div
+        id="bomPanel"
+        class="bom-panel"
+    >
+
+        <div class="bom-title">
+
+            Bill of Materials
+
+        </div>
+
+        <div id="bomBody">
+
+            No Materials
+
+        </div>
+
+    </div>
+
+    <!-- Link Inspector -->
+
+    <div
+        id="linkInspector"
+        class="link-inspector collapsed"
+    >
+
+        <div class="inspector-header">
+
+            <h3>Link Properties</h3>
+
+        </div>
+
+        <div
+            id="inspectorBody"
+            class="inspector-body"
+        >
+
+            No Link Selected
+
+        </div>
+
+    </div>
+
+    <!-- Modal -->
+
+    <div id="equipmentModal" class="modal">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2>Place Node</h2>
+
+                <button id="closeModal">&times;</button>
+
+            </div>
+
+            <input
+                id="modalSearch"
+                type="text"
+                placeholder="Search node..."
+            >
+
+            <div class="modal-subtitle">
+
+                ⭐ Favorites
+
+            </div>
+
+            <div id="modalList"></div>
+
+        </div>
+
+    </div>
+
+    <!-- Data -->
+
+    <script src="api/equipment.js"></script>
+
+    <!-- Core -->
+
+    <script src="js/core/config.js"></script>
+
+    <!-- Layout -->
+
+    <script src="js/layout/renderer.js"></script>
+    <script src="js/layout/layout.js"></script>
+    <script src="js/layout/layout2.js"></script>
+    <script src="js/layout/canvas.js"></script>
+
+    <!-- Connections -->
+
+    <script src="js/connections/connectionFactory.js"></script>
+    <script src="js/connections/connectionHardware.js"></script>
+    <script src="js/connections/connectionUtils.js"></script>
+    <script src="js/connections/connections.js"></script>
+
+    <script src="js/connections/connectionIdentity.js"></script>
+    <script src="js/connections/connectionRegistry.js"></script>
+    <script src="js/connections/connectionPosition.js"></script>
+    <script src="js/connections/connectionPreview.js"></script>
+    <script src="js/connections/connectionRenderer.js"></script>
+
+    <script src="js/connections/linkGeometry.js"></script>
+    <script src="js/connections/linkLength.js"></script>
+    <script src="js/connections/linkAssembly.js"></script>
+    <script src="js/connections/linkMaterials.js"></script>
+    <script src="js/connections/linkRenderer.js"></script>
+    <script src="js/connections/linkNode.js"></script>
+    <script src="js/connections/linkManager.js"></script>
+    <script src="js/connections/linkSelection.js"></script>
+    <script src="js/connections/linkEditor.js"></script>
+
+    <!-- SVG -->
+
+    <script src="js/svg/svgStyles.js"></script>
+    <script src="js/svg/svgLine.js"></script>
+    <script src="js/svg/svgPath.js"></script>
+    <script src="js/svg/svgRenderer.js"></script>
+
+    <!-- UI -->
+
+    <script src="js/ui/library.js"></script>
+
+    <script src="js/ui/modal.js"></script>
+    <script src="js/ui/modalSearch.js"></script>
+    <script src="js/ui/modalEquipment.js"></script>
+    <script src="js/ui/modalHardware.js"></script>
+    <script src="js/ui/modalRenderer.js"></script>
+
+    <script src="js/ui/assemblyPicker.js"></script>
+
+    <script src="js/ui/linkDeleteButton.js"></script>
+
+    <!-- Link Inspector -->
+
+    <script src="js/ui/linkInspectorData.js"></script>
+    <script src="js/ui/linkInspectorPanels.js"></script>
+    <script src="js/ui/linkInspectorConduit.js"></script>
+    <script src="js/ui/linkInspectorAssembly.js"></script>
+    <script src="js/ui/linkInspectorRenderer.js"></script>
+    <script src="js/ui/linkInspectorEvents.js"></script>
+    <script src="js/ui/linkInspector.js"></script>
+
+        <!-- BOM -->
+
+    <script src="js/bom/bomGenerator.js"></script>
+    <script src="js/bom/bomRenderer.js"></script>
+
+    <!-- Project -->
+
+    <script src="api/projectApi.js"></script>
+
+    <script src="js/project/projectState.js"></script>
+    <script src="js/project/projectManager.js"></script>
+
+    <!-- UI -->
+
+    <script src="js/ui/projectDialog.js"></script>
+    <script src="js/ui/toolbar.js"></script>
+
+    <!-- App -->
+
+    <script src="js/core/main.js"></script>
+
+</body>
+
+</html>
