@@ -21,7 +21,6 @@ async function apiRequest(data) {
 
                 method: "POST",
 
-                
                 body: JSON.stringify(data)
 
             }
@@ -74,17 +73,10 @@ async function saveProject(project) {
     //----------------------------------
 
     const payload = serializeProject(project);
+
     console.log("Payload:", payload);
     console.log("Material Summary:", payload.materialSummary);
     console.table(payload.materialSummary);
-
-    //----------------------------------
-    // Debug
-    //----------------------------------
-
-    console.log("Payload");
-
-    console.log(payload);
 
     //----------------------------------
     // Verify
@@ -125,6 +117,36 @@ async function loadProject(jobName, address) {
 }
 
 //----------------------------------
+// Get Presets
+//----------------------------------
+
+async function getPresets() {
+
+    console.log("Calling getPresets()...");
+
+    const result = await apiRequest({
+
+        action: "getPresets"
+
+    });
+
+    console.log("Raw API Result:", result);
+
+    if (!result.success) {
+
+        console.error(result.message);
+
+        return [];
+
+    }
+
+    console.log("Returning Presets:", result.presets);
+
+    return result.presets;
+
+}
+
+//----------------------------------
 // Delete Project
 //----------------------------------
 
@@ -147,3 +169,4 @@ async function deleteProject(projectId) {
 window.saveProject = saveProject;
 window.loadProject = loadProject;
 window.deleteProject = deleteProject;
+window.getPresets = getPresets;

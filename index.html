@@ -2,6 +2,7 @@
 <html>
 
 <head>
+
     <link rel="stylesheet" href="styles/toolbar.css">
     <meta charset="UTF-8">
 
@@ -40,9 +41,52 @@
 
             </div>
 
+            <!---------------------------------->
+            <!-- Equipment -->
+            <!---------------------------------->
+
             <div class="equipment-list">
 
                 <div id="equipmentList"></div>
+
+            </div>
+
+            <!---------------------------------->
+            <!-- Presets -->
+            <!---------------------------------->
+
+            <div class="library-section">
+
+                <div class="library-title">
+
+                    Presets
+
+                </div>
+
+                <div
+                    id="presetLibrary"
+                    class="preset-library"
+                ></div>
+
+            </div>
+
+            <!---------------------------------->
+            <!-- Materials -->
+            <!---------------------------------->
+
+            <div class="library-section">
+
+                <div class="library-title">
+
+                    Materials
+
+                </div>
+
+                <button class="library-button">
+
+                    Add Material
+
+                </button>
 
             </div>
 
@@ -50,41 +94,41 @@
 
         <main class="workspace">
 
-    <!-- Toolbar -->
+            <!-- Toolbar -->
 
-    <div class="workspace-toolbar">
+            <div class="workspace-toolbar">
 
-        <button id="newProjectButton">
+                <button id="newProjectButton">
 
-            📄 New
+                    📄 New
 
-        </button>
+                </button>
 
-        <button id="openProjectButton">
+                <button id="openProjectButton">
 
-            📂 Open
+                    📂 Open
 
-        </button>
+                </button>
 
-        <button id="saveButton">
+                <button id="saveButton">
 
-            💾 Save
+                    💾 Save
 
-        </button>
+                </button>
 
-    </div>
+            </div>
 
-    <h2>Layout</h2>
+            <h2>Layout</h2>
 
-    <div id="canvasContainer">
+            <div id="canvasContainer">
 
-        <div id="grid"></div>
+                <div id="grid"></div>
 
-        <svg id="svgLayer"></svg>
+                <svg id="svgLayer"></svg>
 
-    </div>
+            </div>
 
-</main>
+        </main>
 
     </div>
 
@@ -135,7 +179,10 @@
 
     <!-- Modal -->
 
-    <div id="equipmentModal" class="modal">
+    <div
+        id="equipmentModal"
+        class="modal"
+    >
 
         <div class="modal-content">
 
@@ -234,12 +281,13 @@
     <script src="js/ui/linkInspectorEvents.js"></script>
     <script src="js/ui/linkInspector.js"></script>
 
-        <!-- BOM -->
+    <!-- BOM -->
 
     <script src="js/bom/bomGenerator.js"></script>
     <script src="js/bom/bomRenderer.js"></script>
 
     <!-- Project -->
+
     <script src="js/project/projectSerializer.js"></script>
     <script src="api/projectApi.js"></script>
 
@@ -248,12 +296,12 @@
 
     <!-- UI -->
 
-<script src="js/ui/projectDialog.js"></script>
-<script src="js/ui/toolbar.js"></script>
+    <script src="js/ui/projectDialog.js"></script>
+    <script src="js/ui/toolbar.js"></script>
 
-<!-- App -->
+    <!-- App -->
 
-<script src="js/core/main.js"></script>
+    <script src="js/core/main.js"></script>
 
 </body>
 

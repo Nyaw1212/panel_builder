@@ -4,7 +4,7 @@
 
 const equipmentList = document.getElementById("equipmentList");
 const searchBox = document.getElementById("searchBox");
-
+const presetLibrary = document.getElementById("presetLibrary");
 
 const selectedEquipment = {
 
@@ -13,7 +13,7 @@ const selectedEquipment = {
 };
 
 //----------------------------------
-// Build Library
+// Build Equipment Library
 //----------------------------------
 
 function buildEquipmentLibrary(searchText = "") {
@@ -121,6 +121,65 @@ function buildEquipmentLibrary(searchText = "") {
 }
 
 //----------------------------------
+// Build Preset Library
+//----------------------------------
+
+function buildPresetLibrary() {
+
+    if (!presetLibrary) return;
+
+    presetLibrary.innerHTML = "";
+
+    if (!window.presets || window.presets.length === 0) {
+
+        presetLibrary.innerHTML = "No Presets";
+
+        return;
+
+    }
+
+    const presetCodes = [
+
+        ...new Set(
+
+            window.presets.map(item => item.PRESET)
+
+        )
+
+    ]
+
+    .sort((a, b) => {
+
+        const aNum = parseInt(a.replace("FD", "")) || 0;
+        const bNum = parseInt(b.replace("FD", "")) || 0;
+
+        return bNum - aNum;
+
+    });
+
+    presetCodes.forEach(code => {
+
+        const button = document.createElement("button");
+
+        button.className = "preset-button";
+
+        button.textContent = code;
+
+        button.onclick = () => {
+
+            console.log("Preset Selected:", code);
+
+            // applyPreset(code);
+
+        };
+
+        presetLibrary.appendChild(button);
+
+    });
+
+}
+
+//----------------------------------
 // Search
 //----------------------------------
 
@@ -129,3 +188,11 @@ searchBox.addEventListener("input", () => {
     buildEquipmentLibrary(searchBox.value);
 
 });
+
+//----------------------------------
+// Initialize
+//----------------------------------
+
+buildEquipmentLibrary();
+
+buildPresetLibrary();

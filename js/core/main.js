@@ -8,74 +8,103 @@ let equipment = [];
 
 let materials = [];
 
+let presets = [];
+
 //----------------------------------
 // Main
 //----------------------------------
 
 async function init() {
 
-    //----------------------------------
-    // Load MML Once
-    //----------------------------------
+    try {
 
-    const mml = await API.getMML();
+        //----------------------------------
+        // Load MML
+        //----------------------------------
 
-    //----------------------------------
-    // Split Data
-    //----------------------------------
+        const mml = await API.getMML();
 
-    equipment = mml.filter(item => item.Placeable);
+        //----------------------------------
+        // Load Presets
+        //----------------------------------
 
-    materials = mml.filter(item => !item.Placeable);
+        presets = await getPresets() || [];
 
-    //----------------------------------
-    // Expose Global Data
-    //----------------------------------
+        //----------------------------------
+        // Split MML
+        //----------------------------------
 
-    window.equipment = equipment;
-    window.materials = materials;
+        equipment = mml.filter(item => item.Placeable);
 
-    console.log("Equipment Loaded");
-    console.table(equipment);
+        materials = mml.filter(item => !item.Placeable);
 
-    console.log("Materials Loaded");
-    console.table(materials);
+        //----------------------------------
+        // Expose Global Data
+        //----------------------------------
 
-    //----------------------------------
-    // Initialize SVG
-    //----------------------------------
+        window.equipment = equipment;
+        window.materials = materials;
+        window.presets = presets;
 
-    initializeSVG();
+        //----------------------------------
+        // Debug
+        //----------------------------------
 
-    //----------------------------------
-    // Build Equipment Library
-    //----------------------------------
+        console.log("Equipment Loaded");
+        console.table(equipment);
 
-    buildEquipmentLibrary();
+        console.log("Materials Loaded");
+        console.table(materials);
 
-    //----------------------------------
-    // Initialize Toolbar
-    //----------------------------------
+        console.log("Presets Loaded");
+        console.table(presets);
 
-    if (typeof initializeToolbar === "function") {
+        //----------------------------------
+        // Initialize SVG
+        //----------------------------------
 
-        initializeToolbar();
+        initializeSVG();
+
+        //----------------------------------
+        // Build Libraries
+        //----------------------------------
+
+        buildEquipmentLibrary();
+
+        buildPresetLibrary();
+
+        //----------------------------------
+        // Initialize Toolbar
+        //----------------------------------
+
+        if (typeof initializeToolbar === "function") {
+
+            initializeToolbar();
+
+        }
+
+        //----------------------------------
+        // Draw Canvas
+        //----------------------------------
+
+        drawCanvas();
+
+        //----------------------------------
+        // Show Project Dialog
+        //----------------------------------
+
+        if (typeof showProjectDialog === "function") {
+
+            showProjectDialog();
+
+        }
 
     }
+    catch (err) {
 
-    //----------------------------------
-    // Draw Canvas
-    //----------------------------------
+        console.error(err);
 
-    drawCanvas();
-
-    //----------------------------------
-    // Show Project Dialog
-    //----------------------------------
-
-    if (typeof showProjectDialog === "function") {
-
-        showProjectDialog();
+        alert("Application failed to initialize.");
 
     }
 
@@ -157,11 +186,22 @@ function getMaterials() {
 }
 
 //----------------------------------
+// Get Presets
+//----------------------------------
+
+function getPresetList() {
+
+    return presets;
+
+}
+
+//----------------------------------
 // Expose
 //----------------------------------
 
 window.getEquipment = getEquipment;
 window.getMaterials = getMaterials;
+window.getPresetList = getPresetList;
 
 //----------------------------------
 // Start Application

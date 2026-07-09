@@ -36,6 +36,25 @@ window.API = {
 
         return await response.json();
 
+    },
+
+    //----------------------------------
+    // Presets
+    //----------------------------------
+
+    async getPresets() {
+
+        const response =
+            await fetch("./Mock/PRESETS.json");
+
+        if (!response.ok) {
+
+            throw new Error("Unable to load PRESETS.json");
+
+        }
+
+        return await response.json();
+
     }
 
 };
