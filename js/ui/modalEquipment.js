@@ -6,19 +6,36 @@ function getEquipmentModalList(list) {
 
     return list
 
+        //----------------------------------
+        // Only Placeable Equipment
+        //----------------------------------
+
         .filter(item => item.Placeable)
 
-        .filter(item => item.Favorite)
+        //----------------------------------
+        // Favorites First
+        //----------------------------------
 
-        .sort((a, b) =>
+        .sort((a, b) => {
 
-            a.CatalogNumber.localeCompare(
+            const favA = Boolean(a.Favorite);
+            const favB = Boolean(b.Favorite);
 
-                b.CatalogNumber
+            if (favA && !favB) return -1;
+            if (!favA && favB) return 1;
 
-            )
+            //----------------------------------
+            // Alphabetical
+            //----------------------------------
 
-        );
+            return (a.CatalogNumber || "")
+                .localeCompare(
+
+                    b.CatalogNumber || ""
+
+                );
+
+        });
 
 }
 

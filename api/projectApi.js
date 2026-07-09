@@ -74,6 +74,9 @@ async function saveProject(project) {
     //----------------------------------
 
     const payload = serializeProject(project);
+    console.log("Payload:", payload);
+    console.log("Material Summary:", payload.materialSummary);
+    console.table(payload.materialSummary);
 
     //----------------------------------
     // Debug

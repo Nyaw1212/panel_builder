@@ -67,7 +67,9 @@ function serializeLinks() {
         conduit: link.conduit || null,
 
         assembly: Array.isArray(link.assembly)
+
             ? structuredClone(link.assembly)
+
             : []
 
     }));
@@ -80,15 +82,87 @@ function serializeLinks() {
 
 function serializeMaterialSummary() {
 
+    const map = {};
+
+    //----------------------------------
+    // Equipment
+    //----------------------------------
+
+    const seen = new Set();
+
+    getLayout().forEach(item => {
+
+        if (!item) return;
+
+        if (seen.has(item.id)) return;
+
+        seen.add(item.id);
+
+        const material = item.data;
+
+        if (!material?.CatalogNumber) return;
+
+        const key = material.CatalogNumber;
+
+        if (!map[key]) {
+
+            map[key] = {
+
+                CatalogNumber: key,
+
+                Qty: 0
+
+            };
+
+        }
+
+        map[key].Qty++;
+
+    });
+
+    //----------------------------------
+    // Generated BOM
+    //----------------------------------
+
     const bom = generateBOM();
 
-    return bom.fittings.map(item => ({
+    bom.fittings.forEach(item => {
 
-        CatalogNumber: item.CatalogNumber,
+        if (!item?.CatalogNumber) return;
 
-        Qty: item.Qty
+        const key = item.CatalogNumber;
 
-    }));
+        if (!map[key]) {
+
+            map[key] = {
+
+                CatalogNumber: key,
+
+                Qty: 0
+
+            };
+
+        }
+
+        map[key].Qty += item.Qty;
+
+    });
+
+    //----------------------------------
+    // Return
+    //----------------------------------
+
+    return Object.values(map)
+
+        .sort((a, b) =>
+
+            a.CatalogNumber.localeCompare(
+
+                b.CatalogNumber
+
+            )
+
+        );
 
 }
 
