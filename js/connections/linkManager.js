@@ -283,7 +283,21 @@ function clearLinks() {
     links.length = 0;
 
 }
+//----------------------------------
+// Replace Links
+//----------------------------------
 
+function replaceLinks(newLinks) {
+
+    clearLinks();
+
+    newLinks.forEach(link => {
+
+        links.push(link);
+
+    });
+
+}
 //----------------------------------
 // Expose
 //----------------------------------
@@ -293,3 +307,4 @@ window.getLinks = getLinks;
 window.getLink = getLink;
 window.removeLink = removeLink;
 window.clearLinks = clearLinks;
+window.replaceLinks = replaceLinks;

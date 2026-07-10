@@ -1,4 +1,36 @@
 //----------------------------------
+// Serialize Connection
+//----------------------------------
+
+function serializeConnection(connection) {
+
+    return {
+
+        id: connection.id,
+
+        side: connection.side,
+
+        offset: connection.offset,
+
+        connected: connection.connected,
+
+        hardware: structuredClone(connection.hardware),
+
+        wires: structuredClone(connection.wires),
+
+        materials: structuredClone(connection.materials),
+
+        conduit: structuredClone(connection.conduit),
+
+        conduitLength: connection.conduitLength,
+
+        notes: connection.notes
+
+    };
+
+}
+
+//----------------------------------
 // Serialize Layout
 //----------------------------------
 
@@ -16,11 +48,21 @@ function serializeLayout() {
 
         seen.add(item.id);
 
+        const connections = {};
+
+        CONNECTION_SIDES.forEach(side => {
+
+            connections[side] = item.connections[side].map(
+
+                serializeConnection
+
+            );
+
+        });
+
         uniqueItems.push({
 
             id: item.id,
-
-            catalogNumber: item.data?.CatalogNumber || "",
 
             startCell: item.startCell,
 
@@ -28,7 +70,11 @@ function serializeLayout() {
 
             height: item.height,
 
-            rotation: item.rotation || 0
+            rotation: item.rotation || 0,
+
+            data: structuredClone(item.data),
+
+            connections
 
         });
 
@@ -48,29 +94,17 @@ function serializeLinks() {
 
         id: link.id,
 
-        start: {
+        start: structuredClone(link.start),
 
-            panelId: link.start.panelId,
+        end: structuredClone(link.end),
 
-            connectionId: link.start.connectionId
+        conduit: structuredClone(link.conduit),
 
-        },
+        assembly: structuredClone(link.assembly),
 
-        end: {
+        materials: structuredClone(link.materials),
 
-            panelId: link.end.panelId,
-
-            connectionId: link.end.connectionId
-
-        },
-
-        conduit: link.conduit || null,
-
-        assembly: Array.isArray(link.assembly)
-
-            ? structuredClone(link.assembly)
-
-            : []
+        geometry: structuredClone(link.geometry)
 
     }));
 
@@ -84,10 +118,6 @@ function serializeMaterialSummary() {
 
     const map = {};
 
-    //----------------------------------
-    // Equipment
-    //----------------------------------
-
     const seen = new Set();
 
     getLayout().forEach(item => {
@@ -98,11 +128,9 @@ function serializeMaterialSummary() {
 
         seen.add(item.id);
 
-        const material = item.data;
+        if (!item.data?.CatalogNumber) return;
 
-        if (!material?.CatalogNumber) return;
-
-        const key = material.CatalogNumber;
+        const key = item.data.CatalogNumber;
 
         if (!map[key]) {
 
@@ -119,10 +147,6 @@ function serializeMaterialSummary() {
         map[key].Qty++;
 
     });
-
-    //----------------------------------
-    // Generated BOM
-    //----------------------------------
 
     const bom = generateBOM();
 
@@ -148,10 +172,6 @@ function serializeMaterialSummary() {
 
     });
 
-    //----------------------------------
-    // Return
-    //----------------------------------
-
     return Object.values(map)
 
         .sort((a, b) =>
@@ -170,21 +190,23 @@ function serializeMaterialSummary() {
 // Serialize Project
 //----------------------------------
 
-function serializeProject(project) {
+function serializeProject(project = {}) {
 
     return {
 
-        version: 1,
+        version: 2,
 
-        jobName: project.jobName,
+        jobName: project.jobName || "",
 
-        address: project.address,
+        address: project.address || "",
 
         layout: serializeLayout(),
 
         links: serializeLinks(),
 
-        materialSummary: serializeMaterialSummary()
+        materialSummary: serializeMaterialSummary(),
+
+        savedAt: Date.now()
 
     };
 
@@ -194,7 +216,12 @@ function serializeProject(project) {
 // Expose
 //----------------------------------
 
+window.serializeConnection = serializeConnection;
+
 window.serializeLayout = serializeLayout;
+
 window.serializeLinks = serializeLinks;
+
 window.serializeMaterialSummary = serializeMaterialSummary;
+
 window.serializeProject = serializeProject;

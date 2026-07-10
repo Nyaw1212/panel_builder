@@ -70,7 +70,6 @@ async function init() {
         //----------------------------------
 
         buildEquipmentLibrary();
-
         buildPresetLibrary();
 
         //----------------------------------
@@ -84,10 +83,50 @@ async function init() {
         }
 
         //----------------------------------
-        // Draw Canvas
+        // Draw Empty Canvas
         //----------------------------------
 
         drawCanvas();
+
+        //----------------------------------
+        // Restore Draft
+        //----------------------------------
+
+        if (
+
+            typeof loadDraft === "function" &&
+            typeof deserializeProject === "function"
+
+        ) {
+
+            const draft = loadDraft();
+
+            if (draft) {
+
+                console.log("Restoring Draft...");
+
+                try {
+
+                    deserializeProject(draft);
+
+                    console.log("Draft Restored Successfully");
+
+                }
+                catch (err) {
+
+                    console.error("DESERIALIZER FAILED");
+                    console.error(err);
+                    console.error(err.stack);
+
+                    debugger;
+
+                    throw err;
+
+                }
+
+            }
+
+        }
 
         //----------------------------------
         // Show Project Dialog
@@ -99,12 +138,24 @@ async function init() {
 
         }
 
+        //----------------------------------
+        // Enable Auto Save
+        //----------------------------------
+
+        autoSaveEnabled = true;
+
+        console.log("Auto Save Enabled");
+
     }
     catch (err) {
 
+        console.error("INITIALIZATION FAILED");
         console.error(err);
+        console.error(err.stack);
 
-        alert("Application failed to initialize.");
+        debugger;
+
+        alert(err.message);
 
     }
 

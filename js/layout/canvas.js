@@ -24,7 +24,11 @@ const GRID_SIZE = SETTINGS.rows * SETTINGS.columns;
 
 const layout = new Array(GRID_SIZE).fill(null);
 
+// Currently Selected Panel
 let selectedItem = null;
+
+// Auto Save
+let autoSaveEnabled = false;
 
 //----------------------------------
 // Draw Canvas
@@ -67,6 +71,22 @@ function drawCanvas() {
     if (typeof renderBOM === "function") {
 
         renderBOM();
+
+    }
+
+    //----------------------------------
+    // Auto Save Draft
+    //----------------------------------
+
+    if (
+
+        autoSaveEnabled &&
+
+        typeof saveDraft === "function"
+
+    ) {
+
+        saveDraft();
 
     }
 
@@ -134,7 +154,9 @@ function drawPlacedItems() {
         drawn.add(item.id);
 
         const cell = grid.querySelector(
+
             `[data-index="${item.startCell}"]`
+
         );
 
         if (!cell) return;
@@ -144,7 +166,9 @@ function drawPlacedItems() {
             : "";
 
         const isSelected =
+
             selectedItem &&
+
             selectedItem.id === item.id;
 
         const card = document.createElement("div");
@@ -163,7 +187,10 @@ function drawPlacedItems() {
 
         card.style.boxSizing = "border-box";
 
+        //----------------------------------
         // Reserve space for knockout nodes
+        //----------------------------------
+
         card.style.padding = "24px";
 
         card.style.display = "flex";
@@ -187,26 +214,30 @@ function drawPlacedItems() {
         }
 
         //----------------------------------
-// Remove Button
-//----------------------------------
+        // Remove Button
+        //----------------------------------
 
-const remove = document.createElement("button");
+        const remove = document.createElement("button");
 
-remove.className = "panel-remove";
+        remove.className = "panel-remove";
 
-remove.innerHTML = "✕";
+        remove.innerHTML = "✕";
 
-remove.onclick = e => {
+        remove.onclick = e => {
 
-    e.stopPropagation();
+            e.stopPropagation();
 
-    removeItem(item.startCell);
+            removeItem(item.startCell);
 
-    drawCanvas();
+            drawCanvas();
 
-};
+        };
 
-card.appendChild(remove);
+        card.appendChild(remove);
+
+        //----------------------------------
+        // Image
+        //----------------------------------
 
         const img = document.createElement("img");
 
@@ -219,6 +250,10 @@ card.appendChild(remove);
         img.style.objectFit = "contain";
         img.style.pointerEvents = "none";
 
+        //----------------------------------
+        // Catalog Number
+        //----------------------------------
+
         const code = document.createElement("div");
 
         code.className = "canvas-code";
@@ -230,6 +265,10 @@ card.appendChild(remove);
         code.style.fontWeight = "600";
         code.style.pointerEvents = "none";
 
+        //----------------------------------
+        // Description
+        //----------------------------------
+
         const desc = document.createElement("div");
 
         desc.className = "canvas-desc";
@@ -240,6 +279,10 @@ card.appendChild(remove);
         desc.style.fontSize = "10px";
         desc.style.pointerEvents = "none";
 
+        //----------------------------------
+        // Assemble Card
+        //----------------------------------
+
         card.appendChild(img);
         card.appendChild(code);
         card.appendChild(desc);
@@ -249,3 +292,39 @@ card.appendChild(remove);
     });
 
 }
+
+//----------------------------------
+// Get Layout
+//----------------------------------
+
+function getLayout() {
+
+    return layout;
+
+}
+
+//----------------------------------
+// Selected Item
+//----------------------------------
+
+function getSelectedItem() {
+
+    return selectedItem;
+
+}
+
+function setSelectedItem(item) {
+
+    selectedItem = item;
+
+}
+
+//----------------------------------
+// Expose
+//----------------------------------
+
+window.getLayout = getLayout;
+
+window.getSelectedItem = getSelectedItem;
+
+window.setSelectedItem = setSelectedItem;

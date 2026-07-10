@@ -201,6 +201,25 @@ function getLayout() {
     return layout;
 
 }
+//----------------------------------
+// Replace Layout
+//----------------------------------
+
+function replaceLayout(items) {
+
+    layout.fill(null);
+
+    items.forEach(item => {
+
+        item.occupied.forEach(index => {
+
+            layout[index] = item;
+
+        });
+
+    });
+
+}
 
 //----------------------------------
 // Expose
@@ -211,3 +230,4 @@ window.removeItem = removeItem;
 window.getItem = getItem;
 window.getItemById = getItemById;
 window.getLayout = getLayout;
+window.replaceLayout = replaceLayout;

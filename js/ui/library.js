@@ -20,6 +20,30 @@ function buildEquipmentLibrary(searchText = "") {
 
     equipmentList.innerHTML = "";
 
+    //----------------------------------
+    // Get Equipment
+    //----------------------------------
+
+    const equipment =
+
+        typeof getEquipment === "function"
+
+            ? getEquipment()
+
+            : [];
+
+    if (!equipment.length) {
+
+        console.warn("Equipment not loaded yet.");
+
+        return;
+
+    }
+
+    //----------------------------------
+    // Search
+    //----------------------------------
+
     const keywords = searchText
         .toLowerCase()
         .trim()
@@ -32,7 +56,11 @@ function buildEquipmentLibrary(searchText = "") {
 
         .filter(item => {
 
-            if (keywords.length === 0) return true;
+            if (keywords.length === 0) {
+
+                return true;
+
+            }
 
             const haystack = [
 
@@ -44,27 +72,38 @@ function buildEquipmentLibrary(searchText = "") {
                 item.Color
 
             ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
 
-            return keywords.every(word => haystack.includes(word));
+            return keywords.every(
+
+                word => haystack.includes(word)
+
+            );
 
         })
 
         .sort((a, b) => {
 
             if (a.Favorite && !b.Favorite) return -1;
+
             if (!a.Favorite && b.Favorite) return 1;
 
-            return a.CatalogNumber.localeCompare(b.CatalogNumber);
+            return a.CatalogNumber.localeCompare(
+
+                b.CatalogNumber
+
+            );
 
         })
 
         .forEach(item => {
 
             const image = item.DriveFileID
+
                 ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
+
                 : "";
 
             const card = document.createElement("div");
@@ -105,8 +144,18 @@ function buildEquipmentLibrary(searchText = "") {
             card.onclick = () => {
 
                 document
+
                     .querySelectorAll(".equipment")
-                    .forEach(c => c.classList.remove("selected"));
+
+                    .forEach(card =>
+
+                        card.classList.remove(
+
+                            "selected"
+
+                        )
+
+                    );
 
                 card.classList.add("selected");
 
@@ -130,9 +179,17 @@ function buildPresetLibrary() {
 
     presetLibrary.innerHTML = "";
 
-    if (!window.presets || window.presets.length === 0) {
+    if (
 
-        presetLibrary.innerHTML = "No Presets";
+        !window.presets ||
+
+        window.presets.length === 0
+
+    ) {
+
+        presetLibrary.innerHTML =
+
+            "No Presets";
 
         return;
 
@@ -142,7 +199,11 @@ function buildPresetLibrary() {
 
         ...new Set(
 
-            window.presets.map(item => item.PRESET)
+            window.presets.map(
+
+                item => item.PRESET
+
+            )
 
         )
 
@@ -150,8 +211,21 @@ function buildPresetLibrary() {
 
     .sort((a, b) => {
 
-        const aNum = parseInt(a.replace("FD", "")) || 0;
-        const bNum = parseInt(b.replace("FD", "")) || 0;
+        const aNum =
+
+            parseInt(
+
+                a.replace("FD", "")
+
+            ) || 0;
+
+        const bNum =
+
+            parseInt(
+
+                b.replace("FD", "")
+
+            ) || 0;
 
         return bNum - aNum;
 
@@ -159,21 +233,37 @@ function buildPresetLibrary() {
 
     presetCodes.forEach(code => {
 
-        const button = document.createElement("button");
+        const button =
 
-        button.className = "preset-button";
+            document.createElement(
+
+                "button"
+
+            );
+
+        button.className =
+
+            "preset-button";
 
         button.textContent = code;
 
         button.onclick = () => {
 
-            console.log("Preset Selected:", code);
+            console.log(
 
-            // applyPreset(code);
+                "Preset Selected:",
+
+                code
+
+            );
 
         };
 
-        presetLibrary.appendChild(button);
+        presetLibrary.appendChild(
+
+            button
+
+        );
 
     });
 
@@ -183,16 +273,30 @@ function buildPresetLibrary() {
 // Search
 //----------------------------------
 
-searchBox.addEventListener("input", () => {
+searchBox.addEventListener(
 
-    buildEquipmentLibrary(searchBox.value);
+    "input",
 
-});
+    () => {
+
+        buildEquipmentLibrary(
+
+            searchBox.value
+
+        );
+
+    }
+
+);
 
 //----------------------------------
-// Initialize
+// Expose
 //----------------------------------
 
-buildEquipmentLibrary();
+window.buildEquipmentLibrary =
 
-buildPresetLibrary();
+    buildEquipmentLibrary;
+
+window.buildPresetLibrary =
+
+    buildPresetLibrary;
