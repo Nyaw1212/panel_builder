@@ -272,50 +272,50 @@ function drawKnockouts(item, side) {
 
         };
 
-        //----------------------------------
-        // Double Click
-        //----------------------------------
+       //----------------------------------
+// Double Click
+//----------------------------------
 
-        node.ondblclick = e => {
+node.ondblclick = async e => {
 
-            e.stopPropagation();
+    e.stopPropagation();
 
-            if (!connection) {
+    if (!connection) {
 
-                connection =
-                    addConnection(
-                        item,
-                        side,
-                        offset
-                    );
-
-                updateConnectionIdentity(
-
-                    node,
-
-                    connection
-
-                );
-
-                registerConnectionNode(
-
-                    item.id,
-
-                    connection.id,
-
-                    node
-
-                );
-
-            }
-
-            openMaterialModal(
-
-                connection
-
+        connection =
+            addConnection(
+                item,
+                side,
+                offset
             );
 
-        };
+        updateConnectionIdentity(
+
+            node,
+
+            connection
+
+        );
+
+        registerConnectionNode(
+
+            item.id,
+
+            connection.id,
+
+            node
+
+        );
+
+    }
+
+    await openMaterialModal(
+
+        connection
+
+    );
+
+};
 
         panel.appendChild(node);
 

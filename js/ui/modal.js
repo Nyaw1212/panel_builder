@@ -12,15 +12,10 @@ const closeModal = document.getElementById("closeModal");
 //----------------------------------
 
 let modalMode = "equipment";
-
 let modalTitle = "Place Node";
-
 let modalSource = [];
-
 let modalOnSelect = null;
-
 let currentCell = null;
-
 let currentConnection = null;
 
 //----------------------------------
@@ -111,13 +106,16 @@ function openModal(index) {
 // Connection Hardware
 //----------------------------------
 
-function openMaterialModal(connection) {
+async function openMaterialModal(connection) {
 
     modalMode = "material";
 
     modalTitle = "Connection Hardware";
 
-    modalSource = materials;
+    modalSource = await getMaterials();
+
+    console.log("Materials Loaded:", modalSource.length);
+    console.table(modalSource.slice(0, 5));
 
     modalOnSelect = null;
 
@@ -159,6 +157,8 @@ function buildModalList(searchText = "") {
 
     let list = modalSource;
 
+    console.log("Initial List:", list.length);
+
     //----------------------------------
     // Equipment
     //----------------------------------
@@ -175,19 +175,19 @@ function buildModalList(searchText = "") {
 
     else if (modalMode === "material") {
 
+        console.log("Before Hardware Filter:", list.length);
+
         list = getHardwareModalList(list);
+
+        console.log("After Hardware Filter:", list.length);
 
     }
 
     //----------------------------------
-    // Picker
-    //----------------------------------
-
-    // picker uses modalSource directly
-
-    //----------------------------------
     // Search
     //----------------------------------
+
+    console.log("Before Search:", list.length);
 
     list = filterModalSearch(
 
@@ -197,9 +197,13 @@ function buildModalList(searchText = "") {
 
     );
 
+    console.log("After Search:", list.length);
+
     //----------------------------------
     // Render
     //----------------------------------
+
+    console.log("Rendering:", list.length);
 
     renderModalCards(list);
 

@@ -133,6 +133,8 @@ function buildModalCard(item) {
 
 function renderModalCards(list) {
 
+    console.log("Cards:", list.length);
+
     modalList.innerHTML = "";
 
     list.forEach(item => {

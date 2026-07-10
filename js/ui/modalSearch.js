@@ -22,29 +22,44 @@ function filterModalSearch(
 
     return list.filter(item => {
 
+        //----------------------------------
+        // No Search
+        //----------------------------------
+
         if (keywords.length === 0) {
 
             return true;
 
         }
 
+        //----------------------------------
+        // Search Fields
+        //----------------------------------
+
         const haystack = [
 
             item.CatalogNumber,
-
             item.Description,
-
             item.Type,
-
-            item.Size
+            item.Size,
+            item.NodeType,
+            item.Color,
+            item.Code,
+            item.Supplier,
+            item.Items,
+            item.VendorCode
 
         ]
 
-            .filter(Boolean)
+            .filter(value => value !== null && value !== undefined)
 
             .join(" ")
 
             .toLowerCase();
+
+        //----------------------------------
+        // Match All Keywords
+        //----------------------------------
 
         return keywords.every(keyword =>
 
@@ -60,4 +75,4 @@ function filterModalSearch(
 // Expose
 //----------------------------------
 
-window.filterModalSearch = filterModalSearch;   
+window.filterModalSearch = filterModalSearch;

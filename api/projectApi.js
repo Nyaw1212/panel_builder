@@ -161,6 +161,36 @@ async function deleteProject(projectId) {
     });
 
 }
+//----------------------------------
+// Get Materials
+//----------------------------------
+
+async function getMaterials() {
+
+    const result = await apiRequest({
+
+        action: "getMaterials"
+
+    });
+
+    console.log("API RESULT");
+    console.log(result);
+
+    if (!result.success) {
+
+        console.error(result.message);
+
+        return [];
+
+    }
+
+    console.log("Returned Materials:", result.materials?.length);
+
+    return result.materials || [];
+
+}
+
+window.getMaterials = getMaterials;
 
 //----------------------------------
 // Expose

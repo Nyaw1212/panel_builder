@@ -126,51 +126,12 @@ function buildHardwarePanel() {
 
 function getHardwareModalList(list) {
 
-    return list
+    console.log("Incoming:", list.length);
 
-        .filter(item => !item.Placeable)
+    // Disable ALL filtering temporarily
+    console.table(list.slice(0, 20));
 
-        .filter(item => {
-
-            const text =
-
-                `${item.Description} ${item.CatalogNumber}`
-
-                    .toUpperCase();
-
-            return (
-
-                text.includes("CONNECTOR") ||
-
-                text.includes("HUB") ||
-
-                text.includes("LOCKNUT") ||
-
-                text.includes("COUPLING")
-
-            );
-
-        })
-
-        .sort((a, b) => {
-
-            if (a.Size !== b.Size) {
-
-                return a.Size.localeCompare(
-
-                    b.Size
-
-                );
-
-            }
-
-            return a.Description.localeCompare(
-
-                b.Description
-
-            );
-
-        });
+    return list;
 
 }
 
