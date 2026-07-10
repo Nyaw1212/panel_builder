@@ -126,12 +126,83 @@ function buildHardwarePanel() {
 
 function getHardwareModalList(list) {
 
-    console.log("Incoming:", list.length);
+    //----------------------------------
+    // Allowed Hardware Types
+    //----------------------------------
 
-    // Disable ALL filtering temporarily
-    console.table(list.slice(0, 20));
+    const allowed = [
 
-    return list;
+        "CONNECTOR",
+        "COUPLING",
+        "HUB",
+        "LOCKNUT",
+        "LB",
+        "LL",
+        "LR",
+        "T",
+        "C",
+        "ELBOW",
+        "NIPPLE",
+        "GROUND BUSHING",
+        "ADAPTER",
+        "BOX"
+
+    ];
+
+    return list
+
+        //----------------------------------
+        // Only Fittings
+        //----------------------------------
+
+        .filter(item =>
+
+            String(item.Type || "").toUpperCase() === "FITTING"
+
+        )
+
+        //----------------------------------
+        // Allowed Node Types
+        //----------------------------------
+
+        .filter(item =>
+
+            allowed.includes(
+
+                String(item.NodeType || "")
+                    .toUpperCase()
+                    .trim()
+
+            )
+
+        )
+
+        //----------------------------------
+        // Sort by Size then Type
+        //----------------------------------
+
+        .sort((a, b) => {
+
+            const sizeCompare =
+
+                String(a.Size || "")
+                    .localeCompare(String(b.Size || ""));
+
+            if (sizeCompare !== 0)
+                return sizeCompare;
+
+            const typeCompare =
+
+                String(a.NodeType || "")
+                    .localeCompare(String(b.NodeType || ""));
+
+            if (typeCompare !== 0)
+                return typeCompare;
+
+            return String(a.Description || "")
+                .localeCompare(String(b.Description || ""));
+
+        });
 
 }
 
