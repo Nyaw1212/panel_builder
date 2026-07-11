@@ -5,6 +5,12 @@
 let openProjectDialog = null;
 
 //----------------------------------
+// Cached Projects
+//----------------------------------
+
+let projectList = [];
+
+//----------------------------------
 // Show
 //----------------------------------
 
@@ -132,7 +138,7 @@ async function showOpenProjectDialog() {
 
         openButton.textContent = "Open";
 
-        openButton.onclick = async () => {
+        openButton.onclick = () => {
 
             if (!select.value) {
 
@@ -142,17 +148,17 @@ async function showOpenProjectDialog() {
 
             }
 
-            const result = await apiRequest({
+            //----------------------------------
+            // Find Cached Project
+            //----------------------------------
 
-                action: "loadProjectById",
+            const project = projectList.find(
 
-                projectId: select.value
+                p => p.projectId === select.value
 
-            });
+            );
 
-            console.log(result);
-
-            if (!result.success || !result.found) {
+            if (!project || !project.project) {
 
                 alert("Unable to load project.");
 
@@ -160,9 +166,11 @@ async function showOpenProjectDialog() {
 
             }
 
+            console.log("Opening Cached Project");
+
             clearDraft();
 
-            deserializeProject(result.project);
+            deserializeProject(project.project);
 
             hideOpenProjectDialog();
 
@@ -206,9 +214,13 @@ async function showOpenProjectDialog() {
 
     select.appendChild(placeholder);
 
-    const projects = await getProjects();
+    //----------------------------------
+    // Load Cached Projects
+    //----------------------------------
 
-    projects.forEach(project => {
+    projectList = await getCachedProjects();
+
+    projectList.forEach(project => {
 
         const option = document.createElement("option");
 

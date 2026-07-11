@@ -1,4 +1,14 @@
 //----------------------------------
+// Serialize Equipment Data
+//----------------------------------
+
+function serializeEquipmentData(data) {
+
+    return structuredClone(data);
+
+}
+
+//----------------------------------
 // Serialize Connection
 //----------------------------------
 
@@ -31,6 +41,50 @@ function serializeConnection(connection) {
 }
 
 //----------------------------------
+// Serialize Item
+//----------------------------------
+
+function serializeItem(item) {
+
+    const connections = {};
+
+    CONNECTION_SIDES.forEach(side => {
+
+        connections[side] =
+
+            item.connections[side].map(
+
+                serializeConnection
+
+            );
+
+    });
+
+    return {
+
+        id: item.id,
+
+        startCell: item.startCell,
+
+        width: item.width,
+
+        height: item.height,
+
+        rotation: item.rotation || 0,
+
+        data: serializeEquipmentData(
+
+            item.data
+
+        ),
+
+        connections
+
+    };
+
+}
+
+//----------------------------------
 // Serialize Layout
 //----------------------------------
 
@@ -48,35 +102,11 @@ function serializeLayout() {
 
         seen.add(item.id);
 
-        const connections = {};
+        uniqueItems.push(
 
-        CONNECTION_SIDES.forEach(side => {
+            serializeItem(item)
 
-            connections[side] = item.connections[side].map(
-
-                serializeConnection
-
-            );
-
-        });
-
-        uniqueItems.push({
-
-            id: item.id,
-
-            startCell: item.startCell,
-
-            width: item.width,
-
-            height: item.height,
-
-            rotation: item.rotation || 0,
-
-            data: structuredClone(item.data),
-
-            connections
-
-        });
+        );
 
     });
 
@@ -85,12 +115,12 @@ function serializeLayout() {
 }
 
 //----------------------------------
-// Serialize Links
+// Serialize Link
 //----------------------------------
 
-function serializeLinks() {
+function serializeLink(link) {
 
-    return getLinks().map(link => ({
+    return {
 
         id: link.id,
 
@@ -106,7 +136,21 @@ function serializeLinks() {
 
         geometry: structuredClone(link.geometry)
 
-    }));
+    };
+
+}
+
+//----------------------------------
+// Serialize Links
+//----------------------------------
+
+function serializeLinks() {
+
+    return getLinks().map(
+
+        serializeLink
+
+    );
 
 }
 
@@ -208,7 +252,9 @@ function serializeProject() {
 
         links: serializeLinks(),
 
-        materialSummary: serializeMaterialSummary(),
+        materialSummary:
+
+            serializeMaterialSummary(),
 
         savedAt: Date.now()
 
@@ -220,12 +266,34 @@ function serializeProject() {
 // Expose
 //----------------------------------
 
-window.serializeConnection = serializeConnection;
+window.serializeEquipmentData =
 
-window.serializeLayout = serializeLayout;
+    serializeEquipmentData;
 
-window.serializeLinks = serializeLinks;
+window.serializeConnection =
 
-window.serializeMaterialSummary = serializeMaterialSummary;
+    serializeConnection;
 
-window.serializeProject = serializeProject;
+window.serializeItem =
+
+    serializeItem;
+
+window.serializeLayout =
+
+    serializeLayout;
+
+window.serializeLink =
+
+    serializeLink;
+
+window.serializeLinks =
+
+    serializeLinks;
+
+window.serializeMaterialSummary =
+
+    serializeMaterialSummary;
+
+window.serializeProject =
+
+    serializeProject;

@@ -13,6 +13,8 @@ async function apiRequest(data) {
 
     try {
 
+        console.time("Fetch");
+
         const response = await fetch(
 
             PROJECT_API_URL,
@@ -27,6 +29,8 @@ async function apiRequest(data) {
 
         );
 
+        console.timeEnd("Fetch");
+
         if (!response.ok) {
 
             throw new Error(
@@ -37,7 +41,13 @@ async function apiRequest(data) {
 
         }
 
-        return await response.json();
+        console.time("Parse JSON");
+
+        const result = await response.json();
+
+        console.timeEnd("Parse JSON");
+
+        return result;
 
     }
     catch (err) {
@@ -72,29 +82,45 @@ async function saveProject(project) {
     // Serialize
     //----------------------------------
 
+    console.time("Serialize");
+
     const payload = serializeProject(project);
 
+    console.timeEnd("Serialize");
+
     console.log("Payload:", payload);
+
     console.log("Material Summary:", payload.materialSummary);
+
     console.table(payload.materialSummary);
 
     //----------------------------------
-    // Verify
+    // Verify JSON
     //----------------------------------
+
+    console.time("JSON Verify");
 
     JSON.stringify(payload);
 
+    console.timeEnd("JSON Verify");
+
     //----------------------------------
-    // Save
+    // POST
     //----------------------------------
 
-    return await apiRequest({
+    console.time("POST");
+
+    const result = await apiRequest({
 
         action: "saveProject",
 
         ...payload
 
     });
+
+    console.timeEnd("POST");
+
+    return result;
 
 }
 
@@ -104,7 +130,9 @@ async function saveProject(project) {
 
 async function loadProject(jobName, address) {
 
-    return await apiRequest({
+    console.time("Load Project");
+
+    const result = await apiRequest({
 
         action: "loadProject",
 
@@ -114,6 +142,10 @@ async function loadProject(jobName, address) {
 
     });
 
+    console.timeEnd("Load Project");
+
+    return result;
+
 }
 
 //----------------------------------
@@ -122,7 +154,7 @@ async function loadProject(jobName, address) {
 
 async function getPresets() {
 
-    console.log("Calling getPresets()...");
+    console.time("Get Presets");
 
     const result = await apiRequest({
 
@@ -130,7 +162,7 @@ async function getPresets() {
 
     });
 
-    console.log("Raw API Result:", result);
+    console.timeEnd("Get Presets");
 
     if (!result.success) {
 
@@ -140,16 +172,17 @@ async function getPresets() {
 
     }
 
-    console.log("Returning Presets:", result.presets);
-
     return result.presets;
 
 }
+
 //----------------------------------
 // Get Projects
 //----------------------------------
 
 async function getProjects() {
+
+    console.time("Get Projects");
 
     const result = await apiRequest({
 
@@ -157,7 +190,7 @@ async function getProjects() {
 
     });
 
-    console.log("Projects:", result);
+    console.timeEnd("Get Projects");
 
     if (!result.success) {
 
@@ -186,11 +219,14 @@ async function deleteProject(projectId) {
     });
 
 }
+
 //----------------------------------
 // Get Materials
 //----------------------------------
 
 async function getMaterials() {
+
+    console.time("Get Materials");
 
     const result = await apiRequest({
 
@@ -198,8 +234,7 @@ async function getMaterials() {
 
     });
 
-    console.log("API RESULT");
-    console.log(result);
+    console.timeEnd("Get Materials");
 
     if (!result.success) {
 
@@ -208,8 +243,6 @@ async function getMaterials() {
         return [];
 
     }
-
-    console.log("Returned Materials:", result.materials?.length);
 
     return result.materials || [];
 

@@ -30,11 +30,19 @@ function buildProject() {
 
 async function saveCurrentProject() {
 
+    console.time("Build Project");
+
     const project =
         buildProject();
 
+    console.timeEnd("Build Project");
+
+    console.time("Save API");
+
     const result =
         await saveProject(project);
+
+    console.timeEnd("Save API");
 
     console.log(
 
@@ -57,6 +65,12 @@ async function saveCurrentProject() {
 
         );
 
+        //----------------------------------
+        // Refresh Project Cache
+        //----------------------------------
+
+        invalidateProjectCache();
+
     }
 
     return result;
@@ -75,6 +89,8 @@ async function loadCurrentProject(
 
 ) {
 
+    console.time("Load API");
+
     const result =
         await loadProject(
 
@@ -83,6 +99,8 @@ async function loadCurrentProject(
             address
 
         );
+
+    console.timeEnd("Load API");
 
     console.log(
 
@@ -108,7 +126,6 @@ async function loadCurrentProject(
             address,
 
             version:
-
                 result.project.version || 2
 
         });
