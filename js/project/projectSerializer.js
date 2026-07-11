@@ -190,15 +190,19 @@ function serializeMaterialSummary() {
 // Serialize Project
 //----------------------------------
 
-function serializeProject(project = {}) {
+function serializeProject() {
+
+    const project = getProjectState();
 
     return {
 
-        version: 2,
+        id: project.id,
 
-        jobName: project.jobName || "",
+        version: project.version,
 
-        address: project.address || "",
+        jobName: project.jobName,
+
+        address: project.address,
 
         layout: serializeLayout(),
 

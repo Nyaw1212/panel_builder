@@ -128,15 +128,7 @@ async function init() {
 
         }
 
-        //----------------------------------
-        // Show Project Dialog
-        //----------------------------------
-
-        if (typeof showProjectDialog === "function") {
-
-            showProjectDialog();
-
-        }
+        
 
         //----------------------------------
         // Enable Auto Save

@@ -10,7 +10,19 @@ let projectDialog = null;
 
 function showProjectDialog() {
 
+    //----------------------------------
+    // Already Created
+    //----------------------------------
+
     if (projectDialog) {
+
+        const project = getProjectState();
+
+        document.getElementById("projectJobName").value =
+            project.jobName || "";
+
+        document.getElementById("projectAddress").value =
+            project.address || "";
 
         projectDialog.style.display = "flex";
 
@@ -26,215 +38,218 @@ function showProjectDialog() {
 
     projectDialog.id = "projectDialog";
 
-    projectDialog.style.position = "fixed";
-    projectDialog.style.left = "0";
-    projectDialog.style.top = "0";
-    projectDialog.style.width = "100vw";
-    projectDialog.style.height = "100vh";
+    Object.assign(projectDialog.style, {
 
-    projectDialog.style.background =
-        "rgba(0,0,0,.45)";
+        position: "fixed",
 
-    projectDialog.style.display = "flex";
+        left: "0",
 
-    projectDialog.style.alignItems = "center";
+        top: "0",
 
-    projectDialog.style.justifyContent = "center";
+        width: "100vw",
 
-    projectDialog.style.zIndex = "9999";
+        height: "100vh",
+
+        background: "rgba(0,0,0,.45)",
+
+        display: "flex",
+
+        alignItems: "center",
+
+        justifyContent: "center",
+
+        zIndex: "9999"
+
+    });
 
     //----------------------------------
     // Card
     //----------------------------------
 
-    const card =
-        document.createElement("div");
+    const card = document.createElement("div");
 
-    card.style.width = "420px";
+    Object.assign(card.style, {
 
-    card.style.background = "#ffffff";
+        width: "420px",
 
-    card.style.borderRadius = "10px";
+        background: "#fff",
 
-    card.style.padding = "24px";
+        borderRadius: "10px",
 
-    card.style.boxShadow =
-        "0 10px 30px rgba(0,0,0,.2)";
+        padding: "24px",
+
+        boxShadow: "0 10px 30px rgba(0,0,0,.2)"
+
+    });
 
     //----------------------------------
     // Title
     //----------------------------------
 
-    const title =
-        document.createElement("h2");
+    const title = document.createElement("h2");
 
-    title.textContent = "Project";
+    title.textContent = "Save Project";
 
     title.style.margin = "0 0 20px 0";
 
     //----------------------------------
-    // Job Name
+    // Project Name
     //----------------------------------
 
-    const jobLabel =
-        document.createElement("label");
+    const jobLabel = document.createElement("label");
 
-    jobLabel.textContent = "Job Name";
+    jobLabel.textContent = "Project Name";
 
-    const jobInput =
-        document.createElement("input");
+    const jobInput = document.createElement("input");
 
     jobInput.id = "projectJobName";
 
     jobInput.type = "text";
 
-    jobInput.placeholder =
-        "Enter Job Name";
+    jobInput.placeholder = "Enter Project Name";
 
-    jobInput.style.width = "100%";
+    Object.assign(jobInput.style, {
 
-    jobInput.style.marginTop = "6px";
+        width: "100%",
 
-    jobInput.style.marginBottom = "16px";
+        marginTop: "6px",
 
-    jobInput.style.padding = "10px";
+        marginBottom: "16px",
+
+        padding: "10px"
+
+    });
 
     //----------------------------------
     // Address
     //----------------------------------
 
-    const addressLabel =
-        document.createElement("label");
+    const addressLabel = document.createElement("label");
 
     addressLabel.textContent = "Address";
 
-    const addressInput =
-        document.createElement("input");
+    const addressInput = document.createElement("input");
 
     addressInput.id = "projectAddress";
 
     addressInput.type = "text";
 
-    addressInput.placeholder =
-        "Enter Address";
+    addressInput.placeholder = "Enter Address";
 
-    addressInput.style.width = "100%";
+    Object.assign(addressInput.style, {
 
-    addressInput.style.marginTop = "6px";
+        width: "100%",
 
-    addressInput.style.marginBottom = "20px";
+        marginTop: "6px",
 
-    addressInput.style.padding = "10px";
+        marginBottom: "20px",
 
-    //----------------------------------
-    // Button
-    //----------------------------------
+        padding: "10px"
 
-    const button =
-        document.createElement("button");
-
-    button.textContent =
-        "Open / Create";
-
-    button.style.width = "100%";
-
-    button.style.padding = "12px";
-
-    button.style.cursor = "pointer";
+    });
 
     //----------------------------------
-    // Click
+    // Existing Values
     //----------------------------------
 
-    button.onclick = async () => {
+    const project = getProjectState();
 
-        const jobName =
-            jobInput.value.trim();
+    jobInput.value = project.jobName || "";
 
-        const address =
-            addressInput.value.trim();
+    addressInput.value = project.address || "";
+
+    //----------------------------------
+    // Buttons
+    //----------------------------------
+
+    const buttonRow = document.createElement("div");
+
+    buttonRow.style.display = "flex";
+
+    buttonRow.style.justifyContent = "flex-end";
+
+    buttonRow.style.gap = "10px";
+
+    //----------------------------------
+    // Cancel
+    //----------------------------------
+
+    const cancelButton = document.createElement("button");
+
+    cancelButton.textContent = "Cancel";
+
+    cancelButton.onclick = hideProjectDialog;
+
+    //----------------------------------
+    // Save
+    //----------------------------------
+
+    const saveButton = document.createElement("button");
+
+    saveButton.textContent = "Save";
+
+    saveButton.onclick = async () => {
+
+        const jobName = jobInput.value.trim();
+
+        const address = addressInput.value.trim();
 
         if (!jobName) {
 
-            alert("Job Name is required.");
+            alert("Project Name is required.");
 
             return;
 
         }
 
         //----------------------------------
-        // Save State
+        // Update ONE Project State
         //----------------------------------
 
-        setJobName(jobName);
+        setProjectState({
 
-        setAddress(address);
+            ...getProjectState(),
 
-        //----------------------------------
-        // Load Project
-        //----------------------------------
+            jobName,
 
-        const result =
-            await loadCurrentProject(
+            address
 
-                jobName,
+        });
 
-                address
+        console.log("Project State");
 
-            );
+        console.log(getProjectState());
 
         //----------------------------------
-        // Existing Project
+        // Save
         //----------------------------------
 
-        if (
+        const result = await saveCurrentProject();
 
-            result.success &&
-            result.found
+        console.log(result);
 
-        ) {
+        if (result.success) {
 
-            console.log(
+            hideProjectDialog();
 
-                "Existing Project",
-
-                result
-
-            );
-
-            // restoreProject(result.project);
+            alert("Project Saved!");
 
         }
-
-        //----------------------------------
-        // New Project
-        //----------------------------------
-
         else {
 
-            newProject(
-
-                jobName,
-
-                address
-
-            );
-
-            console.log(
-
-                "New Project"
-
-            );
+            alert("Save Failed.");
 
         }
-
-        hideProjectDialog();
 
     };
 
     //----------------------------------
     // Build
     //----------------------------------
+
+    buttonRow.appendChild(cancelButton);
+
+    buttonRow.appendChild(saveButton);
 
     card.appendChild(title);
 
@@ -246,14 +261,14 @@ function showProjectDialog() {
 
     card.appendChild(addressInput);
 
-    card.appendChild(button);
+    card.appendChild(buttonRow);
 
     projectDialog.appendChild(card);
 
     document.body.appendChild(projectDialog);
 
 }
-
+    
 //----------------------------------
 // Hide
 //----------------------------------

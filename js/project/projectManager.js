@@ -1,60 +1,24 @@
 //----------------------------------
-// Current Project
-//----------------------------------
-
-const currentProject = {
-
-    id: "",
-
-    jobName: "",
-
-    address: ""
-
-};
-
-//----------------------------------
-// Set Project
-//----------------------------------
-
-function setProject(jobName, address) {
-
-    currentProject.jobName =
-        String(jobName || "").trim();
-
-    currentProject.address =
-        String(address || "").trim();
-
-}
-
-//----------------------------------
-// Get Project
-//----------------------------------
-
-function getProject() {
-
-    return currentProject;
-
-}
-
-//----------------------------------
 // Build Project
 //----------------------------------
 
 function buildProject() {
 
+    const project = getProjectState();
+
     return {
 
-        jobName:
-            currentProject.jobName,
+        id: project.id,
 
-        address:
-            currentProject.address,
+        version: project.version,
 
-        layout:
-            getLayout(),
+        jobName: project.jobName,
 
-        links:
-            getLinks()
+        address: project.address,
+
+        layout: getLayout(),
+
+        links: getLinks()
 
     };
 
@@ -87,8 +51,11 @@ async function saveCurrentProject() {
 
     ) {
 
-        currentProject.id =
-            result.projectId;
+        setProjectId(
+
+            result.projectId
+
+        );
 
     }
 
@@ -100,7 +67,13 @@ async function saveCurrentProject() {
 // Load Current Project
 //----------------------------------
 
-async function loadCurrentProject(jobName, address) {
+async function loadCurrentProject(
+
+    jobName,
+
+    address
+
+) {
 
     const result =
         await loadProject(
@@ -126,14 +99,19 @@ async function loadCurrentProject(jobName, address) {
 
     ) {
 
-        currentProject.id =
-            result.projectId;
+        setProjectState({
 
-        currentProject.jobName =
-            jobName;
+            id: result.projectId,
 
-        currentProject.address =
-            address;
+            jobName,
+
+            address,
+
+            version:
+
+                result.project.version || 2
+
+        });
 
     }
 
@@ -145,15 +123,27 @@ async function loadCurrentProject(jobName, address) {
 // New Project
 //----------------------------------
 
-function newProject(jobName, address) {
+function newProject(
 
-    currentProject.id = "";
+    jobName,
 
-    currentProject.jobName =
-        String(jobName || "").trim();
+    address
 
-    currentProject.address =
-        String(address || "").trim();
+) {
+
+    clearProjectState();
+
+    setProjectState({
+
+        id: "",
+
+        version: 2,
+
+        jobName,
+
+        address
+
+    });
 
 }
 
@@ -161,9 +151,14 @@ function newProject(jobName, address) {
 // Expose
 //----------------------------------
 
-window.setProject = setProject;
-window.getProject = getProject;
-window.buildProject = buildProject;
-window.saveCurrentProject = saveCurrentProject;
-window.loadCurrentProject = loadCurrentProject;
-window.newProject = newProject;
+window.buildProject =
+    buildProject;
+
+window.saveCurrentProject =
+    saveCurrentProject;
+
+window.loadCurrentProject =
+    loadCurrentProject;
+
+window.newProject =
+    newProject;

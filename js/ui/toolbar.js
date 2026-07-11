@@ -11,49 +11,115 @@ function initializeToolbar() {
     const saveButton =
         document.getElementById("saveButton");
 
-    if (!saveButton) {
+    //----------------------------------
+    // Open Button
+    //----------------------------------
+
+    const openButton =
+        document.getElementById("openProjectButton");
+
+    //----------------------------------
+    // Save
+    //----------------------------------
+
+    if (saveButton) {
+
+        saveButton.addEventListener(
+
+            "click",
+
+            async () => {
+
+                const project =
+                    getProjectState();
+
+                //----------------------------------
+                // First Save
+                //----------------------------------
+
+                if (!project.jobName) {
+
+                    console.log(
+                        "Opening Save Dialog..."
+                    );
+
+                    showProjectDialog();
+
+                    return;
+
+                }
+
+                //----------------------------------
+                // Save Existing Project
+                //----------------------------------
+
+                console.log(
+                    "Saving Project..."
+                );
+
+                const result =
+                    await saveCurrentProject();
+
+                console.log(result);
+
+                if (result.success) {
+
+                    alert(
+                        "Project Saved!"
+                    );
+
+                }
+                else {
+
+                    alert(
+                        "Save Failed."
+                    );
+
+                }
+
+            }
+
+        );
+
+    }
+    else {
 
         console.warn(
             "Save button not found."
         );
 
-        return;
-
     }
 
-    saveButton.addEventListener(
+    //----------------------------------
+    // Open
+    //----------------------------------
 
-        "click",
+    if (openButton) {
 
-        async () => {
+        openButton.addEventListener(
 
-            console.log(
-                "Saving Project..."
-            );
+            "click",
 
-            const result =
-                await saveCurrentProject();
+            () => {
 
-            console.log(result);
-
-            if (result.success) {
-
-                alert(
-                    "Project Saved!"
+                console.log(
+                    "Opening Project Dialog..."
                 );
 
-            }
-            else {
-
-                alert(
-                    "Save Failed."
-                );
+                showOpenProjectDialog();
 
             }
 
-        }
+        );
 
-    );
+    }
+    else {
+
+        console.warn(
+            "Open button not found."
+        );
+
+    }
 
 }
 

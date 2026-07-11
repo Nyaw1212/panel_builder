@@ -145,6 +145,31 @@ async function getPresets() {
     return result.presets;
 
 }
+//----------------------------------
+// Get Projects
+//----------------------------------
+
+async function getProjects() {
+
+    const result = await apiRequest({
+
+        action: "getProjects"
+
+    });
+
+    console.log("Projects:", result);
+
+    if (!result.success) {
+
+        console.error(result.message);
+
+        return [];
+
+    }
+
+    return result.projects || [];
+
+}
 
 //----------------------------------
 // Delete Project
@@ -198,5 +223,6 @@ window.getMaterials = getMaterials;
 
 window.saveProject = saveProject;
 window.loadProject = loadProject;
+window.getProjects = getProjects;
 window.deleteProject = deleteProject;
 window.getPresets = getPresets;
