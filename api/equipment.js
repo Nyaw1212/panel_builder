@@ -1,3 +1,20 @@
+//----------------------------------
+// Configuration
+//----------------------------------
+
+const CONFIG = {
+
+    // true  = Load local JSON files
+    // false = Load Google Apps Script API
+
+    useMock: false
+
+};
+
+//----------------------------------
+// API
+//----------------------------------
+
 window.API = {
 
     //----------------------------------
@@ -6,16 +23,7 @@ window.API = {
 
     async getEquipment() {
 
-        const response =
-            await fetch("./Mock/MML.json");
-
-        if (!response.ok) {
-
-            throw new Error("Unable to load MML.json");
-
-        }
-
-        return await response.json();
+        return await this.getMML();
 
     },
 
@@ -25,16 +33,29 @@ window.API = {
 
     async getMML() {
 
-        const response =
-            await fetch("./Mock/MML.json");
+        //----------------------------------
+        // Mock Data
+        //----------------------------------
 
-        if (!response.ok) {
+        if (CONFIG.useMock) {
 
-            throw new Error("Unable to load MML.json");
+            const response = await fetch("./Mock/MML.json");
+
+            if (!response.ok) {
+
+                throw new Error("Unable to load Mock/MML.json");
+
+            }
+
+            return await response.json();
 
         }
 
-        return await response.json();
+        //----------------------------------
+        // Live Data
+        //----------------------------------
+
+        return await getMaterials();
 
     },
 
@@ -44,16 +65,21 @@ window.API = {
 
     async getPresets() {
 
-        const response =
-            await fetch("./Mock/PRESETS.json");
+        if (CONFIG.useMock) {
 
-        if (!response.ok) {
+            const response = await fetch("./Mock/PRESETS.json");
 
-            throw new Error("Unable to load PRESETS.json");
+            if (!response.ok) {
+
+                throw new Error("Unable to load Mock/PRESETS.json");
+
+            }
+
+            return await response.json();
 
         }
 
-        return await response.json();
+        return await getPresets();
 
     }
 

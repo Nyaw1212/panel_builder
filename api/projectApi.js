@@ -53,6 +53,54 @@ async function apiRequest(data) {
 }
 
 //----------------------------------
+// Get MML
+//----------------------------------
+
+async function getMML() {
+
+    const result = await apiRequest({
+
+        action: "getMML"
+
+    });
+
+    if (!result.success) {
+
+        console.error(result.message);
+
+        return [];
+
+    }
+
+    return result.mml || [];
+
+}
+
+//----------------------------------
+// Get Presets
+//----------------------------------
+
+async function getPresets() {
+
+    const result = await apiRequest({
+
+        action: "getPresets"
+
+    });
+
+    if (!result.success) {
+
+        console.error(result.message);
+
+        return [];
+
+    }
+
+    return result.presets || [];
+
+}
+
+//----------------------------------
 // Save Project
 //----------------------------------
 
@@ -85,58 +133,6 @@ async function loadProject(jobName, address) {
         address
 
     });
-
-}
-
-//----------------------------------
-// Get Presets
-//----------------------------------
-
-async function getPresets() {
-
-    const result = await apiRequest({
-
-        action: "getPresets"
-
-    });
-
-    if (!result.success) {
-
-        console.error(result.message);
-
-        return [];
-
-    }
-
-    return result.presets || [];
-
-}
-
-//----------------------------------
-// Get Preset Materials
-//----------------------------------
-
-function getPresetMaterials(preset) {
-
-    if (!preset) {
-
-        return [];
-
-    }
-
-    return (window.presets || [])
-
-        .filter(item => item.PRESET === preset)
-
-        .map(item => ({
-
-            catalogNumber: item.CatalogNumber,
-
-            description: item.DESCRIPTION,
-
-            qty: Number(item.QTY)
-
-        }));
 
 }
 
@@ -181,31 +177,55 @@ async function deleteProject(projectId) {
 }
 
 //----------------------------------
-// Get Materials
+// Get Preset Materials
 //----------------------------------
 
-async function getMaterials() {
+function getPresetMaterials(preset) {
 
-    const result = await apiRequest({
-
-        action: "getMaterials"
-
-    });
-
-    if (!result.success) {
-
-        console.error(result.message);
+    if (!preset) {
 
         return [];
 
     }
 
-    return result.materials || [];
+    return (window.presets || [])
+
+        .filter(item => item.PRESET === preset)
+
+        .map(item => ({
+
+            catalogNumber: item.CatalogNumber,
+
+            description: item.DESCRIPTION,
+
+            qty: Number(item.QTY)
+
+        }));
 
 }
 
 //----------------------------------
-// Expose
+// API Object
+//----------------------------------
+
+window.API = {
+
+    getMML,
+
+    getPresets,
+
+    saveProject,
+
+    loadProject,
+
+    getProjects,
+
+    deleteProject
+
+};
+
+//----------------------------------
+// Legacy Compatibility
 //----------------------------------
 
 window.saveProject = saveProject;
@@ -213,5 +233,4 @@ window.loadProject = loadProject;
 window.getProjects = getProjects;
 window.deleteProject = deleteProject;
 window.getPresets = getPresets;
-window.getMaterials = getMaterials;
 window.getPresetMaterials = getPresetMaterials;

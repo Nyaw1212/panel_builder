@@ -86,15 +86,32 @@ function drawGrid() {
 
     grid.innerHTML = "";
 
-    for (let index = 0; index < GRID_SIZE; index++) {
+    //----------------------------------
+    // Dynamic Grid Style
+    //----------------------------------
+
+    grid.style.display = "grid";
+
+    grid.style.gridTemplateColumns =
+        `repeat(${SETTINGS.columns}, ${SETTINGS.cellSize}px)`;
+
+    grid.style.gridAutoRows =
+        `${SETTINGS.cellSize}px`;
+
+    grid.style.gap =
+        `${SETTINGS.gap}px`;
+
+    //----------------------------------
+    // Draw Cells
+    //----------------------------------
+
+    for (let index = 0; index < getGridSize(); index++) {
 
         const cell = document.createElement("div");
 
         cell.className = "cell";
 
         cell.dataset.index = index;
-
-        cell.innerHTML = "+";
 
         //----------------------------------
         // Preview follows cursor
@@ -104,11 +121,7 @@ function drawGrid() {
 
             const preset = getCurrentPreset();
 
-            if (!preset) {
-
-                return;
-
-            }
+            if (!preset) return;
 
             movePlacementPreview(index);
 
@@ -150,27 +163,10 @@ function drawGrid() {
 
             if (preset) {
 
-                console.group("Preset Placement");
-
-                console.log("Preset:", preset);
-
-                console.log("Cell:", index);
-
                 const placed = placePreset(
-
                     preset,
-
                     index
-
                 );
-
-                console.log("Placed:", placed);
-
-                console.groupEnd();
-
-                //----------------------------------
-                // Hide Ghost
-                //----------------------------------
 
                 if (placed) {
 
@@ -183,7 +179,7 @@ function drawGrid() {
             }
 
             //----------------------------------
-            // Normal Placement
+            // Manual Placement
             //----------------------------------
 
             openModal(index);
@@ -348,6 +344,16 @@ function drawPlacedItems() {
         card.appendChild(code);
 
         card.appendChild(desc);
+
+        console.group("Canvas Item");
+
+console.log(item);
+
+console.log("Preset:", item.preset);
+
+console.log("Materials:", item.materials);
+
+console.groupEnd();
 
         //----------------------------------
         // Equipment Node

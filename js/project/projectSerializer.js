@@ -62,7 +62,15 @@ function serializeItem(item) {
 
     return {
 
+        //----------------------------------
+        // Identity
+        //----------------------------------
+
         id: item.id,
+
+        //----------------------------------
+        // Layout
+        //----------------------------------
 
         startCell: item.startCell,
 
@@ -72,11 +80,27 @@ function serializeItem(item) {
 
         rotation: item.rotation || 0,
 
+        //----------------------------------
+        // Equipment
+        //----------------------------------
+
         data: serializeEquipmentData(
 
             item.data
 
         ),
+
+        preset: item.preset || "",
+
+        materials: structuredClone(
+
+            item.materials || []
+
+        ),
+
+        //----------------------------------
+        // Connections
+        //----------------------------------
 
         connections
 

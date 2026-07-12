@@ -2,7 +2,29 @@
 // Layout State
 //----------------------------------
 
-const layout = new Array(GRID_SIZE).fill(null);
+let layout = new Array(getGridSize()).fill(null);
+
+//----------------------------------
+// Resize Layout
+//----------------------------------
+
+function resizeLayout() {
+
+    const requiredSize = getGridSize();
+
+    if (layout.length >= requiredSize) {
+
+        return;
+
+    }
+
+    while (layout.length < requiredSize) {
+
+        layout.push(null);
+
+    }
+
+}
 
 //----------------------------------
 // Get Layout
@@ -62,6 +84,8 @@ function clearLayout() {
 
 function replaceLayout(items) {
 
+    resizeLayout();
+
     clearLayout();
 
     items.forEach(item => {
@@ -89,3 +113,5 @@ window.getItemById = getItemById;
 window.clearLayout = clearLayout;
 
 window.replaceLayout = replaceLayout;
+
+window.resizeLayout = resizeLayout;

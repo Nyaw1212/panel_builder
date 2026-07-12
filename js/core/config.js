@@ -4,23 +4,65 @@
 
 const SETTINGS = {
 
-    rows: 5,
+    //----------------------------------
+    // Initial Grid
+    //----------------------------------
 
-    columns: 10,
+    rows: 12,
+
+    columns: 16,
+
+    //----------------------------------
+    // Canvas
+    //----------------------------------
 
     cellSize: 140,
 
-    gap: 12
+    gap: 2,
+
+    //----------------------------------
+    // Auto Expand
+    //----------------------------------
+
+    autoExpand: true,
+
+    expandBy: 4,
+
+    margin: 2
 
 };
 
 //----------------------------------
-// Grid
+// Grid Size
 //----------------------------------
 
-const GRID_SIZE =
+function getGridSize() {
 
-    SETTINGS.rows * SETTINGS.columns;
+    return SETTINGS.rows * SETTINGS.columns;
+
+}
+
+//----------------------------------
+// Expand Grid
+//----------------------------------
+
+function expandGrid(requiredRow, requiredColumn) {
+
+    if (!SETTINGS.autoExpand) return;
+
+    while (requiredRow >= SETTINGS.rows - SETTINGS.margin) {
+
+        SETTINGS.rows += SETTINGS.expandBy;
+
+    }
+
+    while (requiredColumn >= SETTINGS.columns - SETTINGS.margin) {
+
+        SETTINGS.columns += SETTINGS.expandBy;
+
+    }
+
+}
 
 //----------------------------------
 // Default Port Layout
@@ -44,6 +86,8 @@ const DEFAULT_CONNECTIONS = {
 
 window.SETTINGS = SETTINGS;
 
-window.GRID_SIZE = GRID_SIZE;
+window.getGridSize = getGridSize;
+
+window.expandGrid = expandGrid;
 
 window.DEFAULT_CONNECTIONS = DEFAULT_CONNECTIONS;

@@ -6,11 +6,64 @@ const equipmentList = document.getElementById("equipmentList");
 const searchBox = document.getElementById("searchBox");
 const presetLibrary = document.getElementById("presetLibrary");
 
+//----------------------------------
+// Settings
+//----------------------------------
+
+const IMAGE_SETTINGS = {
+
+    // false = Google Drive
+    // true  = Local PNG
+
+    useLocalImages: false
+
+};
+
 const selectedEquipment = {
 
     type: null
 
 };
+
+//----------------------------------
+// Image
+//----------------------------------
+
+function getEquipmentImage(item) {
+
+    //----------------------------------
+    // Local PNG
+    //----------------------------------
+
+    if (SETTINGS.useLocalImages) {
+
+        return {
+
+            src: `./images/equipment/${String(item.CatalogNumber).trim()}.png`,
+
+            fallback: item.DriveFileID
+                ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
+                : ""
+
+        };
+
+    }
+
+    //----------------------------------
+    // Google Drive
+    //----------------------------------
+
+    return {
+
+        src: item.DriveFileID
+            ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
+            : "",
+
+        fallback: ""
+
+    };
+
+}
 
 //----------------------------------
 // Build Equipment Library
@@ -21,11 +74,8 @@ function buildEquipmentLibrary(searchText = "") {
     equipmentList.innerHTML = "";
 
     const equipment =
-
         typeof getEquipment === "function"
-
             ? getEquipment()
-
             : [];
 
     if (!equipment.length) {
@@ -48,11 +98,7 @@ function buildEquipmentLibrary(searchText = "") {
 
         .filter(item => {
 
-            if (!keywords.length) {
-
-                return true;
-
-            }
+            if (!keywords.length) return true;
 
             const haystack = [
 
@@ -66,40 +112,26 @@ function buildEquipmentLibrary(searchText = "") {
             ]
 
                 .filter(Boolean)
-
                 .join(" ")
-
                 .toLowerCase();
 
-            return keywords.every(
-
-                word => haystack.includes(word)
-
-            );
+            return keywords.every(word => haystack.includes(word));
 
         })
 
         .sort((a, b) => {
 
             if (a.Favorite && !b.Favorite) return -1;
-
             if (!a.Favorite && b.Favorite) return 1;
 
-            return (a.CatalogNumber || "").localeCompare(
-
-                b.CatalogNumber || ""
-
-            );
+            return String(a.CatalogNumber || "")
+                .localeCompare(String(b.CatalogNumber || ""));
 
         })
 
         .forEach(item => {
 
-            const image = item.DriveFileID
-
-                ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
-
-                : "";
+            const image = getEquipmentImage(item);
 
             const card = document.createElement("div");
 
@@ -109,7 +141,7 @@ function buildEquipmentLibrary(searchText = "") {
 
                 <img
                     class="equipment-image"
-                    src="${image}"
+                    src="${image.src}"
                 >
 
                 <div class="equipment-info">
@@ -136,16 +168,24 @@ function buildEquipmentLibrary(searchText = "") {
 
             `;
 
+            const img = card.querySelector(".equipment-image");
+
+            img.onerror = () => {
+
+                if (image.fallback) {
+
+                    img.src = image.fallback;
+
+                }
+
+            };
+
             card.onclick = () => {
 
                 document
-
                     .querySelectorAll(".equipment")
-
                     .forEach(card =>
-
                         card.classList.remove("selected")
-
                     );
 
                 card.classList.add("selected");
@@ -182,11 +222,7 @@ function buildPresetLibrary() {
 
         ...new Set(
 
-            window.presets.map(
-
-                item => item.PRESET
-
-            )
+            window.presets.map(item => item.PRESET)
 
         )
 
@@ -194,9 +230,8 @@ function buildPresetLibrary() {
 
     .sort((a, b) => {
 
-        const aNum = parseInt(a.replace("FD", "")) || 0;
-
-        const bNum = parseInt(b.replace("FD", "")) || 0;
+        const aNum = parseInt(String(a).replace("FD", "")) || 0;
+        const bNum = parseInt(String(b).replace("FD", "")) || 0;
 
         return bNum - aNum;
 
@@ -212,83 +247,31 @@ function buildPresetLibrary() {
 
         button.onclick = () => {
 
-            //----------------------------------
-            // Store Preset
-            //----------------------------------
-
             setCurrentPreset(code);
 
-            //----------------------------------
-            // Highlight Button
-            //----------------------------------
-
             document
-
                 .querySelectorAll(".preset-button")
-
                 .forEach(btn =>
-
                     btn.classList.remove("selected")
-
                 );
 
             button.classList.add("selected");
 
-            //----------------------------------
-            // Find First Equipment
-            //----------------------------------
-
             const presetRow = window.presets.find(
-
                 p => p.PRESET === code
-
             );
 
-            if (!presetRow) {
-
-                console.warn("Preset not found:", code);
-
-                return;
-
-            }
+            if (!presetRow) return;
 
             const equipment = getEquipment().find(
-
                 e =>
-
-                    e.CatalogNumber ===
-
-                    presetRow.CatalogNumber
-
+                    String(e.CatalogNumber) ===
+                    String(presetRow.CatalogNumber)
             );
 
-            if (!equipment) {
-
-                console.warn(
-
-                    "Equipment not found:",
-
-                    presetRow.CatalogNumber
-
-                );
-
-                return;
-
-            }
-
-            //----------------------------------
-            // Show Ghost Preview
-            //----------------------------------
+            if (!equipment) return;
 
             showPlacementPreview(equipment);
-
-            console.group("Preset Mode");
-
-            console.log("Preset:", code);
-
-            console.log("Equipment:", equipment.CatalogNumber);
-
-            console.groupEnd();
 
         };
 
@@ -302,26 +285,15 @@ function buildPresetLibrary() {
 // Search
 //----------------------------------
 
-searchBox.addEventListener(
+searchBox.addEventListener("input", () => {
 
-    "input",
+    buildEquipmentLibrary(searchBox.value);
 
-    () => {
-
-        buildEquipmentLibrary(
-
-            searchBox.value
-
-        );
-
-    }
-
-);
+});
 
 //----------------------------------
 // Expose
 //----------------------------------
 
 window.buildEquipmentLibrary = buildEquipmentLibrary;
-
 window.buildPresetLibrary = buildPresetLibrary;

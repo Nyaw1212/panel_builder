@@ -24,7 +24,7 @@ async function init() {
 
         const mml = await API.getMML();
 
-        presets = await getPresets();
+        const presets = await API.getPresets();
 
         //----------------------------------
         // Split MML
@@ -94,10 +94,8 @@ async function init() {
         //----------------------------------
 
         if (
-
             typeof loadDraft === "function" &&
             typeof deserializeProject === "function"
-
         ) {
 
             const draft = loadDraft();
@@ -126,9 +124,7 @@ async function init() {
     catch (err) {
 
         console.error("INITIALIZATION FAILED");
-
         console.error(err);
-
         console.error(err.stack);
 
         alert(err.message);
