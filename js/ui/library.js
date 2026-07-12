@@ -20,10 +20,6 @@ function buildEquipmentLibrary(searchText = "") {
 
     equipmentList.innerHTML = "";
 
-    //----------------------------------
-    // Get Equipment
-    //----------------------------------
-
     const equipment =
 
         typeof getEquipment === "function"
@@ -40,10 +36,6 @@ function buildEquipmentLibrary(searchText = "") {
 
     }
 
-    //----------------------------------
-    // Search
-    //----------------------------------
-
     const keywords = searchText
         .toLowerCase()
         .trim()
@@ -56,7 +48,7 @@ function buildEquipmentLibrary(searchText = "") {
 
         .filter(item => {
 
-            if (keywords.length === 0) {
+            if (!keywords.length) {
 
                 return true;
 
@@ -72,8 +64,11 @@ function buildEquipmentLibrary(searchText = "") {
                 item.Color
 
             ]
+
                 .filter(Boolean)
+
                 .join(" ")
+
                 .toLowerCase();
 
             return keywords.every(
@@ -149,11 +144,7 @@ function buildEquipmentLibrary(searchText = "") {
 
                     .forEach(card =>
 
-                        card.classList.remove(
-
-                            "selected"
-
-                        )
+                        card.classList.remove("selected")
 
                     );
 
@@ -175,21 +166,11 @@ function buildEquipmentLibrary(searchText = "") {
 
 function buildPresetLibrary() {
 
-    if (!presetLibrary) {
-
-        return;
-
-    }
+    if (!presetLibrary) return;
 
     presetLibrary.innerHTML = "";
 
-    if (
-
-        !window.presets ||
-
-        window.presets.length === 0
-
-    ) {
+    if (!window.presets?.length) {
 
         presetLibrary.innerHTML = "No Presets";
 
@@ -213,17 +194,9 @@ function buildPresetLibrary() {
 
     .sort((a, b) => {
 
-        const aNum = parseInt(
+        const aNum = parseInt(a.replace("FD", "")) || 0;
 
-            a.replace("FD", "")
-
-        ) || 0;
-
-        const bNum = parseInt(
-
-            b.replace("FD", "")
-
-        ) || 0;
+        const bNum = parseInt(b.replace("FD", "")) || 0;
 
         return bNum - aNum;
 
@@ -231,63 +204,95 @@ function buildPresetLibrary() {
 
     presetCodes.forEach(code => {
 
-        const button =
+        const button = document.createElement("button");
 
-            document.createElement(
-
-                "button"
-
-            );
-
-        button.className =
-
-            "preset-button";
+        button.className = "preset-button";
 
         button.textContent = code;
 
         button.onclick = () => {
 
             //----------------------------------
-            // Delegate to Preset Manager
+            // Store Preset
             //----------------------------------
 
             setCurrentPreset(code);
 
             //----------------------------------
-            // Highlight
+            // Highlight Button
             //----------------------------------
 
             document
 
                 .querySelectorAll(".preset-button")
 
-                .forEach(button =>
+                .forEach(btn =>
 
-                    button.classList.remove(
-
-                        "selected"
-
-                    )
+                    btn.classList.remove("selected")
 
                 );
 
             button.classList.add("selected");
 
-            console.log(
+            //----------------------------------
+            // Find First Equipment
+            //----------------------------------
 
-                "Preset Selected:",
+            const presetRow = window.presets.find(
 
-                code
+                p => p.PRESET === code
 
             );
 
+            if (!presetRow) {
+
+                console.warn("Preset not found:", code);
+
+                return;
+
+            }
+
+            const equipment = getEquipment().find(
+
+                e =>
+
+                    e.CatalogNumber ===
+
+                    presetRow.CatalogNumber
+
+            );
+
+            if (!equipment) {
+
+                console.warn(
+
+                    "Equipment not found:",
+
+                    presetRow.CatalogNumber
+
+                );
+
+                return;
+
+            }
+
+            //----------------------------------
+            // Show Ghost Preview
+            //----------------------------------
+
+            showPlacementPreview(equipment);
+
+            console.group("Preset Mode");
+
+            console.log("Preset:", code);
+
+            console.log("Equipment:", equipment.CatalogNumber);
+
+            console.groupEnd();
+
         };
 
-        presetLibrary.appendChild(
-
-            button
-
-        );
+        presetLibrary.appendChild(button);
 
     });
 
@@ -317,8 +322,6 @@ searchBox.addEventListener(
 // Expose
 //----------------------------------
 
-window.buildEquipmentLibrary =
-    buildEquipmentLibrary;
+window.buildEquipmentLibrary = buildEquipmentLibrary;
 
-window.buildPresetLibrary =
-    buildPresetLibrary;
+window.buildPresetLibrary = buildPresetLibrary;

@@ -96,6 +96,28 @@ function drawGrid() {
 
         cell.innerHTML = "+";
 
+        //----------------------------------
+        // Preview follows cursor
+        //----------------------------------
+
+        cell.onmouseenter = () => {
+
+            const preset = getCurrentPreset();
+
+            if (!preset) {
+
+                return;
+
+            }
+
+            movePlacementPreview(index);
+
+        };
+
+        //----------------------------------
+        // Click
+        //----------------------------------
+
         cell.onclick = () => {
 
             const item = getItem(index);
@@ -121,7 +143,7 @@ function drawGrid() {
             selectedItem = null;
 
             //----------------------------------
-            // Preset Mode
+            // Preset Placement
             //----------------------------------
 
             const preset = getCurrentPreset();
@@ -146,12 +168,22 @@ function drawGrid() {
 
                 console.groupEnd();
 
+                //----------------------------------
+                // Hide Ghost
+                //----------------------------------
+
+                if (placed) {
+
+                    hidePlacementPreview();
+
+                }
+
                 return;
 
             }
 
             //----------------------------------
-            // Normal Equipment Placement
+            // Normal Placement
             //----------------------------------
 
             openModal(index);
@@ -278,7 +310,7 @@ function drawPlacedItems() {
         img.style.pointerEvents = "none";
 
         //----------------------------------
-        // Catalog Number
+        // Catalog
         //----------------------------------
 
         const code = document.createElement("div");
@@ -307,7 +339,7 @@ function drawPlacedItems() {
         desc.style.pointerEvents = "none";
 
         //----------------------------------
-        // Assemble Card
+        // Assemble
         //----------------------------------
 
         card.appendChild(img);
