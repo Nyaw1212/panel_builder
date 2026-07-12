@@ -246,7 +246,7 @@ function drawPlacedItems() {
 
         card.style.boxSizing = "border-box";
 
-        card.style.padding = "24px";
+        card.style.padding = "8px";
 
         card.style.display = "flex";
         card.style.flexDirection = "column";
@@ -255,7 +255,7 @@ function drawPlacedItems() {
         card.style.gap = "6px";
 
         card.style.background = "#EAF3FF";
-        card.style.borderRadius = "8px";
+        card.style.borderRadius = "2px";
 
         if (isSelected) {
 
@@ -291,19 +291,34 @@ function drawPlacedItems() {
         card.appendChild(remove);
 
         //----------------------------------
-        // Image
-        //----------------------------------
+// Image
+//----------------------------------
 
-        const img = document.createElement("img");
+const img = document.createElement("img");
 
-        img.className = "canvas-image";
+img.className = "canvas-image";
 
-        img.src = image;
+img.src = image;
 
-        img.style.maxWidth = "60px";
-        img.style.maxHeight = "60px";
-        img.style.objectFit = "contain";
-        img.style.pointerEvents = "none";
+//----------------------------------
+// Dynamic Image Size
+//----------------------------------
+
+const imageWidth =
+    item.width * SETTINGS.cellSize * 0.55;
+
+const imageHeight =
+    item.height * SETTINGS.cellSize * 0.55;
+
+img.style.width = `${imageWidth}px`;
+img.style.height = `${imageHeight}px`;
+
+img.style.maxWidth = "100%";
+img.style.maxHeight = "100%";
+
+img.style.objectFit = "contain";
+img.style.pointerEvents = "none";
+img.draggable = false;
 
         //----------------------------------
         // Catalog
