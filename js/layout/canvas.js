@@ -230,6 +230,10 @@ function drawPlacedItems() {
 
             selectedItem.id === item.id;
 
+        //----------------------------------
+        // Card
+        //----------------------------------
+
         const card = document.createElement("div");
 
         card.className = "panel-card";
@@ -245,10 +249,6 @@ function drawPlacedItems() {
             `${item.height * (SETTINGS.cellSize + SETTINGS.gap) - SETTINGS.gap}px`;
 
         card.style.boxSizing = "border-box";
-
-        //----------------------------------
-        // Reserve space for knockout nodes
-        //----------------------------------
 
         card.style.padding = "24px";
 
@@ -332,19 +332,42 @@ function drawPlacedItems() {
 
         desc.className = "canvas-desc";
 
-        desc.textContent = `${item.data.Size || ""} ${item.data.Type || ""}`;
+        desc.textContent =
+            `${item.data.Size || ""} ${item.data.Type || ""}`;
 
         desc.style.textAlign = "center";
         desc.style.fontSize = "10px";
         desc.style.pointerEvents = "none";
 
         //----------------------------------
-        // Assemble
+        // Assemble Card
         //----------------------------------
 
         card.appendChild(img);
+
         card.appendChild(code);
+
         card.appendChild(desc);
+
+        //----------------------------------
+        // Equipment Node
+        //----------------------------------
+
+        if (typeof drawEquipmentNode === "function") {
+
+            drawEquipmentNode(
+
+                card,
+
+                item
+
+            );
+
+        }
+
+        //----------------------------------
+        // Add to Cell
+        //----------------------------------
 
         cell.appendChild(card);
 
