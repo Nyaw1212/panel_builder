@@ -56,33 +56,16 @@ function createPlacedItem(
     // Apply Preset
     //----------------------------------
 
-    console.log("Before replacePreset", placedItem);
-
     replacePreset(
         placedItem,
         preset
     );
 
-    console.log("After replacePreset", placedItem);
-
     //----------------------------------
     // Occupied Cells
     //----------------------------------
 
-    for (let r = 0; r < item.GridHeight; r++) {
-
-        for (let c = 0; c < item.GridWidth; c++) {
-
-            const index =
-                startCell +
-                (r * SETTINGS.columns) +
-                c;
-
-            placedItem.occupied.push(index);
-
-        }
-
-    }
+    updateOccupiedCells(placedItem);
 
     //----------------------------------
     // Default Ports
@@ -111,20 +94,42 @@ function createPlacedItem(
 }
 
 //----------------------------------
+// Update Occupied Cells
+//----------------------------------
+
+function updateOccupiedCells(item) {
+
+    item.occupied = [];
+
+    for (let r = 0; r < item.height; r++) {
+
+        for (let c = 0; c < item.width; c++) {
+
+            item.occupied.push(
+
+                item.startCell +
+
+                r * SETTINGS.columns +
+
+                c
+
+            );
+
+        }
+
+    }
+
+}
+
+//----------------------------------
 // Can Place
 //----------------------------------
 
 function canPlace(
     item,
-    startCell
+    startCell,
+    ignoreItem = null
 ) {
-
-    console.group("canPlace");
-
-    console.log("Catalog:", item.CatalogNumber);
-    console.log("Start Cell:", startCell);
-    console.log("Width:", item.GridWidth);
-    console.log("Height:", item.GridHeight);
 
     const layout = getLayout();
 
@@ -138,45 +143,26 @@ function canPlace(
             const col =
                 (startCell % SETTINGS.columns) + c;
 
+            if (
+                row >= SETTINGS.rows ||
+                col >= SETTINGS.columns
+            ) {
+
+                return false;
+
+            }
+
             const index =
                 row * SETTINGS.columns + col;
 
-            console.log({
-                r,
-                c,
-                row,
-                col,
-                index,
-                occupied: Boolean(layout[index])
-            });
+            const existing = layout[index];
 
-            if (row >= SETTINGS.rows) {
+            if (
 
-                console.warn("FAILED: Outside Rows");
+                existing &&
+                existing !== ignoreItem
 
-                console.groupEnd();
-
-                return false;
-
-            }
-
-            if (col >= SETTINGS.columns) {
-
-                console.warn("FAILED: Outside Columns");
-
-                console.groupEnd();
-
-                return false;
-
-            }
-
-            if (layout[index]) {
-
-                console.warn("FAILED: Cell Occupied");
-
-                console.log(layout[index]);
-
-                console.groupEnd();
+            ) {
 
                 return false;
 
@@ -185,10 +171,6 @@ function canPlace(
         }
 
     }
-
-    console.log("PASSED");
-
-    console.groupEnd();
 
     return true;
 
@@ -204,16 +186,7 @@ function placeItem(
     preset = ""
 ) {
 
-    console.group("placeItem");
-
-    console.log("Cell:", startCell);
-    console.log("Preset:", preset);
-
     if (!canPlace(item, startCell)) {
-
-        console.warn("Cannot place equipment.");
-
-        console.groupEnd();
 
         alert("Cannot place equipment here.");
 
@@ -239,13 +212,78 @@ function placeItem(
 
     });
 
-    console.log("Placed Item");
-
-    console.log(placedItem);
-
-    console.groupEnd();
-
     return placedItem;
+
+}
+
+//----------------------------------
+// Move Item
+//----------------------------------
+
+function moveItem(
+    item,
+    newStartCell
+) {
+
+    const layout = getLayout();
+
+    //----------------------------------
+    // Clear Current Cells
+    //----------------------------------
+
+    item.occupied.forEach(index => {
+
+        layout[index] = null;
+
+    });
+
+    //----------------------------------
+    // Check New Position
+    //----------------------------------
+
+    if (
+
+        !canPlace(
+
+            item.data,
+
+            newStartCell,
+
+            item
+
+        )
+
+    ) {
+
+        item.occupied.forEach(index => {
+
+            layout[index] = item;
+
+        });
+
+        return false;
+
+    }
+
+    //----------------------------------
+    // Update
+    //----------------------------------
+
+    item.startCell = newStartCell;
+
+    updateOccupiedCells(item);
+
+    //----------------------------------
+    // Fill Layout
+    //----------------------------------
+
+    item.occupied.forEach(index => {
+
+        layout[index] = item;
+
+    });
+
+    return true;
 
 }
 
@@ -304,6 +342,8 @@ function removeItem(index) {
 //----------------------------------
 
 window.createPlacedItem = createPlacedItem;
+window.updateOccupiedCells = updateOccupiedCells;
 window.canPlace = canPlace;
 window.placeItem = placeItem;
+window.moveItem = moveItem;
 window.removeItem = removeItem;

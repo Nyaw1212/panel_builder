@@ -351,14 +351,24 @@ img.draggable = false;
         desc.style.pointerEvents = "none";
 
         //----------------------------------
-        // Assemble Card
-        //----------------------------------
+// Assemble Card
+//----------------------------------
 
-        card.appendChild(img);
+card.appendChild(img);
 
-        card.appendChild(code);
+card.appendChild(code);
 
-        card.appendChild(desc);
+card.appendChild(desc);
+
+//----------------------------------
+// Enable Drag
+//----------------------------------
+
+if (typeof enableDrag === "function") {
+
+    enableDrag(card, item);
+
+}
 
         console.group("Canvas Item");
 
