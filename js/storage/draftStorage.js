@@ -22,13 +22,10 @@ function saveDraft() {
 
         );
 
-        console.log("Draft Saved");
-        console.log(project);
-
     }
     catch (err) {
 
-        console.error(err);
+        console.error("Failed to save draft.", err);
 
     }
 
@@ -48,27 +45,18 @@ function loadDraft() {
 
         );
 
-        console.log("Draft JSON:", json);
-
         if (!json) {
-
-            console.log("No Draft Found");
 
             return null;
 
         }
 
-        const draft = JSON.parse(json);
-
-        console.log("Draft Loaded:");
-        console.log(draft);
-
-        return draft;
+        return JSON.parse(json);
 
     }
     catch (err) {
 
-        console.error(err);
+        console.error("Failed to load draft.", err);
 
         return null;
 
@@ -88,8 +76,6 @@ function clearDraft() {
 
     );
 
-    console.log("Draft Cleared");
-
 }
 
 //----------------------------------
@@ -98,15 +84,11 @@ function clearDraft() {
 
 function hasDraft() {
 
-    const exists = !!localStorage.getItem(
+    return localStorage.getItem(
 
         DRAFT_KEY
 
-    );
-
-    console.log("Has Draft:", exists);
-
-    return exists;
+    ) !== null;
 
 }
 

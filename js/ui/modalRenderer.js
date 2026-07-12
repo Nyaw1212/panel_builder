@@ -79,11 +79,21 @@ function buildModalCard(item) {
 
     card.onclick = () => {
 
+        console.group("Modal Card Click");
+
+        console.log("Catalog:", item.CatalogNumber);
+
+        console.log("Mode:", modalMode);
+
+        console.log("Current Cell:", currentCell);
+
         //----------------------------------
         // Generic Picker
         //----------------------------------
 
         if (modalMode === "picker") {
+
+            console.log("Branch: picker");
 
             if (typeof modalOnSelect === "function") {
 
@@ -92,6 +102,8 @@ function buildModalCard(item) {
             }
 
             modal.style.display = "none";
+
+            console.groupEnd();
 
             return;
 
@@ -103,7 +115,11 @@ function buildModalCard(item) {
 
         if (modalMode === "equipment") {
 
+            console.log("Branch: equipment");
+
             handleEquipmentClick(item);
+
+            console.groupEnd();
 
             return;
 
@@ -115,11 +131,19 @@ function buildModalCard(item) {
 
         if (modalMode === "material") {
 
+            console.log("Branch: material");
+
             handleHardwareClick(item);
+
+            console.groupEnd();
 
             return;
 
         }
+
+        console.warn("Unknown modalMode:", modalMode);
+
+        console.groupEnd();
 
     };
 

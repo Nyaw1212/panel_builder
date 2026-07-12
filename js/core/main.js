@@ -19,16 +19,12 @@ async function init() {
     try {
 
         //----------------------------------
-        // Load MML
+        // Load Data
         //----------------------------------
 
         const mml = await API.getMML();
 
-        //----------------------------------
-        // Load Presets
-        //----------------------------------
-
-        presets = await getPresets() || [];
+        presets = await getPresets();
 
         //----------------------------------
         // Split MML
@@ -47,17 +43,21 @@ async function init() {
         window.presets = presets;
 
         //----------------------------------
-        // Debug
+        // Initialization Summary
         //----------------------------------
 
-        console.log("Equipment Loaded");
-        console.table(equipment);
+        console.group("Initialization");
 
-        console.log("Materials Loaded");
-        console.table(materials);
+        console.log(`Equipment : ${equipment.length}`);
+        console.table(equipment.slice(0, 3));
 
-        console.log("Presets Loaded");
-        console.table(presets);
+        console.log(`Materials : ${materials.length}`);
+        console.table(materials.slice(0, 3));
+
+        console.log(`Presets : ${presets.length}`);
+        console.table(presets.slice(0, 3));
+
+        console.groupEnd();
 
         //----------------------------------
         // Initialize SVG
@@ -70,10 +70,11 @@ async function init() {
         //----------------------------------
 
         buildEquipmentLibrary();
+
         buildPresetLibrary();
 
         //----------------------------------
-        // Initialize Toolbar
+        // Toolbar
         //----------------------------------
 
         if (typeof initializeToolbar === "function") {
@@ -105,30 +106,13 @@ async function init() {
 
                 console.log("Restoring Draft...");
 
-                try {
+                deserializeProject(draft);
 
-                    deserializeProject(draft);
-
-                    console.log("Draft Restored Successfully");
-
-                }
-                catch (err) {
-
-                    console.error("DESERIALIZER FAILED");
-                    console.error(err);
-                    console.error(err.stack);
-
-                    debugger;
-
-                    throw err;
-
-                }
+                console.log("Draft Restored Successfully");
 
             }
 
         }
-
-        
 
         //----------------------------------
         // Enable Auto Save
@@ -142,10 +126,10 @@ async function init() {
     catch (err) {
 
         console.error("INITIALIZATION FAILED");
-        console.error(err);
-        console.error(err.stack);
 
-        debugger;
+        console.error(err);
+
+        console.error(err.stack);
 
         alert(err.message);
 

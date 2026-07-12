@@ -4,30 +4,16 @@
 
 const grid = document.getElementById("grid");
 
-const SETTINGS = {
-
-    rows: 5,
-
-    columns: 10,
-
-    cellSize: 140,
-
-    gap: 12
-
-};
-
-const GRID_SIZE = SETTINGS.rows * SETTINGS.columns;
-
 //----------------------------------
-// Layout
-//----------------------------------
-
-const layout = new Array(GRID_SIZE).fill(null);
-
 // Currently Selected Panel
+//----------------------------------
+
 let selectedItem = null;
 
+//----------------------------------
 // Auto Save
+//----------------------------------
+
 let autoSaveEnabled = false;
 
 //----------------------------------
@@ -114,20 +100,61 @@ function drawGrid() {
 
             const item = getItem(index);
 
+            //----------------------------------
+            // Existing Equipment
+            //----------------------------------
+
             if (item) {
 
                 selectedItem = item;
 
                 drawCanvas();
 
-            }
-            else {
-
-                selectedItem = null;
-
-                openModal(index);
+                return;
 
             }
+
+            //----------------------------------
+            // Empty Cell
+            //----------------------------------
+
+            selectedItem = null;
+
+            //----------------------------------
+            // Preset Mode
+            //----------------------------------
+
+            const preset = getCurrentPreset();
+
+            if (preset) {
+
+                console.group("Preset Placement");
+
+                console.log("Preset:", preset);
+
+                console.log("Cell:", index);
+
+                const placed = placePreset(
+
+                    preset,
+
+                    index
+
+                );
+
+                console.log("Placed:", placed);
+
+                console.groupEnd();
+
+                return;
+
+            }
+
+            //----------------------------------
+            // Normal Equipment Placement
+            //----------------------------------
+
+            openModal(index);
 
         };
 
@@ -145,7 +172,7 @@ function drawPlacedItems() {
 
     const drawn = new Set();
 
-    layout.forEach(item => {
+    getLayout().forEach(item => {
 
         if (!item) return;
 
@@ -273,7 +300,7 @@ function drawPlacedItems() {
 
         desc.className = "canvas-desc";
 
-        desc.textContent = `${item.data.Size} ${item.data.Type}`;
+        desc.textContent = `${item.data.Size || ""} ${item.data.Type || ""}`;
 
         desc.style.textAlign = "center";
         desc.style.fontSize = "10px";
@@ -290,16 +317,6 @@ function drawPlacedItems() {
         cell.appendChild(card);
 
     });
-
-}
-
-//----------------------------------
-// Get Layout
-//----------------------------------
-
-function getLayout() {
-
-    return layout;
 
 }
 
@@ -323,8 +340,9 @@ function setSelectedItem(item) {
 // Expose
 //----------------------------------
 
-window.getLayout = getLayout;
+window.drawCanvas = drawCanvas;
+window.drawGrid = drawGrid;
+window.drawPlacedItems = drawPlacedItems;
 
 window.getSelectedItem = getSelectedItem;
-
 window.setSelectedItem = setSelectedItem;

@@ -90,9 +90,9 @@ function buildEquipmentLibrary(searchText = "") {
 
             if (!a.Favorite && b.Favorite) return 1;
 
-            return a.CatalogNumber.localeCompare(
+            return (a.CatalogNumber || "").localeCompare(
 
-                b.CatalogNumber
+                b.CatalogNumber || ""
 
             );
 
@@ -175,7 +175,11 @@ function buildEquipmentLibrary(searchText = "") {
 
 function buildPresetLibrary() {
 
-    if (!presetLibrary) return;
+    if (!presetLibrary) {
+
+        return;
+
+    }
 
     presetLibrary.innerHTML = "";
 
@@ -187,9 +191,7 @@ function buildPresetLibrary() {
 
     ) {
 
-        presetLibrary.innerHTML =
-
-            "No Presets";
+        presetLibrary.innerHTML = "No Presets";
 
         return;
 
@@ -211,21 +213,17 @@ function buildPresetLibrary() {
 
     .sort((a, b) => {
 
-        const aNum =
+        const aNum = parseInt(
 
-            parseInt(
+            a.replace("FD", "")
 
-                a.replace("FD", "")
+        ) || 0;
 
-            ) || 0;
+        const bNum = parseInt(
 
-        const bNum =
+            b.replace("FD", "")
 
-            parseInt(
-
-                b.replace("FD", "")
-
-            ) || 0;
+        ) || 0;
 
         return bNum - aNum;
 
@@ -248,6 +246,32 @@ function buildPresetLibrary() {
         button.textContent = code;
 
         button.onclick = () => {
+
+            //----------------------------------
+            // Delegate to Preset Manager
+            //----------------------------------
+
+            setCurrentPreset(code);
+
+            //----------------------------------
+            // Highlight
+            //----------------------------------
+
+            document
+
+                .querySelectorAll(".preset-button")
+
+                .forEach(button =>
+
+                    button.classList.remove(
+
+                        "selected"
+
+                    )
+
+                );
+
+            button.classList.add("selected");
 
             console.log(
 
@@ -294,9 +318,7 @@ searchBox.addEventListener(
 //----------------------------------
 
 window.buildEquipmentLibrary =
-
     buildEquipmentLibrary;
 
 window.buildPresetLibrary =
-
     buildPresetLibrary;

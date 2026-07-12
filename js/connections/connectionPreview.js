@@ -54,7 +54,7 @@ function showConnectionPreview(
         `${panel.offsetWidth / 2}px`;
 
     preview.style.top =
-        `${panel.offsetHeight + 500}px`;
+        `${panel.offsetHeight + 20}px`;
 
 }
 

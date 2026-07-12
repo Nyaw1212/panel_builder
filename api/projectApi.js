@@ -13,8 +13,6 @@ async function apiRequest(data) {
 
     try {
 
-        console.time("Fetch");
-
         const response = await fetch(
 
             PROJECT_API_URL,
@@ -29,36 +27,18 @@ async function apiRequest(data) {
 
         );
 
-        console.timeEnd("Fetch");
-
         if (!response.ok) {
 
-            throw new Error(
-
-                `HTTP ${response.status}`
-
-            );
+            throw new Error(`HTTP ${response.status}`);
 
         }
 
-        console.time("Parse JSON");
-
-        const result = await response.json();
-
-        console.timeEnd("Parse JSON");
-
-        return result;
+        return await response.json();
 
     }
     catch (err) {
 
-        console.error(
-
-            "Project API Error",
-
-            err
-
-        );
+        console.error("Project API Error", err);
 
         return {
 
@@ -78,49 +58,15 @@ async function apiRequest(data) {
 
 async function saveProject(project) {
 
-    //----------------------------------
-    // Serialize
-    //----------------------------------
-
-    console.time("Serialize");
-
     const payload = serializeProject(project);
 
-    console.timeEnd("Serialize");
-
-    console.log("Payload:", payload);
-
-    console.log("Material Summary:", payload.materialSummary);
-
-    console.table(payload.materialSummary);
-
-    //----------------------------------
-    // Verify JSON
-    //----------------------------------
-
-    console.time("JSON Verify");
-
-    JSON.stringify(payload);
-
-    console.timeEnd("JSON Verify");
-
-    //----------------------------------
-    // POST
-    //----------------------------------
-
-    console.time("POST");
-
-    const result = await apiRequest({
+    return await apiRequest({
 
         action: "saveProject",
 
         ...payload
 
     });
-
-    console.timeEnd("POST");
-
-    return result;
 
 }
 
@@ -130,9 +76,7 @@ async function saveProject(project) {
 
 async function loadProject(jobName, address) {
 
-    console.time("Load Project");
-
-    const result = await apiRequest({
+    return await apiRequest({
 
         action: "loadProject",
 
@@ -142,10 +86,6 @@ async function loadProject(jobName, address) {
 
     });
 
-    console.timeEnd("Load Project");
-
-    return result;
-
 }
 
 //----------------------------------
@@ -154,15 +94,11 @@ async function loadProject(jobName, address) {
 
 async function getPresets() {
 
-    console.time("Get Presets");
-
     const result = await apiRequest({
 
         action: "getPresets"
 
     });
-
-    console.timeEnd("Get Presets");
 
     if (!result.success) {
 
@@ -172,7 +108,35 @@ async function getPresets() {
 
     }
 
-    return result.presets;
+    return result.presets || [];
+
+}
+
+//----------------------------------
+// Get Preset Materials
+//----------------------------------
+
+function getPresetMaterials(preset) {
+
+    if (!preset) {
+
+        return [];
+
+    }
+
+    return (window.presets || [])
+
+        .filter(item => item.PRESET === preset)
+
+        .map(item => ({
+
+            catalogNumber: item.CatalogNumber,
+
+            description: item.DESCRIPTION,
+
+            qty: Number(item.QTY)
+
+        }));
 
 }
 
@@ -182,15 +146,11 @@ async function getPresets() {
 
 async function getProjects() {
 
-    console.time("Get Projects");
-
     const result = await apiRequest({
 
         action: "getProjects"
 
     });
-
-    console.timeEnd("Get Projects");
 
     if (!result.success) {
 
@@ -226,15 +186,11 @@ async function deleteProject(projectId) {
 
 async function getMaterials() {
 
-    console.time("Get Materials");
-
     const result = await apiRequest({
 
         action: "getMaterials"
 
     });
-
-    console.timeEnd("Get Materials");
 
     if (!result.success) {
 
@@ -248,8 +204,6 @@ async function getMaterials() {
 
 }
 
-window.getMaterials = getMaterials;
-
 //----------------------------------
 // Expose
 //----------------------------------
@@ -259,3 +213,5 @@ window.loadProject = loadProject;
 window.getProjects = getProjects;
 window.deleteProject = deleteProject;
 window.getPresets = getPresets;
+window.getMaterials = getMaterials;
+window.getPresetMaterials = getPresetMaterials;

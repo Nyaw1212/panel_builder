@@ -1,3 +1,5 @@
+console.log("modalEquipment.js Loaded");
+
 //----------------------------------
 // Equipment List
 //----------------------------------
@@ -45,25 +47,64 @@ function getEquipmentModalList(list) {
 
 function handleEquipmentClick(item) {
 
-    const placedItem =
+    console.group("handleEquipmentClick");
 
-        placeItem(
+    console.log("Item:", item.CatalogNumber);
 
-            item,
+    console.log("Current Cell:", currentCell);
 
-            currentCell
+    console.log("Current Preset:", getCurrentPreset());
 
-        );
+    console.log("placeItem:", typeof placeItem);
+
+    console.log("Calling placeItem...");
+
+    const placedItem = placeItem(
+
+        item,
+
+        currentCell,
+
+        getCurrentPreset()
+
+    );
+
+    console.log("Returned:", placedItem);
+
+    console.groupEnd();
 
     if (!placedItem) {
+
+        console.warn("placeItem returned null.");
 
         return;
 
     }
 
-    selectedItem = placedItem;
+    //----------------------------------
+    // Select Equipment
+    //----------------------------------
+
+    if (typeof setSelectedItem === "function") {
+
+        setSelectedItem(placedItem);
+
+    }
+    else {
+
+        selectedItem = placedItem;
+
+    }
+
+    //----------------------------------
+    // Close Modal
+    //----------------------------------
 
     modal.style.display = "none";
+
+    //----------------------------------
+    // Redraw
+    //----------------------------------
 
     drawCanvas();
 

@@ -3,7 +3,6 @@
 
 <head>
 
-    <link rel="stylesheet" href="styles/toolbar.css">
     <meta charset="UTF-8">
 
     <title>Panel Builder</title>
@@ -16,6 +15,9 @@
     <link rel="stylesheet" href="styles/modal.css">
     <link rel="stylesheet" href="styles/inspector.css">
     <link rel="stylesheet" href="styles/bom.css">
+
+    <!-- Uncomment when toolbar.css exists -->
+    <!-- <link rel="stylesheet" href="styles/toolbar.css"> -->
 
 </head>
 
@@ -41,19 +43,11 @@
 
             </div>
 
-            <!---------------------------------->
-            <!-- Equipment -->
-            <!---------------------------------->
-
             <div class="equipment-list">
 
                 <div id="equipmentList"></div>
 
             </div>
-
-            <!---------------------------------->
-            <!-- Presets -->
-            <!---------------------------------->
 
             <div class="library-section">
 
@@ -69,10 +63,6 @@
                 ></div>
 
             </div>
-
-            <!---------------------------------->
-            <!-- Materials -->
-            <!---------------------------------->
 
             <div class="library-section">
 
@@ -93,8 +83,6 @@
         </aside>
 
         <main class="workspace">
-
-            <!-- Toolbar -->
 
             <div class="workspace-toolbar">
 
@@ -212,22 +200,41 @@
 
     </div>
 
+    <!-- ========================================= -->
     <!-- Data -->
+    <!-- ========================================= -->
 
     <script src="api/equipment.js"></script>
 
+    <!-- ========================================= -->
     <!-- Core -->
+    <!-- ========================================= -->
 
     <script src="js/core/config.js"></script>
 
+    <!-- ========================================= -->
     <!-- Layout -->
+    <!-- ========================================= -->
 
+    <script src="js/layout/state.js"></script>
+    <script src="js/layout/equipmentManager.js"></script>
+    <script src="js/layout/placement.js"></script>
     <script src="js/layout/renderer.js"></script>
-    <script src="js/layout/layout.js"></script>
-    <script src="js/layout/layout2.js"></script>
     <script src="js/layout/canvas.js"></script>
+    <script src="js/layout/presetPlacement.js"></script>
 
+    <!-- ========================================= -->
+    <!-- SVG -->
+    <!-- ========================================= -->
+
+    <script src="js/svg/svgStyles.js"></script>
+    <script src="js/svg/svgLine.js"></script>
+    <script src="js/svg/svgPath.js"></script>
+    <script src="js/svg/svgRenderer.js"></script>
+
+    <!-- ========================================= -->
     <!-- Connections -->
+    <!-- ========================================= -->
 
     <script src="js/connections/connectionFactory.js"></script>
     <script src="js/connections/connectionHardware.js"></script>
@@ -250,14 +257,9 @@
     <script src="js/connections/linkSelection.js"></script>
     <script src="js/connections/linkEditor.js"></script>
 
-    <!-- SVG -->
-
-    <script src="js/svg/svgStyles.js"></script>
-    <script src="js/svg/svgLine.js"></script>
-    <script src="js/svg/svgPath.js"></script>
-    <script src="js/svg/svgRenderer.js"></script>
-
+    <!-- ========================================= -->
     <!-- UI -->
+    <!-- ========================================= -->
 
     <script src="js/ui/library.js"></script>
 
@@ -268,10 +270,11 @@
     <script src="js/ui/modalRenderer.js"></script>
 
     <script src="js/ui/assemblyPicker.js"></script>
-
     <script src="js/ui/linkDeleteButton.js"></script>
 
+    <!-- ========================================= -->
     <!-- Link Inspector -->
+    <!-- ========================================= -->
 
     <script src="js/ui/linkInspectorData.js"></script>
     <script src="js/ui/linkInspectorPanels.js"></script>
@@ -280,37 +283,48 @@
     <script src="js/ui/linkInspectorRenderer.js"></script>
     <script src="js/ui/linkInspectorEvents.js"></script>
     <script src="js/ui/linkInspector.js"></script>
+    <script src="js/ui/library.js"></script>
 
+    <!-- ========================================= -->
     <!-- BOM -->
+    <!-- ========================================= -->
 
     <script src="js/bom/bomGenerator.js"></script>
     <script src="js/bom/bomRenderer.js"></script>
 
+    <!-- ========================================= -->
     <!-- Project -->
+    <!-- ========================================= -->
 
     <script src="js/project/projectSerializer.js"></script>
-<script src="js/project/projectDeserializer.js"></script>
-<script src="js/project/projectState.js"></script>
+    <script src="js/project/projectDeserializer.js"></script>
+    <script src="js/project/projectState.js"></script>
+    <script src="js/project/projectCache.js"></script>
+    <script src="js/project/projectManager.js"></script>
 
-<script src="js/project/projectCache.js"></script>
-
-<script src="js/project/projectManager.js"></script>
-<!-- Storage -->
+    <!-- ========================================= -->
+    <!-- Storage -->
+    <!-- ========================================= -->
 
     <script src="js/storage/draftStorage.js"></script>
 
+    <!-- ========================================= -->
+    <!-- API -->
+    <!-- ========================================= -->
+
     <script src="api/projectApi.js"></script>
 
-    <script src="js/project/projectState.js"></script>
-    <script src="js/project/projectManager.js"></script>
-
-    <!-- UI -->
+    <!-- ========================================= -->
+    <!-- Project UI -->
+    <!-- ========================================= -->
 
     <script src="js/ui/projectDialog.js"></script>
     <script src="js/ui/projectOpenDialog.js"></script>
     <script src="js/ui/toolbar.js"></script>
 
-    <!-- App -->
+    <!-- ========================================= -->
+    <!-- Application -->
+    <!-- ========================================= -->
 
     <script src="js/core/main.js"></script>
 
