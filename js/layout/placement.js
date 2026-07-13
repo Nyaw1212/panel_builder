@@ -71,23 +71,21 @@ function createPlacedItem(
     // Default Ports
     //----------------------------------
 
-    Object.entries(DEFAULT_CONNECTIONS).forEach(
+    CONNECTION_SIDES.forEach(side => {
 
-        ([side, count]) => {
+    const count = Number(placedItem.data[side]) || 0;
 
-            setConnectionCount(
+    setConnectionCount(
 
-                placedItem,
+        placedItem,
 
-                side,
+        side,
 
-                count
-
-            );
-
-        }
+        count
 
     );
+
+});
 
     return placedItem;
 

@@ -14,27 +14,13 @@ function getKnockoutPositions(item, side) {
 
     const positions = [];
 
-    let length;
+    const count = item.connections[side].length;
 
-    if (side === "top" || side === "bottom") {
+    if (count === 0) {
 
-        length =
-            item.width *
-            SETTINGS.cellSize;
+        return positions;
 
     }
-    else {
-
-        length =
-            item.height *
-            SETTINGS.cellSize;
-
-    }
-
-    const count = Math.max(
-        1,
-        Math.floor(length / KNOCKOUT_SPACING)
-    );
 
     for (let i = 1; i <= count; i++) {
 
