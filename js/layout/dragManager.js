@@ -28,6 +28,30 @@ function enableDrag(card, item) {
 
 function startDrag(e, item) {
 
+    //----------------------------------
+    // Ignore Interactive Elements
+    //----------------------------------
+
+    if (
+
+        e.target.closest(".panel-remove") ||
+
+        e.target.closest(".connection-node") ||
+
+        e.target.closest(".equipment-node")
+
+    ) {
+
+        return;
+
+    }
+
+    console.log("Start Drag", e.target);
+
+    //----------------------------------
+    // Left Click Only
+    //----------------------------------
+
     if (e.button !== 0) {
 
         return;
