@@ -50,6 +50,36 @@ function handleKeyboardShortcuts(e) {
 
         e.preventDefault();
 
+        //----------------------------------
+        // Copy Hovered Connection
+        //----------------------------------
+
+        if (hasHoveredConnection()) {
+
+            const copied = copyConnection(
+
+                getHoveredConnection()
+
+            );
+
+            if (copied) {
+
+                console.log(
+
+                    "Copied connection."
+
+                );
+
+            }
+
+            return;
+
+        }
+
+        //----------------------------------
+        // Copy Selected Panels
+        //----------------------------------
+
         const copied = copySelection();
 
         if (copied) {
@@ -67,26 +97,50 @@ function handleKeyboardShortcuts(e) {
     }
 
     //----------------------------------
-    // Ctrl + V
+// Ctrl + V
+//----------------------------------
+
+if (
+
+    (e.ctrlKey || e.metaKey) &&
+
+    e.key.toLowerCase() === "v"
+
+) {
+
+    e.preventDefault();
+
+    //----------------------------------
+    // Debug
+    //----------------------------------
+
+    console.log("Hovered:", hasHoveredConnection());
+
+    console.log("Node Clipboard:", hasNodeClipboard());
+
+    //----------------------------------
+    // Paste Connection
     //----------------------------------
 
     if (
 
-        (e.ctrlKey || e.metaKey) &&
+        hasHoveredConnection() &&
 
-        e.key.toLowerCase() === "v"
+        hasNodeClipboard()
 
     ) {
 
-        e.preventDefault();
+        const pasted = pasteConnection(
 
-        const pasted = pasteSelection();
+            getHoveredConnection()
+
+        );
 
         if (pasted) {
 
             console.log(
 
-                `Pasted ${SelectionManager.getCount()} panel(s).`
+                "Pasted connection."
 
             );
 
@@ -95,6 +149,26 @@ function handleKeyboardShortcuts(e) {
         return;
 
     }
+
+    //----------------------------------
+    // Paste Panels
+    //----------------------------------
+
+    const pasted = pasteSelection();
+
+    if (pasted) {
+
+        console.log(
+
+            `Pasted ${SelectionManager.getCount()} panel(s).`
+
+        );
+
+    }
+
+    return;
+
+}
 
     //----------------------------------
     // Ctrl + A
@@ -130,11 +204,9 @@ function handleKeyboardShortcuts(e) {
 
         e.preventDefault();
 
-        e.preventDefault();
+        deleteSelection();
 
-deleteSelection();
-
-return;
+        return;
 
     }
 

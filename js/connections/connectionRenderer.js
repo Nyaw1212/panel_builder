@@ -198,32 +198,52 @@ function drawKnockouts(item, side) {
         }
 
         //----------------------------------
-        // Hover
-        //----------------------------------
+// Hover
+//----------------------------------
 
-        node.onmouseenter = () => {
+node.onmouseenter = () => {
 
-            showConnectionPreview(
+    //----------------------------------
+    // Remember Hovered Connection
+    //----------------------------------
 
-                preview,
+    setHoveredConnection(connection);
 
-                connection,
+    //----------------------------------
+    // Preview
+    //----------------------------------
 
-                panel
+    showConnectionPreview(
 
-            );
+        preview,
 
-        };
+        connection,
 
-        node.onmouseleave = () => {
+        panel
 
-            hideConnectionPreview(
+    );
 
-                preview
+};
 
-            );
+node.onmouseleave = () => {
 
-        };
+    //----------------------------------
+    // Clear Hover
+    //----------------------------------
+
+    clearHoveredConnection();
+
+    //----------------------------------
+    // Preview
+    //----------------------------------
+
+    hideConnectionPreview(
+
+        preview
+
+    );
+
+};
 
         //----------------------------------
         // Click
