@@ -1,0 +1,268 @@
+[
+  {
+    "PRESET": "FD200",
+    "CatalogNumber": "DG224NRK",
+    "DESCRIPTION": "200A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA",
+    "QTY": 1,
+    "rowIndex": 0
+  },
+  {
+    "PRESET": "FD200",
+    "CatalogNumber": "FRNR200",
+    "DESCRIPTION": "200A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 1
+  },
+  {
+    "PRESET": "FD150",
+    "CatalogNumber": "DG224NRK",
+    "DESCRIPTION": "200A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA",
+    "QTY": 1,
+    "rowIndex": 2
+  },
+  {
+    "PRESET": "FD150",
+    "CatalogNumber": "FRNR150",
+    "DESCRIPTION": "150A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 3
+  },
+  {
+    "PRESET": "FD125",
+    "CatalogNumber": "DG224NRK",
+    "DESCRIPTION": "200A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA",
+    "QTY": 1,
+    "rowIndex": 4
+  },
+  {
+    "PRESET": "FD125",
+    "CatalogNumber": "FRNR125",
+    "DESCRIPTION": "125A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 5
+  },
+  {
+    "PRESET": "FD100",
+    "CatalogNumber": "DG223NRB",
+    "DESCRIPTION": "100A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA",
+    "QTY": 1,
+    "rowIndex": 6
+  },
+  {
+    "PRESET": "FD100",
+    "CatalogNumber": "FRNR100",
+    "DESCRIPTION": "100A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 7
+  },
+  {
+    "PRESET": "FD90",
+    "CatalogNumber": "DG223NRB",
+    "DESCRIPTION": "100A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA",
+    "QTY": 1,
+    "rowIndex": 8
+  },
+  {
+    "PRESET": "FD90",
+    "CatalogNumber": "FRNR90",
+    "DESCRIPTION": "90A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 9
+  },
+  {
+    "PRESET": "FD80",
+    "CatalogNumber": "DG223NRB",
+    "DESCRIPTION": "100A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA",
+    "QTY": 1,
+    "rowIndex": 10
+  },
+  {
+    "PRESET": "FD80",
+    "CatalogNumber": "FRNR80",
+    "DESCRIPTION": "80A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 11
+  },
+  {
+    "PRESET": "FD70",
+    "CatalogNumber": "DG223NRB",
+    "DESCRIPTION": "100A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA",
+    "QTY": 1,
+    "rowIndex": 12
+  },
+  {
+    "PRESET": "FD70",
+    "CatalogNumber": "FRNR70",
+    "DESCRIPTION": "70A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 13
+  },
+  {
+    "PRESET": "FD60",
+    "CatalogNumber": "DG222NRB",
+    "DESCRIPTION": "60A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA3R",
+    "QTY": 1,
+    "rowIndex": 14
+  },
+  {
+    "PRESET": "FD60",
+    "CatalogNumber": "FRNR60",
+    "DESCRIPTION": "60A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 15
+  },
+  {
+    "PRESET": "FD50",
+    "CatalogNumber": "DG222NRB",
+    "DESCRIPTION": "60A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA3R",
+    "QTY": 1,
+    "rowIndex": 16
+  },
+  {
+    "PRESET": "FD50",
+    "CatalogNumber": "FRNR50",
+    "DESCRIPTION": "50A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 17
+  },
+  {
+    "PRESET": "FD40",
+    "CatalogNumber": "DG222NRB",
+    "DESCRIPTION": "60A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA3R",
+    "QTY": 1,
+    "rowIndex": 18
+  },
+  {
+    "PRESET": "FD40",
+    "CatalogNumber": "FRNR40",
+    "DESCRIPTION": "40A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 19
+  },
+  {
+    "PRESET": "FD35",
+    "CatalogNumber": "DG222NRB",
+    "DESCRIPTION": "60A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA3R",
+    "QTY": 1,
+    "rowIndex": 20
+  },
+  {
+    "PRESET": "FD35",
+    "CatalogNumber": "FRNR35",
+    "DESCRIPTION": "35A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 21
+  },
+  {
+    "PRESET": "FD30",
+    "CatalogNumber": "DG222NRB",
+    "DESCRIPTION": "60A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA3R",
+    "QTY": 1,
+    "rowIndex": 22
+  },
+  {
+    "PRESET": "FD30",
+    "CatalogNumber": "FRNR30",
+    "DESCRIPTION": "30A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 23
+  },
+  {
+    "PRESET": "FD20",
+    "CatalogNumber": "DG222NRB",
+    "DESCRIPTION": "60A/2P GD FUSIBLE SAFETY SWITCH W/NEUT 240V NEMA3R",
+    "QTY": 1,
+    "rowIndex": 24
+  },
+  {
+    "PRESET": "FD20",
+    "CatalogNumber": "FRNR20",
+    "DESCRIPTION": "20A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 25
+  },
+  {
+    "PRESET": "FD15",
+    "CatalogNumber": "DG221URB",
+    "DESCRIPTION": "30A/2P GD NF SAFETY SWITCH 240V NEMA 3R",
+    "QTY": 1,
+    "rowIndex": 26
+  },
+  {
+    "PRESET": "FD15",
+    "CatalogNumber": "FRNR15",
+    "DESCRIPTION": "15A 250V TD Class RK5 Dual Elem Fuse-Fusetron",
+    "QTY": 2,
+    "rowIndex": 27
+  },
+  {
+    "PRESET": "SD",
+    "CatalogNumber": "664RTSC",
+    "DESCRIPTION": "6X6X4 RT JUNCTION BOX",
+    "QTY": 1,
+    "rowIndex": 28
+  },
+  {
+    "PRESET": "SD",
+    "CatalogNumber": "5133713",
+    "DESCRIPTION": "12X12X6 PVC JUNCTION BOX",
+    "QTY": 1,
+    "rowIndex": 29
+  },
+  {
+    "PRESET": "JJ",
+    "CatalogNumber": "A6R64",
+    "DESCRIPTION": "6X6X4 N3R SC",
+    "QTY": 1,
+    "rowIndex": 30
+  },
+  {
+    "PRESET": "JJ",
+    "CatalogNumber": "5133713",
+    "DESCRIPTION": "12X12X6 PVC JUNCTION BOX",
+    "QTY": 1,
+    "rowIndex": 31
+  },
+  {
+    "PRESET": "DC60",
+    "CatalogNumber": "DG222URB",
+    "DESCRIPTION": "60A/2P GD NF SAFETY SWITCH 240V NEMA 3R",
+    "QTY": 1,
+    "rowIndex": 32
+  },
+  {
+    "PRESET": "DC30",
+    "CatalogNumber": "DG221UGB",
+    "DESCRIPTION": "30A/2P GD NF SAFETY SWITCH 240V NEMA 1",
+    "QTY": 1,
+    "rowIndex": 33
+  },
+  {
+    "PRESET": "3P30",
+    "CatalogNumber": "DG321URB",
+    "DESCRIPTION": "30A/3P GD NF SAFETY SWITCH 240V NEMA 3R",
+    "QTY": 1,
+    "rowIndex": 34
+  },
+  {
+    "PRESET": "GEN",
+    "CatalogNumber": "BR816L125RP",
+    "DESCRIPTION": "1PH 125A MLO 8/16 CIR AL BUS NEMA 3R",
+    "QTY": 1,
+    "rowIndex": 35
+  },
+  {
+    "PRESET": "LOAD",
+    "CatalogNumber": "BR612L125RP",
+    "DESCRIPTION": "1PH 125A MLO 6/12 CIR AL BUS NEMA 3R",
+    "QTY": 1,
+    "rowIndex": 36
+  },
+  {
+    "PRESET": "FSU32/200",
+    "CatalogNumber": "CHP32B200R",
+    "DESCRIPTION": "CH Pon Loadcntr 200A Main BRKR 32 Space N3R",
+    "QTY": 1,
+    "rowIndex": 37
+  }
+]

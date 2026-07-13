@@ -65,22 +65,6 @@ function expandGrid(requiredRow, requiredColumn) {
 }
 
 //----------------------------------
-// Default Port Layout
-//----------------------------------
-
-const DEFAULT_CONNECTIONS = {
-
-    top: 2,
-
-    right: 2,
-
-    bottom: 2,
-
-    left: 2
-
-};
-
-//----------------------------------
 // Expose
 //----------------------------------
 
@@ -89,5 +73,3 @@ window.SETTINGS = SETTINGS;
 window.getGridSize = getGridSize;
 
 window.expandGrid = expandGrid;
-
-window.DEFAULT_CONNECTIONS = DEFAULT_CONNECTIONS;

@@ -16,23 +16,41 @@ let presets = [];
 
 async function init() {
 
+    PERF.start("Application Startup");
+
     try {
 
         //----------------------------------
-        // Load Data
+        // Load MML
         //----------------------------------
+
+        PERF.start("Load MML");
 
         const mml = await API.getMML();
 
-        const presets = await API.getPresets();
+        PERF.end("Load MML");
+
+        //----------------------------------
+        // Load Presets
+        //----------------------------------
+
+        PERF.start("Load Presets");
+
+        presets = await API.getPresets();
+
+        PERF.end("Load Presets");
 
         //----------------------------------
         // Split MML
         //----------------------------------
 
+        PERF.start("Split MML");
+
         equipment = mml.filter(item => item.Placeable);
 
         materials = mml.filter(item => !item.Placeable);
+
+        PERF.end("Split MML");
 
         //----------------------------------
         // Expose Global Data
@@ -63,15 +81,31 @@ async function init() {
         // Initialize SVG
         //----------------------------------
 
+        PERF.start("Initialize SVG");
+
         initializeSVG();
 
+        PERF.end("Initialize SVG");
+
         //----------------------------------
-        // Build Libraries
+        // Equipment Library
         //----------------------------------
+
+        PERF.start("Equipment Library");
 
         buildEquipmentLibrary();
 
+        PERF.end("Equipment Library");
+
+        //----------------------------------
+        // Preset Library
+        //----------------------------------
+
+        PERF.start("Preset Library");
+
         buildPresetLibrary();
+
+        PERF.end("Preset Library");
 
         //----------------------------------
         // Toolbar
@@ -79,7 +113,11 @@ async function init() {
 
         if (typeof initializeToolbar === "function") {
 
+            PERF.start("Toolbar");
+
             initializeToolbar();
+
+            PERF.end("Toolbar");
 
         }
 
@@ -87,26 +125,36 @@ async function init() {
         // Draw Empty Canvas
         //----------------------------------
 
+        PERF.start("Draw Canvas");
+
         drawCanvas();
+
+        PERF.end("Draw Canvas");
 
         //----------------------------------
         // Restore Draft
         //----------------------------------
 
         if (
+
             typeof loadDraft === "function" &&
             typeof deserializeProject === "function"
+
         ) {
 
             const draft = loadDraft();
 
             if (draft) {
 
+                PERF.start("Restore Draft");
+
                 console.log("Restoring Draft...");
 
                 deserializeProject(draft);
 
                 console.log("Draft Restored Successfully");
+
+                PERF.end("Restore Draft");
 
             }
 
@@ -128,6 +176,11 @@ async function init() {
         console.error(err.stack);
 
         alert(err.message);
+
+    }
+    finally {
+
+        PERF.end("Application Startup");
 
     }
 
