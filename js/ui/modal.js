@@ -7,6 +7,9 @@ const modalList = document.getElementById("modalList");
 const modalSearch = document.getElementById("modalSearch");
 const closeModal = document.getElementById("closeModal");
 
+// Filter UI
+const modalFilters = document.getElementById("modalFilters");
+
 //----------------------------------
 // State
 //----------------------------------
@@ -66,6 +69,12 @@ function openPickerModal(
 
     modalSearch.value = "";
 
+    if (modalFilters) {
+
+        modalFilters.style.display = "none";
+
+    }
+
     document.querySelector(".modal-header h2").textContent = title;
 
     buildModalList();
@@ -94,6 +103,12 @@ function openModal(index) {
 
     modalSearch.value = "";
 
+    if (modalFilters) {
+
+        modalFilters.style.display = "none";
+
+    }
+
     document.querySelector(".modal-header h2").textContent = modalTitle;
 
     buildModalList();
@@ -114,9 +129,6 @@ async function openMaterialModal(connection) {
 
     modalSource = await getMaterials();
 
-    console.log("Materials Loaded:", modalSource.length);
-    console.table(modalSource.slice(0, 5));
-
     modalOnSelect = null;
 
     currentConnection = connection;
@@ -124,6 +136,32 @@ async function openMaterialModal(connection) {
     currentCell = null;
 
     modalSearch.value = "";
+
+    if (modalFilters) {
+
+        modalFilters.style.display = "block";
+
+    }
+
+    //----------------------------------
+    // Filters (safe)
+    //----------------------------------
+
+    if (typeof resetModalFilters === "function") {
+
+        resetModalFilters();
+
+    }
+
+    if (typeof buildFilterChips === "function") {
+
+        buildFilterChips(
+
+            getHardwareModalList(modalSource)
+
+        );
+
+    }
 
     document.querySelector(".modal-header h2").textContent = modalTitle;
 
@@ -142,7 +180,7 @@ function buildModalList(searchText = "") {
     modalList.innerHTML = "";
 
     //----------------------------------
-    // Connection Hardware Panel
+    // Selected Hardware
     //----------------------------------
 
     if (modalMode === "material") {
@@ -155,9 +193,7 @@ function buildModalList(searchText = "") {
     // Source
     //----------------------------------
 
-    let list = modalSource;
-
-    console.log("Initial List:", list.length);
+    let list = [...modalSource];
 
     //----------------------------------
     // Equipment
@@ -170,24 +206,24 @@ function buildModalList(searchText = "") {
     }
 
     //----------------------------------
-    // Connection Hardware
+    // Hardware
     //----------------------------------
 
     else if (modalMode === "material") {
 
-        console.log("Before Hardware Filter:", list.length);
-
         list = getHardwareModalList(list);
 
-        console.log("After Hardware Filter:", list.length);
+        if (typeof applyModalFilters === "function") {
+
+            list = applyModalFilters(list);
+
+        }
 
     }
 
     //----------------------------------
     // Search
     //----------------------------------
-
-    console.log("Before Search:", list.length);
 
     list = filterModalSearch(
 
@@ -197,13 +233,9 @@ function buildModalList(searchText = "") {
 
     );
 
-    console.log("After Search:", list.length);
-
     //----------------------------------
     // Render
     //----------------------------------
-
-    console.log("Rendering:", list.length);
 
     renderModalCards(list);
 

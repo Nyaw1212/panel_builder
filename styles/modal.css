@@ -251,3 +251,98 @@ ITEM ROW
     color:#666;
 
 }
+/*==================================
+Modal Filters
+==================================*/
+
+.modal-filters{
+
+    display:none;
+
+    margin:16px 0;
+
+}
+
+.filter-group{
+
+    margin-bottom:14px;
+
+}
+
+.filter-title{
+
+    margin-bottom:8px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    color:#666;
+
+    text-transform:uppercase;
+
+    letter-spacing:.5px;
+
+}
+
+.chip-container{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:8px;
+
+}
+
+/*==================================
+Filter Chips
+==================================*/
+
+.chip{
+
+    padding:6px 14px;
+
+    border:1px solid #d0d0d0;
+
+    border-radius:999px;
+
+    background:#ffffff;
+
+    color:#333;
+
+    font-size:13px;
+
+    cursor:pointer;
+
+    transition:all .15s ease;
+
+    user-select:none;
+
+}
+
+.chip:hover{
+
+    background:#f5f5f5;
+
+    border-color:#999;
+
+}
+
+.chip.active{
+
+    background:#1976d2;
+
+    color:#fff;
+
+    border-color:#1976d2;
+
+}
+
+.chip:focus{
+
+    outline:none;
+
+    box-shadow:0 0 0 2px rgba(25,118,210,.25);
+
+}

@@ -185,18 +185,72 @@
             </div>
 
             <input
-                id="modalSearch"
-                type="text"
-                placeholder="Search node..."
-            >
+    id="modalSearch"
+    type="text"
+    placeholder="Search node..."
+>
 
-            <div class="modal-subtitle">
+<!-- Filters -->
 
-                ⭐ Favorites
+<div
+    id="modalFilters"
+    class="modal-filters"
+>
 
-            </div>
+    <div class="filter-group">
 
-            <div id="modalList"></div>
+    <div class="filter-title">
+
+        Type
+
+    </div>
+
+    <div
+        id="typeChips"
+        class="chip-container"
+    ></div>
+
+</div>
+
+<div class="filter-group">
+
+    <div class="filter-title">
+
+        Size
+
+    </div>
+
+    <div
+        id="sizeChips"
+        class="chip-container"
+    ></div>
+
+</div>
+
+    <div class="filter-group">
+
+        <div class="filter-title">
+
+            Size
+
+        </div>
+
+        <div
+            id="sizeChips"
+            class="chip-container"
+        ></div>
+
+    </div>
+
+</div>
+
+<div class="modal-subtitle">
+
+    ⭐ Favorites
+
+</div>
+
+<div id="modalList"></div>
 
         </div>
 
@@ -277,10 +331,13 @@
     <script src="js/ui/library.js"></script>
 
     <script src="js/ui/modal.js"></script>
-    <script src="js/ui/modalSearch.js"></script>
-    <script src="js/ui/modalEquipment.js"></script>
-    <script src="js/ui/modalHardware.js"></script>
-    <script src="js/ui/modalRenderer.js"></script>
+
+<script src="js/ui/modalFilters.js"></script>
+
+<script src="js/ui/modalSearch.js"></script>
+<script src="js/ui/modalEquipment.js"></script>
+<script src="js/ui/modalHardware.js"></script>
+<script src="js/ui/modalRenderer.js"></script>
 
     <script src="js/ui/assemblyPicker.js"></script>
     <script src="js/ui/linkDeleteButton.js"></script>
