@@ -46,7 +46,8 @@ function startDrag(e, item) {
 
         SelectionManager.toggle(item);
 
-    } else {
+    }
+    else {
 
         SelectionManager.select(item);
 
@@ -60,14 +61,18 @@ function startDrag(e, item) {
 
     drag.active = true;
 
+    drag.moved = false;
+
     drag.item = item;
 
     drag.startCell = item.startCell;
 
     drag.hoverCell = item.startCell;
 
-    drag.mouseX = e.clientX;
+    drag.startMouseX = e.clientX;
+    drag.startMouseY = e.clientY;
 
+    drag.mouseX = e.clientX;
     drag.mouseY = e.clientY;
 
     document.body.style.userSelect = "none";
@@ -99,6 +104,26 @@ function onDrag(e) {
     if (!drag.active) {
 
         return;
+
+    }
+
+    //----------------------------------
+    // Detect Movement
+    //----------------------------------
+
+    const dx = e.clientX - drag.startMouseX;
+
+    const dy = e.clientY - drag.startMouseY;
+
+    if (
+
+        Math.abs(dx) > 4 ||
+
+        Math.abs(dy) > 4
+
+    ) {
+
+        drag.moved = true;
 
     }
 
@@ -158,6 +183,8 @@ function onDrag(e) {
 
     console.log("Current Cell:", drag.hoverCell);
 
+    console.log("Moved:", drag.moved);
+
     console.log(drag);
 
 }
@@ -198,8 +225,12 @@ function stopDrag() {
 
     if (
 
+        drag.moved &&
+
         drag.item &&
+
         drag.hoverCell != null &&
+
         drag.hoverCell !== drag.startCell
 
     ) {
