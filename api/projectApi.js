@@ -1,4 +1,16 @@
 //----------------------------------
+// API Mode
+//----------------------------------
+
+const LOCAL_MODE = true;
+
+console.log(
+    `Catalog Source: ${
+        LOCAL_MODE ? "Local JSON" : "Apps Script"
+    }`
+);
+
+//----------------------------------
 // Project API
 //----------------------------------
 
@@ -53,10 +65,42 @@ async function apiRequest(data) {
 }
 
 //----------------------------------
+// Load Local JSON
+//----------------------------------
+
+async function loadLocalJSON(path) {
+
+    const response = await fetch(path);
+
+    if (!response.ok) {
+
+        throw new Error(`Unable to load ${path}`);
+
+    }
+
+    return await response.json();
+
+}
+
+//----------------------------------
 // Get MML
 //----------------------------------
 
 async function getMML() {
+
+    //----------------------------------
+    // Local
+    //----------------------------------
+
+    if (LOCAL_MODE) {
+
+        return await loadLocalJSON("./Mock/MML.json");
+
+    }
+
+    //----------------------------------
+    // Apps Script
+    //----------------------------------
 
     const result = await apiRequest({
 
@@ -81,6 +125,20 @@ async function getMML() {
 //----------------------------------
 
 async function getPresets() {
+
+    //----------------------------------
+    // Local
+    //----------------------------------
+
+    if (LOCAL_MODE) {
+
+        return await loadLocalJSON("./Mock/PRESETS.json");
+
+    }
+
+    //----------------------------------
+    // Apps Script
+    //----------------------------------
 
     const result = await apiRequest({
 
