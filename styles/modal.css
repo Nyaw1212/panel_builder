@@ -156,6 +156,8 @@ LIST
 
     flex:1;
 
+    min-height:0;
+
     overflow-y:auto;
 
     display:flex;
@@ -354,7 +356,7 @@ Connection Assembly
 
 .connection-assembly{
 
-    margin-bottom:18px;
+    margin-bottom:16px;
 
 }
 
@@ -364,11 +366,11 @@ Assembly Panel
 
 .selected-hardware{
 
+    padding:14px;
+
     border:1px solid #e5e7eb;
 
     border-radius:10px;
-
-    padding:14px;
 
     background:#fafafa;
 
@@ -380,23 +382,61 @@ Assembly Title
 
 .selected-title{
 
+    margin-bottom:12px;
+
     font-size:14px;
 
     font-weight:600;
 
     color:#444;
 
-    margin-bottom:12px;
+}
+
+/*=====================================
+Assembly Row
+=====================================*/
+
+.assembly-row{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    overflow-x:auto;
+
+    padding-bottom:8px;
+
+    margin-bottom:14px;
+
+}
+
+.assembly-row::-webkit-scrollbar{
+
+    height:6px;
+
+}
+
+.assembly-row::-webkit-scrollbar-thumb{
+
+    background:#d1d5db;
+
+    border-radius:999px;
 
 }
 
 /*=====================================
-Assembly Cards
+Assembly Card
 =====================================*/
 
 .assembly-card{
 
     position:relative;
+
+    flex:0 0 auto;
+
+    width:88px;
 
     display:flex;
 
@@ -404,19 +444,15 @@ Assembly Cards
 
     align-items:center;
 
-    justify-content:center;
+    gap:6px;
 
-    gap:8px;
-
-    padding:12px;
-
-    margin-bottom:10px;
+    padding:10px;
 
     border:1px solid #dcdcdc;
 
     border-radius:10px;
 
-    background:#ffffff;
+    background:#fff;
 
 }
 
@@ -426,9 +462,9 @@ Assembly Image
 
 .assembly-image{
 
-    width:70px;
+    width:52px;
 
-    height:70px;
+    height:52px;
 
     object-fit:contain;
 
@@ -440,11 +476,29 @@ Assembly Code
 
 .assembly-code{
 
-    font-size:13px;
+    font-size:11px;
 
     font-weight:600;
 
     text-align:center;
+
+    word-break:break-word;
+
+}
+
+/*=====================================
+Assembly Arrow
+=====================================*/
+
+.assembly-arrow{
+
+    flex:0 0 auto;
+
+    font-size:22px;
+
+    color:#9ca3af;
+
+    font-weight:600;
 
 }
 
@@ -456,13 +510,13 @@ Remove Button
 
     position:absolute;
 
-    top:6px;
+    top:4px;
 
-    right:6px;
+    right:4px;
 
-    width:22px;
+    width:18px;
 
-    height:22px;
+    height:18px;
 
     border:none;
 
@@ -470,16 +524,69 @@ Remove Button
 
     background:#ef4444;
 
-    color:white;
+    color:#fff;
+
+    font-size:11px;
+
+    line-height:18px;
 
     cursor:pointer;
-
-    font-size:12px;
 
 }
 
 .assembly-remove:hover{
 
     background:#dc2626;
+
+}
+
+/*=====================================
+Empty Assembly
+=====================================*/
+
+.selected-empty{
+
+    padding:12px 0;
+
+    color:#888;
+
+    font-style:italic;
+
+}
+
+/*=====================================
+Done Button
+=====================================*/
+
+.save-connection{
+
+    width:100%;
+
+    margin-top:6px;
+
+}
+/*=====================================
+Modal Wrapper
+=====================================*/
+
+.modal-wrapper{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    gap:14px;
+
+}
+
+/*=====================================
+Detached Assembly Panel
+=====================================*/
+
+#assemblyPanel{
+
+    width:700px;
 
 }

@@ -167,12 +167,29 @@
 
     </div>
 
-    <!-- Modal -->
+   <!-- ========================================= -->
+<!-- Modal -->
+<!-- ========================================= -->
 
-    <div
-        id="equipmentModal"
-        class="modal"
-    >
+<div
+    id="equipmentModal"
+    class="modal"
+>
+
+    <div class="modal-wrapper">
+
+        <!-- ========================================= -->
+        <!-- Connection Assembly -->
+        <!-- ========================================= -->
+
+        <div
+            id="assemblyPanel"
+            class="connection-assembly"
+        ></div>
+
+        <!-- ========================================= -->
+        <!-- Modal Window -->
+        <!-- ========================================= -->
 
         <div class="modal-content">
 
@@ -180,15 +197,100 @@
 
                 <h2>Place Node</h2>
 
-                <button id="closeModal">&times;</button>
+                <button id="closeModal">
+
+                    &times;
+
+                </button>
 
             </div>
 
+            <!-- ========================================= -->
+            <!-- Search -->
+            <!-- ========================================= -->
+
             <input
-    id="modalSearch"
-    type="text"
-    placeholder="Search node..."
->
+                id="modalSearch"
+                type="text"
+                placeholder="Search node..."
+            >
+
+            <!-- ========================================= -->
+            <!-- Filters -->
+            <!-- ========================================= -->
+
+            <div
+                id="modalFilters"
+                class="modal-filters"
+            >
+
+                <!-- Conduit -->
+
+                <div class="filter-group">
+
+                    <div class="filter-title">
+
+                        Conduit
+
+                    </div>
+
+                    <div
+                        id="systemChips"
+                        class="chip-container"
+                    ></div>
+
+                </div>
+
+                <!-- Fitting -->
+
+                <div class="filter-group">
+
+                    <div class="filter-title">
+
+                        Fitting
+
+                    </div>
+
+                    <div
+                        id="typeChips"
+                        class="chip-container"
+                    ></div>
+
+                </div>
+
+                <!-- Size -->
+
+                <div class="filter-group">
+
+                    <div class="filter-title">
+
+                        Size
+
+                    </div>
+
+                    <div
+                        id="sizeChips"
+                        class="chip-container"
+                    ></div>
+
+                </div>
+
+            </div>
+
+            <!-- ========================================= -->
+            <!-- Available Hardware -->
+            <!-- ========================================= -->
+
+            <div
+                id="modalList"
+                class="modal-list"
+            ></div>
+
+        </div>
+
+    </div>
+
+</div>
 
 <!-- Filters -->
 
@@ -197,21 +299,41 @@
     class="modal-filters"
 >
 
+    <!-- Conduit -->
+
     <div class="filter-group">
 
-    <div class="filter-title">
+        <div class="filter-title">
 
-        Type
+            Conduit
+
+        </div>
+
+        <div
+            id="systemChips"
+            class="chip-container"
+        ></div>
 
     </div>
 
-    <div
-        id="typeChips"
-        class="chip-container"
-    ></div>
+    <!-- Fitting -->
 
-</div>
+    <div class="filter-group">
 
+        <div class="filter-title">
+
+            Fitting
+
+        </div>
+
+        <div
+            id="typeChips"
+            class="chip-container"
+        ></div>
+
+    </div>
+
+    <!-- Size -->
 
     <div class="filter-group">
 

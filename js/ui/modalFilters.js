@@ -2,8 +2,9 @@
 // Modal Filter State
 //----------------------------------
 
-let selectedType = "All";
-let selectedSize = "All";
+let selectedSystem = "EMT";
+let selectedType = "HUB";
+let selectedSize = '2"';
 
 //----------------------------------
 // Reset Filters
@@ -11,8 +12,9 @@ let selectedSize = "All";
 
 function resetModalFilters() {
 
-    selectedType = "All";
-    selectedSize = "All";
+    selectedSystem = "EMT";
+    selectedType = "HUB";
+    selectedSize = '2"';
 
 }
 
@@ -26,10 +28,11 @@ function buildFilterChips(list) {
     // Elements
     //----------------------------------
 
+    const systemChips = document.getElementById("systemChips");
     const typeChips = document.getElementById("typeChips");
     const sizeChips = document.getElementById("sizeChips");
 
-    if (!typeChips || !sizeChips) {
+    if (!systemChips || !typeChips || !sizeChips) {
 
         console.error("Modal filter containers not found.");
 
@@ -38,7 +41,25 @@ function buildFilterChips(list) {
     }
 
     //----------------------------------
-    // Types
+    // Conduit Types (Color)
+    //----------------------------------
+
+    const systems = [
+
+        "All",
+
+        ...new Set(
+
+            list
+                .map(item => String(item.Color || "").trim().toUpperCase())
+                .filter(Boolean)
+
+        )
+
+    ];
+
+    //----------------------------------
+    // Fitting Types
     //----------------------------------
 
     const types = [
@@ -48,7 +69,7 @@ function buildFilterChips(list) {
         ...new Set(
 
             list
-                .map(item => String(item.NodeType || "").trim())
+                .map(item => String(item.NodeType || "").trim().toUpperCase())
                 .filter(Boolean)
 
         )
@@ -59,15 +80,27 @@ function buildFilterChips(list) {
     // Sizes
     //----------------------------------
 
+    const allowedSizes = [
+
+        '2"',
+        '1-1/2"',
+        '1-1/4"',
+        '1"',
+        '3/4"'
+
+    ];
+
     const sizes = [
 
         "All",
 
-        ...new Set(
+        ...allowedSizes.filter(size =>
 
-            list
-                .map(item => String(item.Size || "").trim())
-                .filter(Boolean)
+            list.some(item =>
+
+                String(item.Size || "").trim() === size
+
+            )
 
         )
 
@@ -77,23 +110,20 @@ function buildFilterChips(list) {
     // Sort
     //----------------------------------
 
+    systems.sort();
     types.sort();
-    sizes.sort();
 
-    //----------------------------------
-    // Keep All First
-    //----------------------------------
+    systems.splice(systems.indexOf("All"), 1);
+    systems.unshift("All");
 
     types.splice(types.indexOf("All"), 1);
     types.unshift("All");
-
-    sizes.splice(sizes.indexOf("All"), 1);
-    sizes.unshift("All");
 
     //----------------------------------
     // Clear
     //----------------------------------
 
+    systemChips.innerHTML = "";
     typeChips.innerHTML = "";
     sizeChips.innerHTML = "";
 
@@ -134,7 +164,31 @@ function buildFilterChips(list) {
     }
 
     //----------------------------------
-    // Type
+    // Conduit
+    //----------------------------------
+
+    systems.forEach(system => {
+
+        buildChip(
+
+            systemChips,
+
+            system,
+
+            value => {
+
+                selectedSystem = value;
+
+            },
+
+            selectedSystem === system
+
+        );
+
+    });
+
+    //----------------------------------
+    // Fitting
     //----------------------------------
 
     types.forEach(type => {
@@ -189,15 +243,37 @@ function buildFilterChips(list) {
 
 function applyModalFilters(list) {
 
-    if (selectedType !== "All") {
+    //----------------------------------
+    // Conduit
+    //----------------------------------
+
+    if (selectedSystem !== "All") {
 
         list = list.filter(item =>
 
-            String(item.NodeType || "").trim() === selectedType
+            String(item.Color || "").trim().toUpperCase() === selectedSystem
 
         );
 
     }
+
+    //----------------------------------
+    // Fitting
+    //----------------------------------
+
+    if (selectedType !== "All") {
+
+        list = list.filter(item =>
+
+            String(item.NodeType || "").trim().toUpperCase() === selectedType
+
+        );
+
+    }
+
+    //----------------------------------
+    // Size
+    //----------------------------------
 
     if (selectedSize !== "All") {
 

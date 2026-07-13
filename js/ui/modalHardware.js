@@ -8,15 +8,15 @@ function buildHardwarePanel() {
 
     if (!currentConnection) return;
 
-    const assemblyList = document.getElementById("assemblyList");
+    const assemblyPanel = document.getElementById("assemblyPanel");
 
-    if (!assemblyList) return;
+    if (!assemblyPanel) return;
 
     //----------------------------------
-    // Clear Previous Assembly
+    // Clear
     //----------------------------------
 
-    assemblyList.innerHTML = "";
+    assemblyPanel.innerHTML = "";
 
     const hardwarePanel = document.createElement("div");
 
@@ -49,10 +49,14 @@ function buildHardwarePanel() {
     }
 
     //----------------------------------
-    // Hardware List
+    // Assembly Row
     //----------------------------------
 
     else {
+
+        const row = document.createElement("div");
+
+        row.className = "assembly-row";
 
         currentConnection.hardware.forEach((hardware, index) => {
 
@@ -117,14 +121,32 @@ function buildHardwarePanel() {
 
             };
 
-            hardwarePanel.appendChild(card);
+            row.appendChild(card);
+
+            //----------------------------------
+            // Arrow
+            //----------------------------------
+
+            if (index < currentConnection.hardware.length - 1) {
+
+                const arrow = document.createElement("div");
+
+                arrow.className = "assembly-arrow";
+
+                arrow.textContent = "➜";
+
+                row.appendChild(arrow);
+
+            }
 
         });
+
+        hardwarePanel.appendChild(row);
 
     }
 
     //----------------------------------
-    // Done Button
+    // Done
     //----------------------------------
 
     const saveButton = document.createElement("button");
@@ -144,10 +166,10 @@ function buildHardwarePanel() {
     hardwarePanel.appendChild(saveButton);
 
     //----------------------------------
-    // Render Assembly
+    // Render
     //----------------------------------
 
-    assemblyList.appendChild(hardwarePanel);
+    assemblyPanel.appendChild(hardwarePanel);
 
 }
 
@@ -156,10 +178,6 @@ function buildHardwarePanel() {
 //----------------------------------
 
 function getHardwareModalList(list) {
-
-    //----------------------------------
-    // Allowed Hardware Types
-    //----------------------------------
 
     const allowed = [
 
@@ -182,19 +200,11 @@ function getHardwareModalList(list) {
 
     return list
 
-        //----------------------------------
-        // Only Fittings
-        //----------------------------------
-
         .filter(item =>
 
             String(item.Type || "").toUpperCase() === "FITTING"
 
         )
-
-        //----------------------------------
-        // Allowed Node Types
-        //----------------------------------
 
         .filter(item =>
 
@@ -207,10 +217,6 @@ function getHardwareModalList(list) {
             )
 
         )
-
-        //----------------------------------
-        // Sort by Size then Type
-        //----------------------------------
 
         .sort((a, b) => {
 
