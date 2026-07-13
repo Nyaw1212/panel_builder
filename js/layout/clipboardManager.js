@@ -46,6 +46,10 @@ function copySelection() {
 
     clipboard = {
 
+        //----------------------------------
+        // Origin
+        //----------------------------------
+
         origin: {
 
             row: minRow,
@@ -53,6 +57,22 @@ function copySelection() {
             column: minCol
 
         },
+
+        //----------------------------------
+        // Paste Offset
+        //----------------------------------
+
+        offset: {
+
+            row: 1,
+
+            column: 1
+
+        },
+
+        //----------------------------------
+        // Panels
+        //----------------------------------
 
         panels: selected.map(item => ({
 
@@ -102,6 +122,8 @@ function copySelection() {
 
     console.log("Panels:", clipboard.panels.length);
 
+    console.log("Offset:", clipboard.offset);
+
     console.log(clipboard);
 
     console.groupEnd();
@@ -111,7 +133,7 @@ function copySelection() {
 }
 
 //----------------------------------
-// Clear Clipboard
+// Clipboard
 //----------------------------------
 
 function clearClipboard() {
@@ -120,19 +142,11 @@ function clearClipboard() {
 
 }
 
-//----------------------------------
-// Has Clipboard
-//----------------------------------
-
 function hasClipboard() {
 
     return clipboard !== null;
 
 }
-
-//----------------------------------
-// Get Clipboard
-//----------------------------------
 
 function getClipboard() {
 
@@ -140,15 +154,35 @@ function getClipboard() {
 
 }
 
-//----------------------------------
-// Clipboard Count
-//----------------------------------
-
 function getClipboardCount() {
 
     return clipboard
         ? clipboard.panels.length
         : 0;
+
+}
+
+//----------------------------------
+// Paste Offset
+//----------------------------------
+
+function incrementPasteOffset() {
+
+    if (!clipboard) return;
+
+    clipboard.offset.row++;
+
+    clipboard.offset.column++;
+
+}
+
+function resetPasteOffset() {
+
+    if (!clipboard) return;
+
+    clipboard.offset.row = 1;
+
+    clipboard.offset.column = 1;
 
 }
 
@@ -161,3 +195,6 @@ window.clearClipboard = clearClipboard;
 window.hasClipboard = hasClipboard;
 window.getClipboard = getClipboard;
 window.getClipboardCount = getClipboardCount;
+
+window.incrementPasteOffset = incrementPasteOffset;
+window.resetPasteOffset = resetPasteOffset;

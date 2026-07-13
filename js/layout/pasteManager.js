@@ -1,4 +1,3 @@
-console.log("Clipboard:", getClipboard());
 //----------------------------------
 // Paste Selection
 //----------------------------------
@@ -23,9 +22,9 @@ function pasteSelection() {
     // Paste Offset
     //----------------------------------
 
-    const rowOffset = 1;
+    const rowOffset = data.offset.row;
 
-    const colOffset = 1;
+    const colOffset = data.offset.column;
 
     //----------------------------------
     // Paste Panels
@@ -102,6 +101,22 @@ function pasteSelection() {
     });
 
     //----------------------------------
+    // Nothing Pasted
+    //----------------------------------
+
+    if (!pasted.length) {
+
+        return false;
+
+    }
+
+    //----------------------------------
+    // Next Paste Offset
+    //----------------------------------
+
+    incrementPasteOffset();
+
+    //----------------------------------
     // Select Newly Pasted
     //----------------------------------
 
@@ -121,13 +136,9 @@ function pasteSelection() {
 
     console.group("Paste");
 
-    console.log(
+    console.log("Panels:", pasted.length);
 
-        "Panels:",
-
-        pasted.length
-
-    );
+    console.log("Next Offset:", data.offset);
 
     console.groupEnd();
 
