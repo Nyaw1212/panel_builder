@@ -130,9 +130,11 @@ function handleKeyboardShortcuts(e) {
 
         e.preventDefault();
 
-        console.log("Delete Selection - Coming Soon");
+        e.preventDefault();
 
-        return;
+deleteSelection();
+
+return;
 
     }
 
