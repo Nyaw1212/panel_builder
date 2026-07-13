@@ -5,12 +5,6 @@
 const grid = document.getElementById("grid");
 
 //----------------------------------
-// Currently Selected Panel
-//----------------------------------
-
-let selectedItem = null;
-
-//----------------------------------
 // Auto Save
 //----------------------------------
 
@@ -136,24 +130,22 @@ function drawGrid() {
             const item = getItem(index);
 
             //----------------------------------
-            // Existing Equipment
-            //----------------------------------
+// Existing Equipment
+//----------------------------------
 
-            if (item) {
+if (item) {
 
-                selectedItem = item;
+    // Selection is handled by dragManager.js
 
-                drawCanvas();
+    return;
 
-                return;
-
-            }
+}
 
             //----------------------------------
             // Empty Cell
             //----------------------------------
 
-            selectedItem = null;
+            SelectionManager.clear();
 
             //----------------------------------
             // Preset Placement
@@ -220,11 +212,7 @@ function drawPlacedItems() {
             ? `https://drive.google.com/thumbnail?id=${item.data.DriveFileID}&sz=w300`
             : "";
 
-        const isSelected =
-
-            selectedItem &&
-
-            selectedItem.id === item.id;
+        const isSelected = SelectionManager.isSelected(item);
 
         //----------------------------------
         // Card
@@ -407,28 +395,9 @@ console.groupEnd();
 }
 
 //----------------------------------
-// Selected Item
-//----------------------------------
-
-function getSelectedItem() {
-
-    return selectedItem;
-
-}
-
-function setSelectedItem(item) {
-
-    selectedItem = item;
-
-}
-
-//----------------------------------
 // Expose
 //----------------------------------
 
 window.drawCanvas = drawCanvas;
 window.drawGrid = drawGrid;
 window.drawPlacedItems = drawPlacedItems;
-
-window.getSelectedItem = getSelectedItem;
-window.setSelectedItem = setSelectedItem;

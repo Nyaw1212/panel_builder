@@ -38,6 +38,26 @@ function startDrag(e, item) {
 
     e.stopPropagation();
 
+    //----------------------------------
+    // Selection
+    //----------------------------------
+
+    if (e.ctrlKey || e.metaKey) {
+
+        SelectionManager.toggle(item);
+
+    } else {
+
+        SelectionManager.select(item);
+
+    }
+
+    drawCanvas();
+
+    //----------------------------------
+    // Drag State
+    //----------------------------------
+
     drag.active = true;
 
     drag.item = item;
@@ -83,6 +103,7 @@ function onDrag(e) {
     }
 
     drag.mouseX = e.clientX;
+
     drag.mouseY = e.clientY;
 
     //----------------------------------
@@ -220,47 +241,6 @@ function stopDrag() {
     //----------------------------------
 
     clearDragState();
-
-}
-//----------------------------------
-// Move
-//----------------------------------
-
-if (
-
-    drag.item &&
-    drag.hoverCell != null &&
-    drag.hoverCell !== drag.startCell
-
-) {
-
-    console.log(
-
-        "Moving",
-
-        drag.startCell,
-
-        "->",
-
-        drag.hoverCell
-
-    );
-
-    const moved = moveItem(
-
-        drag.item,
-
-        drag.hoverCell
-
-    );
-
-    console.log("Moved:", moved);
-
-    if (moved) {
-
-        drawCanvas();
-
-    }
 
 }
 
