@@ -139,7 +139,7 @@ async function openMaterialModal(connection) {
 
     if (modalFilters) {
 
-        modalFilters.style.display = "block";
+        modalFilters.style.display = "grid";
 
     }
 
