@@ -8,6 +8,16 @@ function buildHardwarePanel() {
 
     if (!currentConnection) return;
 
+    const assemblyList = document.getElementById("assemblyList");
+
+    if (!assemblyList) return;
+
+    //----------------------------------
+    // Clear Previous Assembly
+    //----------------------------------
+
+    assemblyList.innerHTML = "";
+
     const hardwarePanel = document.createElement("div");
 
     hardwarePanel.className = "selected-hardware";
@@ -16,7 +26,7 @@ function buildHardwarePanel() {
 
         <div class="selected-title">
 
-            Selected Hardware (${currentConnection.hardware.length})
+            Connection Assembly (${currentConnection.hardware.length})
 
         </div>
 
@@ -32,7 +42,7 @@ function buildHardwarePanel() {
 
         empty.className = "selected-empty";
 
-        empty.textContent = "No hardware selected.";
+        empty.textContent = "No fittings added.";
 
         hardwarePanel.appendChild(empty);
 
@@ -46,31 +56,48 @@ function buildHardwarePanel() {
 
         currentConnection.hardware.forEach((hardware, index) => {
 
-            const row = document.createElement("div");
+            //----------------------------------
+            // Image
+            //----------------------------------
 
-            row.className = "selected-item";
+            const image = hardware.DriveFileID
+                ? `https://drive.google.com/thumbnail?id=${hardware.DriveFileID}&sz=w200`
+                : "";
 
-            row.innerHTML = `
+            //----------------------------------
+            // Card
+            //----------------------------------
 
-                <div>
+            const card = document.createElement("div");
 
-                    <strong>${hardware.CatalogNumber}</strong>
+            card.className = "assembly-card";
 
-                    <br>
+            card.innerHTML = `
 
-                    ${hardware.Description}
-
-                </div>
-
-                <button class="remove-hardware">
+                <button class="assembly-remove">
 
                     ✕
 
                 </button>
 
+                <img
+                    class="assembly-image"
+                    src="${image}"
+                >
+
+                <div class="assembly-code">
+
+                    ${hardware.CatalogNumber}
+
+                </div>
+
             `;
 
-            row.querySelector("button").onclick = () => {
+            //----------------------------------
+            // Remove
+            //----------------------------------
+
+            card.querySelector(".assembly-remove").onclick = () => {
 
                 removeHardware(
 
@@ -90,7 +117,7 @@ function buildHardwarePanel() {
 
             };
 
-            hardwarePanel.appendChild(row);
+            hardwarePanel.appendChild(card);
 
         });
 
@@ -116,7 +143,11 @@ function buildHardwarePanel() {
 
     hardwarePanel.appendChild(saveButton);
 
-    modalList.appendChild(hardwarePanel);
+    //----------------------------------
+    // Render Assembly
+    //----------------------------------
+
+    assemblyList.appendChild(hardwarePanel);
 
 }
 
