@@ -27,12 +27,40 @@ function drawCanvas() {
     }
 
     //----------------------------------
-    // Draw
+    // Draw Grid
     //----------------------------------
 
     drawGrid();
 
+    //----------------------------------
+    // Draw Equipment
+    //----------------------------------
+
     drawPlacedItems();
+
+        //----------------------------------
+    // Build Obstacle Grid
+    //----------------------------------
+
+    if (typeof refreshObstacleGrid === "function") {
+
+        refreshObstacleGrid();
+
+    }
+
+    //----------------------------------
+    // Debug Grid
+    //----------------------------------
+
+    if (typeof debugObstacleGrid === "function") {
+
+        debugObstacleGrid();
+
+    }
+
+    //----------------------------------
+    // Clear SVG
+    //----------------------------------
 
     if (typeof clearSVG === "function") {
 
@@ -40,7 +68,15 @@ function drawCanvas() {
 
     }
 
+    //----------------------------------
+    // Draw Connections
+    //----------------------------------
+
     drawConnections();
+
+    //----------------------------------
+    // Draw Links
+    //----------------------------------
 
     drawLinks();
 

@@ -78,168 +78,94 @@ function updateLinkGeometry(link) {
 
 function createRoute(link, start, end) {
 
-    const points = [];
-
-    //----------------------------------
-    // Get Connection Sides
+        //----------------------------------
+    // Pixel -> Grid
     //----------------------------------
 
-    const startNode = getRegisteredConnectionNode(
+    const startCell = pixelToGrid(start);
+    const endCell = pixelToGrid(end);
 
-        link.start.panelId,
-        link.start.connectionId
+    //----------------------------------
+    // Debug
+    //----------------------------------
+
+    console.group("Pathfinding");
+
+    console.log("Start Pixel", start);
+    console.log("End Pixel", end);
+
+    console.log("Start Cell", startCell);
+    console.log("End Cell", endCell);
+
+    if (typeof debugGridCell === "function") {
+
+        debugGridCell(start);
+        debugGridCell(end);
+
+    }
+
+    //----------------------------------
+    // Find Path
+    //----------------------------------
+
+    const cells = findPath(
+
+        startCell,
+
+        endCell
 
     );
 
-    const endNode = getRegisteredConnectionNode(
+    console.log("Grid Path", cells);
 
-        link.end.panelId,
-        link.end.connectionId
+    //----------------------------------
+    // No Route
+    //----------------------------------
+
+    if (!cells.length) {
+
+        console.warn("NO PATH FOUND");
+
+        console.groupEnd();
+
+        return [
+
+            start,
+
+            end
+
+        ];
+
+    }
+
+    //----------------------------------
+    // Grid -> Pixels
+    //----------------------------------
+
+    const points = [
+
+        start
+
+    ];
+
+    for (const cell of cells) {
+
+        points.push(
+
+            gridToPixel(cell)
+
+        );
+
+    }
+
+    points.push(
+
+        end
 
     );
+    console.log("Pixel Route", points);
 
-    const startSide = startNode?.dataset.side;
-    const endSide = endNode?.dataset.side;
-
-    //----------------------------------
-    // Exit Distance
-    //----------------------------------
-
-    const EXIT = SETTINGS.cellSize * 0.45;
-
-    const p1 = { ...start };
-    const p2 = { ...end };
-
-    //----------------------------------
-    // Leave Start
-    //----------------------------------
-
-    switch (startSide) {
-
-        case "left":
-            p1.x -= EXIT;
-            break;
-
-        case "right":
-            p1.x += EXIT;
-            break;
-
-        case "top":
-            p1.y -= EXIT;
-            break;
-
-        case "bottom":
-            p1.y += EXIT;
-            break;
-
-    }
-
-    //----------------------------------
-    // Enter End
-    //----------------------------------
-
-    switch (endSide) {
-
-        case "left":
-            p2.x -= EXIT;
-            break;
-
-        case "right":
-            p2.x += EXIT;
-            break;
-
-        case "top":
-            p2.y -= EXIT;
-            break;
-
-        case "bottom":
-            p2.y += EXIT;
-            break;
-
-    }
-
-    //----------------------------------
-    // Build Route
-    //----------------------------------
-
-    const horizontalFirst =
-
-        Math.abs(p2.x - p1.x) >=
-
-        Math.abs(p2.y - p1.y);
-
-    if (horizontalFirst) {
-
-        const midX =
-
-            (p1.x + p2.x) / 2;
-
-        points.push(start);
-
-        points.push(p1);
-
-        points.push({
-
-            x: midX,
-            y: p1.y
-
-        });
-
-        points.push({
-
-            x: midX,
-            y: p2.y
-
-        });
-
-        points.push(p2);
-
-        points.push(end);
-
-    }
-
-    else {
-
-        const midY =
-
-            (p1.y + p2.y) / 2;
-
-        points.push(start);
-
-        points.push(p1);
-
-        points.push({
-
-            x: p1.x,
-            y: midY
-
-        });
-
-        points.push({
-
-            x: p2.x,
-            y: midY
-
-        });
-
-        points.push(p2);
-
-        points.push(end);
-
-    }
-
-    //----------------------------------
-    // Obstacle Check
-    //----------------------------------
-
-    if (routeHitsObstacle(points)) {
-
-        console.log("Obstacle Found");
-
-        return optimizeRoute(points);
-
-    }
-
+    console.groupEnd();
     return points;
 
 }
