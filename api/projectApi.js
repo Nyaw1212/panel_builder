@@ -2,7 +2,7 @@
 // API Mode
 //----------------------------------
 
-const LOCAL_MODE = true;
+const LOCAL_MODE = false;
 
 console.log(
     `Catalog Source: ${
@@ -99,8 +99,24 @@ async function getMML() {
     }
 
     //----------------------------------
+    // Cache
+    //----------------------------------
+
+    const cache = loadMMLCache();
+
+    if (cache) {
+
+        console.log("Catalog Source: Cache");
+
+        return cache.data;
+
+    }
+
+    //----------------------------------
     // Apps Script
     //----------------------------------
+
+    console.log("Catalog Source: Apps Script");
 
     const result = await apiRequest({
 
@@ -116,7 +132,13 @@ async function getMML() {
 
     }
 
-    return result.mml || [];
+    const mml = result.mml || [];
+
+    saveMMLCache(mml);
+
+    console.log("MML Cached");
+
+    return mml;
 
 }
 
@@ -137,8 +159,24 @@ async function getPresets() {
     }
 
     //----------------------------------
+    // Cache
+    //----------------------------------
+
+    const cache = loadPresetCache();
+
+    if (cache) {
+
+        console.log("Preset Source: Cache");
+
+        return cache.data;
+
+    }
+
+    //----------------------------------
     // Apps Script
     //----------------------------------
+
+    console.log("Preset Source: Apps Script");
 
     const result = await apiRequest({
 
@@ -154,7 +192,13 @@ async function getPresets() {
 
     }
 
-    return result.presets || [];
+    const presets = result.presets || [];
+
+    savePresetCache(presets);
+
+    console.log("Presets Cached");
+
+    return presets;
 
 }
 
