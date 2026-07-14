@@ -685,3 +685,44 @@ Detached Assembly Panel
     max-width: 95vw;
 
 }
+/*=====================================
+Favorite Badge
+=====================================*/
+
+.equipment{
+
+    position:relative;
+
+}
+
+.favorite-badge{
+
+    position:absolute;
+
+    top:8px;
+
+    right:8px;
+
+    width:22px;
+
+    height:22px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:#f59e0b;
+
+    color:#fff;
+
+    font-size:14px;
+
+    font-weight:700;
+
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+
+}

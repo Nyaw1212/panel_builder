@@ -219,6 +219,23 @@ function buildModalList(searchText = "") {
 
         }
 
+        //----------------------------------
+        // Favorites First
+        //----------------------------------
+
+        list.sort((a, b) => {
+
+            const favA = Number(a.Favorite) === 1;
+            const favB = Number(b.Favorite) === 1;
+
+            if (favA && !favB) return -1;
+            if (!favA && favB) return 1;
+
+            return (a.CatalogNumber || "")
+                .localeCompare(b.CatalogNumber || "");
+
+        });
+
     }
 
     //----------------------------------

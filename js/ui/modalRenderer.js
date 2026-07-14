@@ -4,9 +4,22 @@
 
 function buildModalCard(item) {
 
+    console.log(
+        item.CatalogNumber,
+        "Favorite:",
+        item.Favorite,
+        typeof item.Favorite
+    );
+
     const image = item.DriveFileID
         ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w200`
         : "";
+
+    //----------------------------------
+    // Favorite
+    //----------------------------------
+
+    const favorite = Number(item.Favorite) === 1;
 
     const card = document.createElement("div");
 
@@ -39,6 +52,10 @@ function buildModalCard(item) {
     //----------------------------------
 
     card.innerHTML = `
+
+        ${favorite
+            ? `<div class="favorite-badge">★</div>`
+            : ""}
 
         <img
             class="equipment-image"
