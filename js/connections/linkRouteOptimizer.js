@@ -25,15 +25,7 @@ function optimizeRoute(points) {
 
         }
 
-        console.log(
-
-            "Blocked Segment",
-
-            i,
-
-            obstacle
-
-        );
+        console.log("Blocked Segment", i);
 
         //----------------------------------
         // Build Detour
@@ -47,25 +39,24 @@ function optimizeRoute(points) {
 
         );
 
-        //----------------------------------
-        // Remove duplicated start/end
-        //----------------------------------
-
-        replacement.shift();
-
-        replacement.pop();
+        console.log("Old Route", [...route]);
+        console.log("Replacement", replacement);
 
         //----------------------------------
-        // Insert New Corners
+        // Insert Only Interior Points
         //----------------------------------
+
+        const interior = replacement.slice(1, -1);
 
         route.splice(
 
             i + 1,
             0,
-            ...replacement
+            ...interior
 
         );
+
+        console.log("New Route", [...route]);
 
         break;
 

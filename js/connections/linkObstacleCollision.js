@@ -40,18 +40,10 @@ function segmentHitsObstacle(start, end) {
 // Segment vs Rectangle
 //----------------------------------
 
-function intersectsObstacle(
-
-    start,
-
-    end,
-
-    rect
-
-) {
+function intersectsObstacle(start, end, rect) {
 
     //----------------------------------
-    // Vertical Segment
+    // Vertical
     //----------------------------------
 
     if (start.x === end.x) {
@@ -68,21 +60,8 @@ function intersectsObstacle(
 
         }
 
-        const top = Math.min(
-
-            start.y,
-
-            end.y
-
-        );
-
-        const bottom = Math.max(
-
-            start.y,
-
-            end.y
-
-        );
+        const top = Math.min(start.y, end.y);
+        const bottom = Math.max(start.y, end.y);
 
         return !(
 
@@ -95,7 +74,7 @@ function intersectsObstacle(
     }
 
     //----------------------------------
-    // Horizontal Segment
+    // Horizontal
     //----------------------------------
 
     if (start.y === end.y) {
@@ -112,21 +91,8 @@ function intersectsObstacle(
 
         }
 
-        const left = Math.min(
-
-            start.x,
-
-            end.x
-
-        );
-
-        const right = Math.max(
-
-            start.x,
-
-            end.x
-
-        );
+        const left = Math.min(start.x, end.x);
+        const right = Math.max(start.x, end.x);
 
         return !(
 
@@ -139,124 +105,10 @@ function intersectsObstacle(
     }
 
     //----------------------------------
-    // Ignore Diagonal
+    // Ignore diagonal
     //----------------------------------
 
     return false;
-
-}
-
-//----------------------------------
-// Debug
-//----------------------------------
-
-function testSegment(start, end) {
-
-    const obstacle =
-
-        segmentHitsObstacle(
-
-            start,
-
-            end
-
-        );
-
-    console.log(
-
-        obstacle
-
-            ? "HIT"
-
-            : "CLEAR",
-
-        obstacle
-
-    );
-
-}
-
-//----------------------------------
-// Reroute Segment
-//----------------------------------
-
-function rerouteSegment(start, end, obstacle) {
-
-    const OFFSET = 20;
-
-    const topRoute = [
-
-        start,
-
-        {
-
-            x: start.x,
-
-            y: obstacle.top - OFFSET
-
-        },
-
-        {
-
-            x: end.x,
-
-            y: obstacle.top - OFFSET
-
-        },
-
-        end
-
-    ];
-
-    const bottomRoute = [
-
-        start,
-
-        {
-
-            x: start.x,
-
-            y: obstacle.bottom + OFFSET
-
-        },
-
-        {
-
-            x: end.x,
-
-            y: obstacle.bottom + OFFSET
-
-        },
-
-        end
-
-    ];
-
-    //----------------------------------
-    // Choose Shorter
-    //----------------------------------
-
-    const topDistance =
-
-        Math.abs(start.y - (obstacle.top - OFFSET)) +
-
-        Math.abs(end.y - (obstacle.top - OFFSET));
-
-    const bottomDistance =
-
-        Math.abs(start.y - (obstacle.bottom + OFFSET)) +
-
-        Math.abs(end.y - (obstacle.bottom + OFFSET));
-
-    return (
-
-        topDistance < bottomDistance
-
-            ? topRoute
-
-            : bottomRoute
-
-    );
 
 }
 
@@ -291,11 +143,129 @@ function routeHitsObstacle(points) {
 }
 
 //----------------------------------
+// Reroute Segment
+//----------------------------------
+
+function rerouteSegment(start, end, obstacle) {
+
+    const OFFSET = 20;
+
+    //----------------------------------
+    // Above
+    //----------------------------------
+
+    const topY = obstacle.top - OFFSET;
+
+    const topRoute = [
+
+        start,
+
+        {
+
+            x: start.x,
+
+            y: topY
+
+        },
+
+        {
+
+            x: end.x,
+
+            y: topY
+
+        },
+
+        end
+
+    ];
+
+    //----------------------------------
+    // Below
+    //----------------------------------
+
+    const bottomY = obstacle.bottom + OFFSET;
+
+    const bottomRoute = [
+
+        start,
+
+        {
+
+            x: start.x,
+
+            y: bottomY
+
+        },
+
+        {
+
+            x: end.x,
+
+            y: bottomY
+
+        },
+
+        end
+
+    ];
+
+    //----------------------------------
+    // Choose Shorter
+    //----------------------------------
+
+    const topDistance =
+
+        Math.abs(start.y - topY) +
+
+        Math.abs(end.y - topY);
+
+    const bottomDistance =
+
+        Math.abs(start.y - bottomY) +
+
+        Math.abs(end.y - bottomY);
+
+    const route =
+
+        topDistance < bottomDistance
+
+            ? topRoute
+
+            : bottomRoute;
+
+    console.log("Detour Route", route);
+
+    return route;
+
+}
+
+//----------------------------------
+// Debug
+//----------------------------------
+
+function testSegment(start, end) {
+
+    console.log(
+
+        segmentHitsObstacle(
+
+            start,
+
+            end
+
+        )
+
+    );
+
+}
+
+//----------------------------------
 // Expose
 //----------------------------------
 
 window.segmentHitsObstacle = segmentHitsObstacle;
 window.intersectsObstacle = intersectsObstacle;
-window.testSegment = testSegment;
-window.rerouteSegment = rerouteSegment;
 window.routeHitsObstacle = routeHitsObstacle;
+window.rerouteSegment = rerouteSegment;
+window.testSegment = testSegment;
