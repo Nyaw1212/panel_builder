@@ -1,0 +1,75 @@
+//----------------------------------
+// Equipment Preview
+//----------------------------------
+
+function showEquipmentPreview(x, y) {
+
+    let preview =
+        document.getElementById("equipmentPreview");
+
+    //----------------------------------
+    // Create
+    //----------------------------------
+
+    if (!preview) {
+
+        preview =
+            document.createElement("div");
+
+        preview.id =
+            "equipmentPreview";
+
+        preview.innerHTML = `
+            TEST
+        `;
+
+        document.body.appendChild(
+            preview
+        );
+
+    }
+
+    //----------------------------------
+    // Position
+    //----------------------------------
+
+    preview.style.left =
+        `${x}px`;
+
+    preview.style.top =
+        `${y}px`;
+
+    preview.style.display =
+        "block";
+
+}
+
+//----------------------------------
+// Hide
+//----------------------------------
+
+function hideEquipmentPreview() {
+
+    const preview =
+        document.getElementById(
+            "equipmentPreview"
+        );
+
+    if (preview) {
+
+        preview.style.display =
+            "none";
+
+    }
+
+}
+
+//----------------------------------
+// Expose
+//----------------------------------
+
+window.showEquipmentPreview =
+    showEquipmentPreview;
+
+window.hideEquipmentPreview =
+    hideEquipmentPreview;

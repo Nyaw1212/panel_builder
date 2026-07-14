@@ -4,6 +4,10 @@
 
 function renderEquipmentMaterials(item) {
 
+    //----------------------------------
+    // Elements
+    //----------------------------------
+
     const modal =
         document.getElementById("equipmentModal");
 
@@ -31,57 +35,127 @@ function renderEquipmentMaterials(item) {
     //----------------------------------
 
     if (
-
         !item.materials ||
-
         item.materials.length === 0
-
     ) {
 
-        list.innerHTML =
-
-            "<div style='padding:20px'>No Materials</div>";
+        list.innerHTML = `
+            <div style="padding:20px">
+                No Materials
+            </div>
+        `;
 
         return;
 
     }
 
     //----------------------------------
-    // Cards
+// Cards
+//----------------------------------
+
+item.materials.forEach(itemMaterial => {
+
+    //----------------------------------
+    // Lookup Material
     //----------------------------------
 
-    item.materials.forEach(material => {
+    const catalogNumber =
+        itemMaterial.catalogNumber ??
+        itemMaterial.CatalogNumber;
 
-        const card =
-            document.createElement("div");
+    const material =
+        getMaterial(catalogNumber);
 
-        card.className =
-            "equipment";
+    if (!material) {
 
-        card.innerHTML = `
+        console.warn(
+            "Material not found:",
+            catalogNumber
+        );
 
-            <div class="equipment-info">
+        return;
 
-                <div class="equipment-code">
+    }
 
-                    ${material.CatalogNumber}
+    //----------------------------------
+    // Image
+    //----------------------------------
 
-                </div>
+    const image =
+        getEquipmentImage(material);
 
-                <div class="equipment-desc">
+    //----------------------------------
+    // Qty
+    //----------------------------------
 
-                    Qty : ${material.QTY}
+    const qty =
+        itemMaterial.qty ??
+        itemMaterial.QTY ??
+        itemMaterial.quantity ??
+        1;
 
-                </div>
+    //----------------------------------
+    // Card
+    //----------------------------------
+
+    const card =
+        document.createElement("div");
+
+    card.className =
+        "equipment";
+
+    card.innerHTML = `
+
+        <img
+            class="equipment-image"
+            src="${image.src}"
+        >
+
+        <div class="equipment-info">
+
+            <div class="equipment-code">
+
+                ${material.CatalogNumber}
 
             </div>
 
-        `;
+            <div class="equipment-desc">
 
-        list.appendChild(card);
+                ${material.Description}
 
-    });
+            </div>
 
+            <div class="equipment-desc">
+
+                Qty : ${qty}
+
+            </div>
+
+        </div>
+
+    `;
+
+    //----------------------------------
+    // Image Fallback
+    //----------------------------------
+
+    const img =
+        card.querySelector(".equipment-image");
+
+    img.onerror = () => {
+
+        if (image.fallback) {
+
+            img.src =
+                image.fallback;
+
+        }
+
+    };
+
+    list.appendChild(card);
+
+});
 }
 
 //----------------------------------
