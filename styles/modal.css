@@ -26,9 +26,13 @@ MODAL WINDOW
 
 .modal-content{
 
-    width:700px;
+    width:1100px;
 
-    height:650px;
+    max-width:95vw;
+
+    height:750px;
+
+    max-height:92vh;
 
     background:#fff;
 
@@ -259,15 +263,65 @@ ITEM ROW
 Modal Filters
 ==================================*/
 
+/*==================================
+Modal Body
+==================================*/
+
+.modal-body{
+
+    flex:1;
+
+    display:grid;
+
+    grid-template-columns:260px 1fr;
+
+    gap:20px;
+
+    min-height:0;
+
+    overflow:hidden;
+
+}
+
+/*==================================
+Filter Panel
+==================================*/
+
+.filter-panel{
+
+    overflow-y:auto;
+
+    border-right:1px solid #e5e7eb;
+
+    padding-right:16px;
+
+}
+
+/*==================================
+Library Panel
+==================================*/
+
+.library-panel{
+
+    display:flex;
+
+    flex-direction:column;
+
+    min-height:0;
+
+}
+
+/*==================================
+Filters
+==================================*/
+
 .modal-filters{
 
-    display:none;
+    display:flex;
 
-    grid-template-columns:180px 1fr 150px;
+    flex-direction:column;
 
     gap:24px;
-
-    align-items:start;
 
 }
 
@@ -313,23 +367,23 @@ Chip Style
 
 .chip{
 
-    padding:6px 14px;
+    width:100%;
+
+    padding:10px 14px;
 
     border:1px solid #d0d0d0;
 
-    border-radius:999px;
+    border-radius:8px;
 
-    background:#ffffff;
+    background:#fff;
 
-    color:#333;
+    text-align:left;
 
     font-size:13px;
 
     cursor:pointer;
 
     transition:.15s;
-
-    user-select:none;
 
 }
 
@@ -365,13 +419,11 @@ Filter Layout
 
 #typeChips{
 
-    display:grid;
+    display:flex;
 
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    flex-direction:column;
 
     gap:8px;
-
-    width:100%;
 
 }
 
@@ -635,6 +687,10 @@ Detached Assembly Panel
 
 #assemblyPanel{
 
-    width:700px;
+    width: fit-content;
+
+    min-width: 700px;
+
+    max-width: 95vw;
 
 }
