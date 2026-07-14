@@ -123,7 +123,13 @@ function createRoute(link, start, end) {
 
     );
 
-    console.log("Grid Path", cells);
+    console.log(
+
+        "Grid Path",
+
+        cells
+
+    );
 
     //----------------------------------
     // No Route
@@ -131,7 +137,11 @@ function createRoute(link, start, end) {
 
     if (!cells.length) {
 
-        console.warn("NO PATH FOUND");
+        console.warn(
+
+            "NO PATH FOUND"
+
+        );
 
         console.groupEnd();
 
@@ -146,6 +156,24 @@ function createRoute(link, start, end) {
     }
 
     //----------------------------------
+    // Compress Grid Path
+    //----------------------------------
+
+    const simplified = compressGridPath(
+
+        cells
+
+    );
+
+    console.log(
+
+        "Simplified Path",
+
+        simplified
+
+    );
+
+    //----------------------------------
     // Grid -> Pixels
     //----------------------------------
 
@@ -155,7 +183,7 @@ function createRoute(link, start, end) {
 
     ];
 
-    for (const cell of cells) {
+    for (const cell of simplified) {
 
         points.push(
 
@@ -171,14 +199,126 @@ function createRoute(link, start, end) {
 
     );
 
-    console.log("Pixel Route", points);
+    //----------------------------------
+    // Remove Duplicate Points
+    //----------------------------------
+
+    const cleaned = [];
+
+    for (const point of points) {
+
+        const last = cleaned[
+
+            cleaned.length - 1
+
+        ];
+
+        if (
+
+            !last ||
+
+            last.x !== point.x ||
+
+            last.y !== point.y
+
+        ) {
+
+            cleaned.push(point);
+
+        }
+
+    }
+
+    console.log(
+
+        "Pixel Route",
+
+        cleaned
+
+    );
 
     console.groupEnd();
 
-    return points;
+    return optimizePixelRoute(cleaned);
 
 }
+//----------------------------------
+// Compress Grid Path
+//----------------------------------
 
+function compressGridPath(cells) {
+
+    //----------------------------------
+    // Nothing to Compress
+    //----------------------------------
+
+    if (cells.length <= 2) {
+
+        return cells;
+
+    }
+
+    const result = [
+
+        cells[0]
+
+    ];
+
+    let lastDX = null;
+    let lastDY = null;
+
+    //----------------------------------
+    // Remove Straight-Line Points
+    //----------------------------------
+
+    for (let i = 1; i < cells.length; i++) {
+
+        const dx =
+
+            cells[i].x -
+
+            cells[i - 1].x;
+
+        const dy =
+
+            cells[i].y -
+
+            cells[i - 1].y;
+
+        if (
+
+            lastDX !== null &&
+
+            (dx !== lastDX || dy !== lastDY)
+
+        ) {
+
+            result.push(
+
+                cells[i - 1]
+
+            );
+
+        }
+
+        lastDX = dx;
+        lastDY = dy;
+
+    }
+
+    //----------------------------------
+    // Keep Last Point
+    //----------------------------------
+
+    result.push(
+
+        cells[cells.length - 1]
+
+    );
+
+    return result;
+
+}
 
 //----------------------------------
 // Set Geometry
@@ -299,3 +439,4 @@ window.setLinkGeometry = setLinkGeometry;
 window.getLinkGeometry = getLinkGeometry;
 window.getLinkPoints = getLinkPoints;
 window.clearLinkGeometry = clearLinkGeometry;
+window.compressGridPath = compressGridPath;
