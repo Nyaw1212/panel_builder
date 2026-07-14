@@ -48,7 +48,13 @@ function getFittingBOM() {
 
                 map,
 
-                part.material
+                {
+
+                    ...part.material,
+
+                    qty: part.qty
+
+                }
 
             );
 
@@ -124,11 +130,23 @@ function mergeMaterial(
 
     if (!material) return;
 
-    const key =
-
-        material.CatalogNumber;
+    const key = material.CatalogNumber;
 
     if (!key) return;
+
+    //----------------------------------
+    // Material Quantity
+    //----------------------------------
+
+    const qty = Number(
+
+        material.qty ??
+
+        material.Qty ??
+
+        1
+
+    );
 
     //----------------------------------
     // Existing
@@ -136,7 +154,7 @@ function mergeMaterial(
 
     if (map[key]) {
 
-        map[key].Qty++;
+        map[key].Qty += qty;
 
         return;
 
@@ -164,7 +182,7 @@ function mergeMaterial(
 
             material.Type,
 
-        Qty: 1,
+        Qty: qty,
 
         Material: material
 
