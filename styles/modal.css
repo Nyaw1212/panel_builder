@@ -12,9 +12,11 @@ MODAL OVERLAY
 
     background:rgba(0,0,0,.45);
 
-    justify-content:center;
+    justify-content:flex-start;
 
-    align-items:center;
+    align-items:flex-start;
+
+    padding:30px;
 
     z-index:1000;
 
