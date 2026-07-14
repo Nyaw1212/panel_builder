@@ -8,9 +8,9 @@ const SETTINGS = {
     // Initial Grid
     //----------------------------------
 
-    rows: 12,
+    rows: 20,
 
-    columns: 16,
+    columns: 25,
 
     //----------------------------------
     // Canvas
