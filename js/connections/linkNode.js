@@ -22,11 +22,15 @@ function getLinkNodePosition(link) {
     // Position on horizontal segment
     //----------------------------------
 
-    const OFFSET = 80; // Distance from the start node
+    const OFFSET = 80;
 
     return {
 
-        x: start.x + Math.sign(end.x - start.x) * Math.min(OFFSET, Math.abs(end.x - start.x) / 2),
+        x: start.x + Math.sign(end.x - start.x) *
+            Math.min(
+                OFFSET,
+                Math.abs(end.x - start.x) / 2
+            ),
 
         y: start.y
 
@@ -44,7 +48,7 @@ function drawLinkNode(link) {
 
     if (!position) return;
 
-    const node =
+    const group =
         document.createElementNS(
             "http://www.w3.org/2000/svg",
             "g"
@@ -93,7 +97,7 @@ function drawLinkNode(link) {
     // Delete Button
     //----------------------------------
 
-    const deleteX = position.x + 10;
+    const deleteX = position.x + 20;
     const deleteY = position.y - 10;
 
     const deleteButton =
@@ -119,46 +123,32 @@ function drawLinkNode(link) {
 
     deleteButton.addEventListener("mouseenter", () => {
 
-        deleteButton.setAttribute(
-            "fill",
-            "#dc2626"
-        );
-
-        deleteButton.setAttribute(
-            "r",
-            LINK_DELETE_RADIUS + 1
-        );
+        deleteButton.setAttribute("fill", "#dc2626");
+        deleteButton.setAttribute("r", LINK_DELETE_RADIUS + 1);
 
     });
 
     deleteButton.addEventListener("mouseleave", () => {
 
-        deleteButton.setAttribute(
-            "fill",
-            "#ef4444"
-        );
-
-        deleteButton.setAttribute(
-            "r",
-            LINK_DELETE_RADIUS
-        );
+        deleteButton.setAttribute("fill", "#ef4444");
+        deleteButton.setAttribute("r", LINK_DELETE_RADIUS);
 
     });
 
     //----------------------------------
-// Delete Click
-//----------------------------------
+    // Delete Click
+    //----------------------------------
 
-deleteButton.addEventListener("click", (e) => {
+    deleteButton.addEventListener("click", e => {
 
-    e.stopPropagation();
+        e.stopPropagation();
 
-    console.log("Delete Clicked");
-    console.log(link.id);
+        console.log("Delete Clicked");
 
-    removeLink(link.id);
+        removeLink(link.id);
 
-});
+    });
+
     //----------------------------------
     // X Line 1
     //----------------------------------
@@ -227,7 +217,7 @@ deleteButton.addEventListener("click", (e) => {
     // Click
     //----------------------------------
 
-    hit.addEventListener("click", (e) => {
+    hit.addEventListener("click", async e => {
 
         e.stopPropagation();
 
@@ -235,9 +225,10 @@ deleteButton.addEventListener("click", (e) => {
 
         selectLink(link);
 
-        openLinkEditor(link);
+        // Reuse the existing Material Modal
+        await openMaterialModal(link.nodes.start);
 
-        refreshLinkInspector();
+        drawCanvas();
 
     });
 
@@ -245,14 +236,14 @@ deleteButton.addEventListener("click", (e) => {
     // Build
     //----------------------------------
 
-    node.appendChild(hit);
-    node.appendChild(circle);
+    group.appendChild(hit);
+    group.appendChild(circle);
 
-    node.appendChild(deleteButton);
-    node.appendChild(x1);
-    node.appendChild(x2);
+    group.appendChild(deleteButton);
+    group.appendChild(x1);
+    group.appendChild(x2);
 
-    svgLayer.appendChild(node);
+    svgLayer.appendChild(group);
 
 }
 

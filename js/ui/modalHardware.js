@@ -249,33 +249,31 @@ function getHardwareModalList(list) {
 
 function handleHardwareClick(item) {
 
-    if (
-
-        currentConnection.hardware.some(
-
-            h => h.CatalogNumber === item.CatalogNumber
-
-        )
-
-    ) {
-
-        return;
-
-    }
+    //----------------------------------
+    // Always Add
+    //----------------------------------
 
     addHardware(
 
         currentConnection,
 
-        item
+        structuredClone(item)
 
     );
+
+    //----------------------------------
+    // Refresh Modal
+    //----------------------------------
 
     buildModalList(
 
         modalSearch.value
 
     );
+
+    //----------------------------------
+    // Redraw
+    //----------------------------------
 
     drawCanvas();
 
