@@ -4,15 +4,11 @@
 
 function deserializeProject(project) {
 
-    console.log("Deserialize Start");
-
     if (!project) return;
 
     //----------------------------------
     // Clear Existing
     //----------------------------------
-
-    console.log("Clearing Existing");
 
     replaceLayout([]);
 
@@ -28,11 +24,7 @@ function deserializeProject(project) {
 
     const connectionLookup = new Map();
 
-    console.log("Saved Panels:", project.layout?.length || 0);
-
     (project.layout || []).forEach(savedItem => {
-
-        console.log("Restoring Panel:", savedItem);
 
         const item = structuredClone(savedItem);
 
@@ -126,8 +118,6 @@ function deserializeProject(project) {
 
     });
 
-    console.log("Panels Restored:", panels.length);
-
     //----------------------------------
     // Replace Layout
     //----------------------------------
@@ -140,11 +130,7 @@ function deserializeProject(project) {
 
     const restoredLinks = [];
 
-    console.log("Saved Links:", project.links?.length || 0);
-
     (project.links || []).forEach(saved => {
-
-        console.log("Restoring Link:", saved.id);
 
         const startPanel =
             panelLookup.get(saved.start.panelId);
@@ -236,13 +222,9 @@ function deserializeProject(project) {
 
     });
 
-    console.log("Links Restored:", restoredLinks.length);
-
     replaceLinks(restoredLinks);
 
     drawCanvas();
-
-    console.log("Project Restored");
 
 }
 

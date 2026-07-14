@@ -130,16 +130,16 @@ function drawGrid() {
             const item = getItem(index);
 
             //----------------------------------
-// Existing Equipment
-//----------------------------------
+            // Existing Equipment
+            //----------------------------------
 
-if (item) {
+            if (item) {
 
-    // Selection is handled by dragManager.js
+                // Selection handled by dragManager.js
 
-    return;
+                return;
 
-}
+            }
 
             //----------------------------------
             // Empty Cell
@@ -156,8 +156,11 @@ if (item) {
             if (preset) {
 
                 const placed = placePreset(
+
                     preset,
+
                     index
+
                 );
 
                 if (placed) {
@@ -279,34 +282,34 @@ function drawPlacedItems() {
         card.appendChild(remove);
 
         //----------------------------------
-// Image
-//----------------------------------
+        // Image
+        //----------------------------------
 
-const img = document.createElement("img");
+        const img = document.createElement("img");
 
-img.className = "canvas-image";
+        img.className = "canvas-image";
 
-img.src = image;
+        img.src = image;
 
-//----------------------------------
-// Dynamic Image Size
-//----------------------------------
+        //----------------------------------
+        // Dynamic Image Size
+        //----------------------------------
 
-const imageWidth =
-    item.width * SETTINGS.cellSize * 0.55;
+        const imageWidth =
+            item.width * SETTINGS.cellSize * 0.55;
 
-const imageHeight =
-    item.height * SETTINGS.cellSize * 0.55;
+        const imageHeight =
+            item.height * SETTINGS.cellSize * 0.55;
 
-img.style.width = `${imageWidth}px`;
-img.style.height = `${imageHeight}px`;
+        img.style.width = `${imageWidth}px`;
+        img.style.height = `${imageHeight}px`;
 
-img.style.maxWidth = "100%";
-img.style.maxHeight = "100%";
+        img.style.maxWidth = "100%";
+        img.style.maxHeight = "100%";
 
-img.style.objectFit = "contain";
-img.style.pointerEvents = "none";
-img.draggable = false;
+        img.style.objectFit = "contain";
+        img.style.pointerEvents = "none";
+        img.draggable = false;
 
         //----------------------------------
         // Catalog
@@ -339,34 +342,24 @@ img.draggable = false;
         desc.style.pointerEvents = "none";
 
         //----------------------------------
-// Assemble Card
-//----------------------------------
+        // Assemble Card
+        //----------------------------------
 
-card.appendChild(img);
+        card.appendChild(img);
 
-card.appendChild(code);
+        card.appendChild(code);
 
-card.appendChild(desc);
+        card.appendChild(desc);
 
-//----------------------------------
-// Enable Drag
-//----------------------------------
+        //----------------------------------
+        // Enable Drag
+        //----------------------------------
 
-if (typeof enableDrag === "function") {
+        if (typeof enableDrag === "function") {
 
-    enableDrag(card, item);
+            enableDrag(card, item);
 
-}
-
-        console.group("Canvas Item");
-
-console.log(item);
-
-console.log("Preset:", item.preset);
-
-console.log("Materials:", item.materials);
-
-console.groupEnd();
+        }
 
         //----------------------------------
         // Equipment Node
