@@ -1,18 +1,97 @@
 //----------------------------------
-// Link Pathfinder
+// Link Pathfinder (A*)
+//----------------------------------
+
+//----------------------------------
+// Directions
 //----------------------------------
 
 const PATH_DIRECTIONS = [
 
-    { x: 0,  y: -1 }, // Up
-    { x: 1,  y: 0  }, // Right
-    { x: 0,  y: 1  }, // Down
-    { x: -1, y: 0  }  // Left
+    { x: 0,  y: -1, dir: "up"    },
+
+    { x: 1,  y: 0,  dir: "right" },
+
+    { x: 0,  y: 1,  dir: "down"  },
+
+    { x: -1, y: 0,  dir: "left"  }
 
 ];
 
 //----------------------------------
-// Find Path (BFS)
+// Costs
+//----------------------------------
+
+const MOVE_COST = 10;
+
+const TURN_COST = 25;
+
+//----------------------------------
+// Priority Queue
+//----------------------------------
+
+class PriorityQueue {
+
+    constructor() {
+
+        this.items = [];
+
+    }
+
+    //----------------------------------
+    // Push
+    //----------------------------------
+
+    push(node) {
+
+        this.items.push(node);
+
+        this.items.sort(
+
+            (a, b) => a.f - b.f
+
+        );
+
+    }
+
+    //----------------------------------
+    // Pop Lowest Cost
+    //----------------------------------
+
+    pop() {
+
+        return this.items.shift();
+
+    }
+
+    //----------------------------------
+    // Empty
+    //----------------------------------
+
+    isEmpty() {
+
+        return this.items.length === 0;
+
+    }
+
+}
+//----------------------------------
+// Manhattan Distance
+//----------------------------------
+
+function heuristic(a, b) {
+
+    return (
+
+        Math.abs(a.x - b.x) +
+
+        Math.abs(a.y - b.y)
+
+    ) * MOVE_COST;
+
+}
+//----------------------------------
+// Find Path (A*)
 //----------------------------------
 
 function findPath(start, end) {
@@ -29,50 +108,87 @@ function findPath(start, end) {
     const cols = grid[0].length;
 
     //----------------------------------
-    // Queue
+    // Open Set
     //----------------------------------
 
-    const queue = [];
+    const open = new PriorityQueue();
 
-    queue.push({
+    //----------------------------------
+// Best Cost Per Cell
+//----------------------------------
+
+const bestCost = new Map();
+
+const closed = new Set();
+
+    //----------------------------------
+    // Start Node
+    //----------------------------------
+
+    open.push({
 
         x: start.x,
 
         y: start.y,
 
-        path: [
+        g: 0,
 
-            {
+        h: heuristic(start, end),
 
-                x: start.x,
+        f: heuristic(start, end),
 
-                y: start.y
+        parent: null,
 
-            }
-
-        ]
+        dir: null
 
     });
 
     //----------------------------------
-    // Visited
+    // Search
     //----------------------------------
 
-    const visited = new Set();
+    while (!open.isEmpty()) {
 
-    visited.add(
+        const current = open.pop();
 
-        `${start.x},${start.y}`
+        const key = `${current.x},${current.y}`;
 
-    );
+        //----------------------------------
+// Skip Worse Paths
+//----------------------------------
 
-    //----------------------------------
-    // BFS
-    //----------------------------------
+const previous = bestCost.get(key);
 
-    while (queue.length) {
+if (
 
-        const current = queue.shift();
+    previous !== undefined &&
+
+    current.g > previous
+
+) {
+
+    continue;
+
+}
+
+bestCost.set(
+
+    key,
+
+    current.g
+
+);
+        //----------------------------------
+        // Skip Visited
+        //----------------------------------
+
+        if (closed.has(key)) {
+
+            continue;
+
+        }
+
+        closed.add(key);
 
         //----------------------------------
         // Goal
@@ -86,18 +202,36 @@ function findPath(start, end) {
 
         ) {
 
-            return current.path;
+            const path = [];
+
+            let node = current;
+
+            while (node) {
+
+                path.unshift({
+
+                    x: node.x,
+
+                    y: node.y
+
+                });
+
+                node = node.parent;
+
+            }
+
+            return path;
 
         }
 
         //----------------------------------
-        // Explore
+        // Explore Neighbors
         //----------------------------------
 
-        for (const dir of PATH_DIRECTIONS) {
+        for (const move of PATH_DIRECTIONS) {
 
-            const nx = current.x + dir.x;
-            const ny = current.y + dir.y;
+            const nx = current.x + move.x;
+            const ny = current.y + move.y;
 
             //----------------------------------
             // Bounds
@@ -120,7 +254,7 @@ function findPath(start, end) {
             }
 
             //----------------------------------
-            // Blocked
+            // Obstacle
             //----------------------------------
 
             if (
@@ -133,47 +267,58 @@ function findPath(start, end) {
 
             }
 
+            
             //----------------------------------
-            // Visited
-            //----------------------------------
-
-            const key = `${nx},${ny}`;
-
-            if (
-
-                visited.has(key)
-
-            ) {
-
-                continue;
-
-            }
-
-            visited.add(key);
-
-            //----------------------------------
-            // Push
+            // Costs
             //----------------------------------
 
-            queue.push({
+            //----------------------------------
+// Turn Penalty
+//----------------------------------
+
+let moveCost = MOVE_COST;
+
+if (
+
+    current.dir &&
+
+    current.dir !== move.dir
+
+) {
+
+    moveCost += TURN_COST;
+
+}
+
+const g =
+
+    current.g +
+
+    moveCost;
+
+            const h = heuristic(
+
+                { x: nx, y: ny },
+
+                end
+
+            );
+
+            open.push({
 
                 x: nx,
 
                 y: ny,
 
-                path: [
+                g,
 
-                    ...current.path,
+                h,
 
-                    {
+                f: g + h,
 
-                        x: nx,
+                parent: current,
 
-                        y: ny
-
-                    }
-
-                ]
+                dir: move.dir
 
             });
 
@@ -190,22 +335,7 @@ function findPath(start, end) {
 }
 
 //----------------------------------
-// Debug
-//----------------------------------
-
-function debugPath(start, end) {
-
-    const path = findPath(start, end);
-
-    console.table(path);
-
-    return path;
-
-}
-
-//----------------------------------
 // Expose
 //----------------------------------
 
 window.findPath = findPath;
-window.debugPath = debugPath;

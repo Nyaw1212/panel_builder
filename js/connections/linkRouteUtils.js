@@ -8,10 +8,6 @@
 
 function compressGridPath(cells) {
 
-    //----------------------------------
-    // Nothing to Compress
-    //----------------------------------
-
     if (!cells || cells.length <= 2) {
 
         return cells || [];
@@ -45,10 +41,6 @@ function compressGridPath(cells) {
 
             cells[i - 1].y;
 
-        //----------------------------------
-        // Direction Changed
-        //----------------------------------
-
         if (
 
             lastDX !== null &&
@@ -75,10 +67,6 @@ function compressGridPath(cells) {
         lastDY = dy;
 
     }
-
-    //----------------------------------
-    // Always Keep Last Cell
-    //----------------------------------
 
     result.push(
 
@@ -216,26 +204,128 @@ function removeCollinearPoints(points) {
 }
 
 //----------------------------------
+// Remove Tiny Doglegs
+//----------------------------------
+
+function removeDoglegs(points) {
+
+    if (!points || points.length < 4) {
+
+        return points || [];
+
+    }
+
+    const result = [
+
+        points[0]
+
+    ];
+
+    for (
+
+        let i = 1;
+
+        i < points.length - 2;
+
+        i++
+
+    ) {
+
+        const a = result[
+
+            result.length - 1
+
+        ];
+
+        const b = points[i];
+        const c = points[i + 1];
+        const d = points[i + 2];
+
+        //----------------------------------
+        // Vertical Dogleg
+        //----------------------------------
+
+        if (
+
+            a.x === b.x &&
+            c.x === d.x &&
+            b.y === c.y
+
+        ) {
+
+            if (a.x === d.x) {
+
+                continue;
+
+            }
+
+        }
+
+        //----------------------------------
+        // Horizontal Dogleg
+        //----------------------------------
+
+        if (
+
+            a.y === b.y &&
+            c.y === d.y &&
+            b.x === c.x
+
+        ) {
+
+            if (a.y === d.y) {
+
+                continue;
+
+            }
+
+        }
+
+        result.push(b);
+
+    }
+
+    result.push(
+
+        points[points.length - 2]
+
+    );
+
+    result.push(
+
+        points[points.length - 1]
+
+    );
+
+    return result;
+
+}
+
+//----------------------------------
 // Optimize Pixel Route
 //----------------------------------
 
 function optimizePixelRoute(points) {
 
-    let route =
+    let route = points;
 
-        removeDuplicatePoints(
+    let changed = true;
 
-            points
+    while (changed) {
 
-        );
+        const before = route.length;
 
-    route =
+        route = removeDuplicatePoints(route);
 
-        removeCollinearPoints(
+        route = removeCollinearPoints(route);
 
-            route
+        route = removeDoglegs(route);
 
-        );
+        changed =
+
+            route.length !== before;
+
+    }
 
     return route;
 
@@ -248,4 +338,5 @@ function optimizePixelRoute(points) {
 window.compressGridPath = compressGridPath;
 window.removeDuplicatePoints = removeDuplicatePoints;
 window.removeCollinearPoints = removeCollinearPoints;
+window.removeDoglegs = removeDoglegs;
 window.optimizePixelRoute = optimizePixelRoute;
