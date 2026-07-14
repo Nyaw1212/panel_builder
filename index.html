@@ -7,6 +7,8 @@
 
     <title>Panel Builder</title>
 
+
+    <link rel="stylesheet" href="styles/toolbar.css">
     <link rel="stylesheet" href="styles/reset.css">
     <link rel="stylesheet" href="styles/layout.css">
     <link rel="stylesheet" href="styles/library.css">
@@ -82,43 +84,57 @@
 
         </aside>
 
-        <main class="workspace">
+       <main class="workspace">
 
-            <div class="workspace-toolbar">
+    <!--==================================
+    Workspace Toolbar
+    ==================================-->
 
-                <button id="newProjectButton">
+    <div class="workspace-toolbar">
 
-                    📄 New
+        <button id="newProjectButton">
 
-                </button>
+            📄 New
 
-                <button id="openProjectButton">
+        </button>
 
-                    📂 Open
+        <button id="openProjectButton">
 
-                </button>
+            📂 Open
 
-                <button id="saveButton">
+        </button>
 
-                    💾 Save
+        <button id="saveButton">
 
-                </button>
+            💾 Save
 
-            </div>
+        </button>
 
-            <h2>Layout</h2>
+        <button id="bomButton">
 
-            <div id="canvasContainer">
+            📋 BOM
 
-    <div id="grid"></div>
+        </button>
 
-    <div id="previewLayer"></div>
+    </div>
 
-    <svg id="svgLayer"></svg>
+    <!--==================================
+    Layout
+    ==================================-->
 
-</div>
+    <h2>Layout</h2>
 
-        </main>
+    <div id="canvasContainer">
+
+        <div id="grid"></div>
+
+        <div id="previewLayer"></div>
+
+        <svg id="svgLayer"></svg>
+
+    </div>
+
+</main>
 
     </div>
 

@@ -5,18 +5,17 @@
 function initializeToolbar() {
 
     //----------------------------------
-    // Save Button
+    // Buttons
     //----------------------------------
 
     const saveButton =
         document.getElementById("saveButton");
 
-    //----------------------------------
-    // Open Button
-    //----------------------------------
-
     const openButton =
         document.getElementById("openProjectButton");
+
+    const bomButton =
+        document.getElementById("bomButton");
 
     //----------------------------------
     // Save
@@ -117,6 +116,37 @@ function initializeToolbar() {
 
         console.warn(
             "Open button not found."
+        );
+
+    }
+
+    //----------------------------------
+    // BOM
+    //----------------------------------
+
+    if (bomButton) {
+
+        bomButton.addEventListener(
+
+            "click",
+
+            () => {
+
+                console.log(
+                    "Printing BOM..."
+                );
+
+                printBOM();
+
+            }
+
+        );
+
+    }
+    else {
+
+        console.warn(
+            "BOM button not found."
         );
 
     }

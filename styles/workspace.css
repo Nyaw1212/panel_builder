@@ -1,0 +1,91 @@
+/*=====================================
+Workspace Toolbar
+=====================================*/
+
+.workspace-toolbar{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    margin-bottom:10px;
+
+}
+
+/*=====================================
+Toolbar Buttons
+=====================================*/
+
+.workspace-toolbar button{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:6px;
+
+    min-width:90px;
+
+    height:34px;
+
+    padding:0 14px;
+
+    border:1px solid #d1d5db;
+
+    border-radius:8px;
+
+    background:#ffffff;
+
+    color:#374151;
+
+    font-size:13px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:all .15s ease;
+
+}
+
+/*=====================================
+Hover
+=====================================*/
+
+.workspace-toolbar button:hover{
+
+    background:#eff6ff;
+
+    border-color:#2563eb;
+
+    color:#2563eb;
+
+}
+
+/*=====================================
+Active
+=====================================*/
+
+.workspace-toolbar button:active{
+
+    transform:translateY(1px);
+
+    background:#dbeafe;
+
+}
+
+/*=====================================
+Focus
+=====================================*/
+
+.workspace-toolbar button:focus{
+
+    outline:none;
+
+    box-shadow:0 0 0 3px rgba(37,99,235,.18);
+
+}
