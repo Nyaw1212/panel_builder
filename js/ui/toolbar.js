@@ -8,6 +8,9 @@ function initializeToolbar() {
     // Buttons
     //----------------------------------
 
+    const newButton =
+        document.getElementById("newProjectButton");
+
     const saveButton =
         document.getElementById("saveButton");
 
@@ -16,6 +19,41 @@ function initializeToolbar() {
 
     const bomButton =
         document.getElementById("bomButton");
+
+    //----------------------------------
+    // New
+    //----------------------------------
+
+    if (newButton) {
+
+        newButton.addEventListener(
+
+            "click",
+
+            () => {
+
+                console.log(
+
+                    "New Project..."
+
+                );
+
+                newProject();
+
+            }
+
+        );
+
+    }
+    else {
+
+        console.warn(
+
+            "New button not found."
+
+        );
+
+    }
 
     //----------------------------------
     // Save
