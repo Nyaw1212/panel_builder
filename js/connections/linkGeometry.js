@@ -78,12 +78,19 @@ function updateLinkGeometry(link) {
 
 function createRoute(link, start, end) {
 
-        //----------------------------------
+    //----------------------------------
     // Pixel -> Grid
     //----------------------------------
 
-    const startCell = pixelToGrid(start);
-    const endCell = pixelToGrid(end);
+    let startCell = pixelToGrid(start);
+    let endCell = pixelToGrid(end);
+
+    //----------------------------------
+    // Move Outside Equipment
+    //----------------------------------
+
+    startCell = findNearestFreeCell(startCell);
+    endCell = findNearestFreeCell(endCell);
 
     //----------------------------------
     // Debug
@@ -163,9 +170,11 @@ function createRoute(link, start, end) {
         end
 
     );
+
     console.log("Pixel Route", points);
 
     console.groupEnd();
+
     return points;
 
 }
