@@ -204,7 +204,7 @@ function createRoute(
 
     }
 
-    //----------------------------------
+        //----------------------------------
     // Compress
     //----------------------------------
 
@@ -213,6 +213,18 @@ function createRoute(
         cells
 
     );
+
+    //----------------------------------
+    // Remove Start / End Cells
+    //----------------------------------
+
+    if (simplified.length > 2) {
+
+        simplified.shift();
+
+        simplified.pop();
+
+    }
 
     console.log(
 
