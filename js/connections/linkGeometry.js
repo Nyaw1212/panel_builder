@@ -159,12 +159,20 @@ function createRoute(link, start, end) {
     }
 
     //----------------------------------
-    // Horizontal vs Vertical
+    // Build Route
     //----------------------------------
 
-    if (Math.abs(p2.x - p1.x) >= Math.abs(p2.y - p1.y)) {
+    const horizontalFirst =
 
-        const midX = (p1.x + p2.x) / 2;
+        Math.abs(p2.x - p1.x) >=
+
+        Math.abs(p2.y - p1.y);
+
+    if (horizontalFirst) {
+
+        const midX =
+
+            (p1.x + p2.x) / 2;
 
         points.push(start);
 
@@ -192,7 +200,9 @@ function createRoute(link, start, end) {
 
     else {
 
-        const midY = (p1.y + p2.y) / 2;
+        const midY =
+
+            (p1.y + p2.y) / 2;
 
         points.push(start);
 
@@ -218,9 +228,22 @@ function createRoute(link, start, end) {
 
     }
 
+    //----------------------------------
+    // Obstacle Check
+    //----------------------------------
+
+    if (routeHitsObstacle(points)) {
+
+        console.log("Obstacle Found");
+
+        return optimizeRoute(points);
+
+    }
+
     return points;
 
 }
+
 
 //----------------------------------
 // Set Geometry

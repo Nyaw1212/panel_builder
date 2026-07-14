@@ -1,76 +1,60 @@
+console.log("createRoute()");
+
 //----------------------------------
 // Create Route
 //----------------------------------
 
-function createRoute(start, end) {
-
-    const points = [];
-
-    const EXIT = SETTINGS.cellSize * 0.40;
+function createRoute(link, start, end) {
 
     //----------------------------------
-    // Leave Start
+    // Try Horizontal First
     //----------------------------------
 
-    const p1 = { ...start };
-    const p2 = { ...end };
+    const horizontal = createHorizontalRoute(
 
-    //----------------------------------
-    // Horizontal First
-    //----------------------------------
+        start,
+        end
 
-    if (Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)) {
+    );
 
-        p1.x += end.x > start.x ? EXIT : -EXIT;
-        p2.x += end.x > start.x ? -EXIT : EXIT;
+    if (!routeHitsObstacle(horizontal)) {
 
-        points.push(start);
+        console.log("Horizontal Route");
 
-        points.push(p1);
-
-        points.push({
-
-            x: p2.x,
-
-            y: p1.y
-
-        });
-
-        points.push(p2);
-
-        points.push(end);
+        return horizontal;
 
     }
 
     //----------------------------------
-    // Vertical First
+    // Try Vertical First
     //----------------------------------
 
-    else {
+    const vertical = createVerticalRoute(
 
-        p1.y += end.y > start.y ? EXIT : -EXIT;
-        p2.y += end.y > start.y ? -EXIT : EXIT;
+        start,
+        end
 
-        points.push(start);
+    );
 
-        points.push(p1);
+    if (!routeHitsObstacle(vertical)) {
 
-        points.push({
+        console.log("Vertical Route");
 
-            x: p1.x,
-
-            y: p2.y
-
-        });
-
-        points.push(p2);
-
-        points.push(end);
+        return vertical;
 
     }
 
-    return points;
+    //----------------------------------
+    // Obstacle Found
+    //----------------------------------
+
+    console.log("Obstacle Route");
+
+    return createObstacleRoute(
+
+        start,
+        end
+
+    );
 
 }
-
-window.createRoute = createRoute;

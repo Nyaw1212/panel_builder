@@ -177,8 +177,125 @@ function testSegment(start, end) {
 }
 
 //----------------------------------
+// Reroute Segment
+//----------------------------------
+
+function rerouteSegment(start, end, obstacle) {
+
+    const OFFSET = 20;
+
+    const topRoute = [
+
+        start,
+
+        {
+
+            x: start.x,
+
+            y: obstacle.top - OFFSET
+
+        },
+
+        {
+
+            x: end.x,
+
+            y: obstacle.top - OFFSET
+
+        },
+
+        end
+
+    ];
+
+    const bottomRoute = [
+
+        start,
+
+        {
+
+            x: start.x,
+
+            y: obstacle.bottom + OFFSET
+
+        },
+
+        {
+
+            x: end.x,
+
+            y: obstacle.bottom + OFFSET
+
+        },
+
+        end
+
+    ];
+
+    //----------------------------------
+    // Choose Shorter
+    //----------------------------------
+
+    const topDistance =
+
+        Math.abs(start.y - (obstacle.top - OFFSET)) +
+
+        Math.abs(end.y - (obstacle.top - OFFSET));
+
+    const bottomDistance =
+
+        Math.abs(start.y - (obstacle.bottom + OFFSET)) +
+
+        Math.abs(end.y - (obstacle.bottom + OFFSET));
+
+    return (
+
+        topDistance < bottomDistance
+
+            ? topRoute
+
+            : bottomRoute
+
+    );
+
+}
+
+//----------------------------------
+// Route Hits Obstacle
+//----------------------------------
+
+function routeHitsObstacle(points) {
+
+    for (let i = 0; i < points.length - 1; i++) {
+
+        if (
+
+            segmentHitsObstacle(
+
+                points[i],
+
+                points[i + 1]
+
+            )
+
+        ) {
+
+            return true;
+
+        }
+
+    }
+
+    return false;
+
+}
+
+//----------------------------------
 // Expose
 //----------------------------------
 
 window.segmentHitsObstacle = segmentHitsObstacle;
+window.intersectsObstacle = intersectsObstacle;
 window.testSegment = testSegment;
+window.rerouteSegment = rerouteSegment;
+window.routeHitsObstacle = routeHitsObstacle;
