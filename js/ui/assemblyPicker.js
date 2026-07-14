@@ -26,58 +26,36 @@ function openAssemblyPicker(
 
     editingAssemblyIndex = index;
 
-    let part;
+    //----------------------------------
+    // Assembly Slot
+    //----------------------------------
 
-    switch (section) {
+    const part =
 
-        case "start":
+        section === "assembly"
 
-            part = {
+            ? link.assembly[index]
 
-                type: "HARDWARE"
-
-            };
-
-            break;
-
-        case "end":
-
-            part = {
-
-                type: "HARDWARE"
-
-            };
-
-            break;
-
-        default:
-
-            part = link.assembly[index];
-
-            break;
-
-    }
-
-    if (!part) return;
+            : {};
 
     //----------------------------------
-// Filter Materials
-//----------------------------------
+    // Filter Materials
+    //----------------------------------
 
-const list =
-    getAssemblyMaterials(part);
+    const list =
+        getAssemblyMaterials();
 
-console.log("========== Assembly Picker ==========");
+    console.log("========== Assembly Picker ==========");
 
-console.log("Section:", section);
+    console.log("Section:", section);
 
-console.log("Part:", part);
+    console.log("Part:", part);
 
-console.log("Materials Loaded:", getMaterials().length);
+    console.log("Materials Loaded:", getMaterials().length);
 
-console.log("Filtered List:", list);
+    console.log("Filtered List:", list);
 
-console.log("=====================================");
+    console.log("=====================================");
 
     //----------------------------------
     // Open Modal
@@ -85,7 +63,7 @@ console.log("=====================================");
 
     openPickerModal(
 
-        `Select ${part.type}`,
+        "Select Material",
 
         list,
 
@@ -149,6 +127,76 @@ function selectAssemblyMaterial(item) {
 
             if (!part) return;
 
+            //----------------------------------
+            // Default Quantity
+            //----------------------------------
+
+            let qty = 1;
+
+            const nodeType = String(
+
+                item.NodeType || ""
+
+            ).toUpperCase();
+
+            //----------------------------------
+            // Pipe / Wire
+            //----------------------------------
+
+            if (
+
+                nodeType === "PIPE" ||
+
+                nodeType === "WIRE"
+
+            ) {
+
+                const value = prompt(
+
+                    `Enter quantity for ${item.CatalogNumber}`,
+
+                    part.qty ?? 1
+
+                );
+
+                //----------------------------------
+                // Cancel
+                //----------------------------------
+
+                if (value === null) {
+
+                    closeAssemblyPicker();
+
+                    return;
+
+                }
+
+                qty = Number(value);
+
+                //----------------------------------
+                // Validate
+                //----------------------------------
+
+                if (
+
+                    Number.isNaN(qty) ||
+
+                    qty <= 0
+
+                ) {
+
+                    alert("Please enter a valid quantity.");
+
+                    return;
+
+                }
+
+            }
+
+            //----------------------------------
+            // Save Material
+            //----------------------------------
+
             part.material = item;
 
             part.catalog =
@@ -156,6 +204,8 @@ function selectAssemblyMaterial(item) {
 
             part.description =
                 item.Description || "";
+
+            part.qty = qty;
 
         }
 
@@ -176,143 +226,16 @@ function selectAssemblyMaterial(item) {
 }
 
 //----------------------------------
-// Filter
+// Filter Materials
 //----------------------------------
 
-function getAssemblyMaterials(part) {
+function getAssemblyMaterials() {
 
-    const type =
-        String(part.type || "")
-            .toUpperCase();
+    return getMaterials().filter(item =>
 
-    return getMaterials().filter(item => {
+        !item.Placeable
 
-        const nodeType =
-            String(item.NodeType || "")
-                .toUpperCase();
-
-        //----------------------------------
-        // Generic Hardware
-        //----------------------------------
-
-        if (type === "HARDWARE") {
-
-            return [
-
-                "CONNECTOR",
-                "COUPLING",
-                "HUB",
-                "LOCKNUT"
-
-            ].includes(nodeType);
-
-        }
-
-        //----------------------------------
-        // Connector
-        //----------------------------------
-
-        if (type === "CONNECTOR") {
-
-            return nodeType === "CONNECTOR";
-
-        }
-
-        //----------------------------------
-        // Coupling
-        //----------------------------------
-
-        if (type === "COUPLING") {
-
-            return nodeType === "COUPLING";
-
-        }
-
-        //----------------------------------
-        // Hub
-        //----------------------------------
-
-        if (type === "HUB") {
-
-            return nodeType === "HUB";
-
-        }
-
-        //----------------------------------
-        // Locknut
-        //----------------------------------
-
-        if (type === "LOCKNUT") {
-
-            return nodeType === "LOCKNUT";
-
-        }
-
-        //----------------------------------
-        // LB
-        //----------------------------------
-
-        if (type === "LB") {
-
-            return nodeType === "LB";
-
-        }
-
-        //----------------------------------
-        // LL
-        //----------------------------------
-
-        if (type === "LL") {
-
-            return nodeType === "LL";
-
-        }
-
-        //----------------------------------
-        // LR
-        //----------------------------------
-
-        if (type === "LR") {
-
-            return nodeType === "LR";
-
-        }
-
-        //----------------------------------
-        // T
-        //----------------------------------
-
-        if (type === "T") {
-
-            return nodeType === "T";
-
-        }
-
-        //----------------------------------
-        // Conduit
-        //----------------------------------
-
-        if (type === "CONDUIT") {
-
-            return String(item.Type || "")
-                .toUpperCase() === "CONDUIT";
-
-        }
-
-        //----------------------------------
-        // Generic Fitting
-        //----------------------------------
-
-        if (type === "FITTING") {
-
-            return String(item.Type || "")
-                .toUpperCase() === "FITTING";
-
-        }
-
-        return false;
-
-    });
+    );
 
 }
 

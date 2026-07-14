@@ -93,6 +93,12 @@ function renderInspectorAssembly(link) {
 
                             </div>
 
+                            <div class="assembly-qty">
+
+                                Qty: ${item.part?.qty ?? 1}
+
+                            </div>
+
                             <div class="assembly-desc">
 
                                 ${item.material?.Description || "Click to Select"}

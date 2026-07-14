@@ -78,24 +78,30 @@ function buildHardwarePanel() {
 
             card.innerHTML = `
 
-                <button class="assembly-remove">
+    <button class="assembly-remove">
 
-                    ✕
+        ✕
 
-                </button>
+    </button>
 
-                <img
-                    class="assembly-image"
-                    src="${image}"
-                >
+    <img
+        class="assembly-image"
+        src="${image}"
+    >
 
-                <div class="assembly-code">
+    <div class="assembly-code">
 
-                    ${hardware.CatalogNumber}
+        ${hardware.CatalogNumber}
 
-                </div>
+    </div>
 
-            `;
+    <div class="assembly-qty">
+
+        Qty: ${hardware.qty ?? 1}
+
+    </div>
+
+`;
 
             //----------------------------------
             // Remove
@@ -179,65 +185,64 @@ function buildHardwarePanel() {
 
 function getHardwareModalList(list) {
 
-    const allowed = [
-
-        "CONNECTOR",
-        "COUPLING",
-        "HUB",
-        "LOCKNUT",
-        "LB",
-        "LL",
-        "LR",
-        "T",
-        "C",
-        "ELBOW",
-        "NIPPLE",
-        "GROUND BUSHING",
-        "ADAPTER",
-        "BOX"
-
-    ];
-
     return list
 
-        .filter(item =>
+        //----------------------------------
+        // Everything Except Equipment
+        //----------------------------------
 
-            String(item.Type || "").toUpperCase() === "FITTING"
+        .filter(item => !item.Placeable)
 
-        )
-
-        .filter(item =>
-
-            allowed.includes(
-
-                String(item.NodeType || "")
-                    .toUpperCase()
-                    .trim()
-
-            )
-
-        )
+        //----------------------------------
+        // Sort
+        //----------------------------------
 
         .sort((a, b) => {
+
+            //----------------------------------
+            // Node Type
+            //----------------------------------
+
+            const nodeCompare =
+
+                String(a.NodeType || "")
+                    .localeCompare(
+
+                        String(b.NodeType || "")
+
+                    );
+
+            if (nodeCompare !== 0)
+
+                return nodeCompare;
+
+            //----------------------------------
+            // Size
+            //----------------------------------
 
             const sizeCompare =
 
                 String(a.Size || "")
-                    .localeCompare(String(b.Size || ""));
+                    .localeCompare(
+
+                        String(b.Size || "")
+
+                    );
 
             if (sizeCompare !== 0)
+
                 return sizeCompare;
 
-            const typeCompare =
+            //----------------------------------
+            // Catalog
+            //----------------------------------
 
-                String(a.NodeType || "")
-                    .localeCompare(String(b.NodeType || ""));
+            return String(a.CatalogNumber || "")
+                .localeCompare(
 
-            if (typeCompare !== 0)
-                return typeCompare;
+                    String(b.CatalogNumber || "")
 
-            return String(a.Description || "")
-                .localeCompare(String(b.Description || ""));
+                );
 
         });
 
@@ -250,14 +255,86 @@ function getHardwareModalList(list) {
 function handleHardwareClick(item) {
 
     //----------------------------------
-    // Always Add
+    // Default Quantity
+    //----------------------------------
+
+    let qty = 1;
+
+    const nodeType = String(
+
+        item.NodeType || ""
+
+    ).toUpperCase();
+
+    //----------------------------------
+    // Pipe / Wire
+    //----------------------------------
+
+    if (
+
+        nodeType === "PIPE" ||
+
+        nodeType === "WIRE"
+
+    ) {
+
+        const value = prompt(
+
+            `Enter quantity for ${item.CatalogNumber}`,
+
+            1
+
+        );
+
+        //----------------------------------
+        // Cancel
+        //----------------------------------
+
+        if (value === null) {
+
+            return;
+
+        }
+
+        qty = Number(value);
+
+        //----------------------------------
+        // Validate
+        //----------------------------------
+
+        if (
+
+            Number.isNaN(qty) ||
+
+            qty <= 0
+
+        ) {
+
+            alert("Please enter a valid quantity.");
+
+            return;
+
+        }
+
+    }
+
+    //----------------------------------
+    // Clone Hardware
+    //----------------------------------
+
+    const hardware = structuredClone(item);
+
+    hardware.qty = qty;
+
+    //----------------------------------
+    // Add Hardware
     //----------------------------------
 
     addHardware(
 
         currentConnection,
 
-        structuredClone(item)
+        hardware
 
     );
 

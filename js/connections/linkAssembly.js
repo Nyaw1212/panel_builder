@@ -9,7 +9,7 @@ function updateLinkAssembly(link) {
     const assembly = [];
 
     //----------------------------------
-    // Create Generic Fittings
+    // Create Generic Assembly Slots
     //----------------------------------
 
     for (let i = 0; i < 10; i++) {
@@ -18,8 +18,6 @@ function updateLinkAssembly(link) {
 
             id: crypto.randomUUID(),
 
-            type: "Fitting",
-
             slot: i + 1,
 
             catalog: "",
@@ -27,6 +25,8 @@ function updateLinkAssembly(link) {
             description: "",
 
             material: null,
+
+            qty: 1,
 
             editable: true
 
@@ -51,6 +51,8 @@ function updateLinkAssembly(link) {
             part.description = existing.description || "";
 
             part.material = existing.material || null;
+
+            part.qty = existing.qty ?? 1;
 
         });
 
