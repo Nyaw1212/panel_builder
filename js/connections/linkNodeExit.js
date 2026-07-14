@@ -3,6 +3,12 @@
 //----------------------------------
 
 //----------------------------------
+// Exit Distance
+//----------------------------------
+
+const NODE_EXIT_DISTANCE = SETTINGS.cellSize;
+
+//----------------------------------
 // Get Node Exit Point
 //----------------------------------
 
@@ -40,31 +46,29 @@ function getNodeExitPoint(
     }
 
     //----------------------------------
-    // Exit Offset
+    // Long Exit Segment
     //----------------------------------
-
-    const OFFSET = 24;
 
     switch (node.dataset.side) {
 
         case "left":
 
-            point.x -= OFFSET;
+            point.x -= NODE_EXIT_DISTANCE;
             break;
 
         case "right":
 
-            point.x += OFFSET;
+            point.x += NODE_EXIT_DISTANCE;
             break;
 
         case "top":
 
-            point.y -= OFFSET;
+            point.y -= NODE_EXIT_DISTANCE;
             break;
 
         case "bottom":
 
-            point.y += OFFSET;
+            point.y += NODE_EXIT_DISTANCE;
             break;
 
     }
@@ -97,9 +101,85 @@ function getNodeGridCell(
 
     }
 
-    const cell = pixelToGrid(exit);
+    const cell = pixelToGrid(
 
-    return findNearestFreeCell(cell);
+        exit
+
+    );
+
+    return findNearestFreeCell(
+
+        cell
+
+    );
+
+}
+
+//----------------------------------
+// Get Exit Direction
+//----------------------------------
+
+function getNodeExitDirection(
+
+    panelId,
+    connectionId
+
+) {
+
+    const node = getRegisteredConnectionNode(
+
+        panelId,
+        connectionId
+
+    );
+
+    if (!node) {
+
+        return null;
+
+    }
+
+    switch (node.dataset.side) {
+
+        case "left":
+
+            return {
+
+                x: -1,
+                y: 0
+
+            };
+
+        case "right":
+
+            return {
+
+                x: 1,
+                y: 0
+
+            };
+
+        case "top":
+
+            return {
+
+                x: 0,
+                y: -1
+
+            };
+
+        case "bottom":
+
+            return {
+
+                x: 0,
+                y: 1
+
+            };
+
+    }
+
+    return null;
 
 }
 
@@ -128,10 +208,18 @@ function debugNodeExit(
 
     );
 
+    const dir = getNodeExitDirection(
+
+        panelId,
+        connectionId
+
+    );
+
     console.group("Node Exit");
 
     console.log("Exit Pixel", exit);
     console.log("Grid Cell", cell);
+    console.log("Direction", dir);
 
     console.groupEnd();
 
@@ -143,4 +231,5 @@ function debugNodeExit(
 
 window.getNodeExitPoint = getNodeExitPoint;
 window.getNodeGridCell = getNodeGridCell;
+window.getNodeExitDirection = getNodeExitDirection;
 window.debugNodeExit = debugNodeExit;

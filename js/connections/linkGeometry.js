@@ -32,21 +32,50 @@ function updateLinkGeometry(link) {
 
     if (!link) return;
 
-    const start = getNodeExitPoint(
+    //----------------------------------
+    // Connector Centers
+    //----------------------------------
+
+    const startCenter = getConnectionCenter(
 
         link.start.panelId,
         link.start.connectionId
 
     );
 
-    const end = getNodeExitPoint(
+    const endCenter = getConnectionCenter(
 
         link.end.panelId,
         link.end.connectionId
 
     );
 
-    if (!start || !end) {
+    //----------------------------------
+    // Exit Points
+    //----------------------------------
+
+    const startExit = getNodeExitPoint(
+
+        link.start.panelId,
+        link.start.connectionId
+
+    );
+
+    const endExit = getNodeExitPoint(
+
+        link.end.panelId,
+        link.end.connectionId
+
+    );
+
+    if (
+
+        !startCenter ||
+        !endCenter ||
+        !startExit ||
+        !endExit
+
+    ) {
 
         clearLinkGeometry(link);
 
@@ -54,11 +83,17 @@ function updateLinkGeometry(link) {
 
     }
 
+    //----------------------------------
+    // Build Route
+    //----------------------------------
+
     const route = createRoute(
 
         link,
-        start,
-        end
+        startCenter,
+        startExit,
+        endExit,
+        endCenter
 
     );
 
@@ -75,7 +110,15 @@ function updateLinkGeometry(link) {
 // Create Route
 //----------------------------------
 
-function createRoute(link, start, end) {
+function createRoute(
+
+    link,
+    startCenter,
+    startExit,
+    endExit,
+    endCenter
+
+) {
 
     //----------------------------------
     // Get Grid Cells
@@ -99,8 +142,8 @@ function createRoute(link, start, end) {
 
         return [
 
-            start,
-            end
+            startCenter,
+            endCenter
 
         ];
 
@@ -112,8 +155,11 @@ function createRoute(link, start, end) {
 
     console.group("Pathfinding");
 
-    console.log("Start Pixel", start);
-    console.log("End Pixel", end);
+    console.log("Start Center", startCenter);
+    console.log("Start Exit", startExit);
+
+    console.log("End Exit", endExit);
+    console.log("End Center", endCenter);
 
     console.log("Start Cell", startCell);
     console.log("End Cell", endCell);
@@ -149,8 +195,10 @@ function createRoute(link, start, end) {
 
         return [
 
-            start,
-            end
+            startCenter,
+            startExit,
+            endExit,
+            endCenter
 
         ];
 
@@ -175,12 +223,13 @@ function createRoute(link, start, end) {
     );
 
     //----------------------------------
-    // Convert To Pixels
+    // Build Pixel Route
     //----------------------------------
 
     const points = [
 
-        start
+        startCenter,
+        startExit
 
     ];
 
@@ -196,7 +245,8 @@ function createRoute(link, start, end) {
 
     points.push(
 
-        end
+        endExit,
+        endCenter
 
     );
 
