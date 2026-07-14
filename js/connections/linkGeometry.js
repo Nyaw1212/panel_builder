@@ -56,10 +56,11 @@ function updateLinkGeometry(link) {
 
     const route = createRoute(
 
-        start,
-        end
+    link,
+    start,
+    end
 
-    );
+);
 
     setLinkGeometry(
 
@@ -75,72 +76,143 @@ function updateLinkGeometry(link) {
 // Create Route
 //----------------------------------
 
-function createRoute(start, end) {
+function createRoute(link, start, end) {
 
     const points = [];
 
-    const dx = Math.abs(end.x - start.x);
-    const dy = Math.abs(end.y - start.y);
-
     //----------------------------------
-    // Horizontal First
+    // Get Connection Sides
     //----------------------------------
 
-    if (dx >= dy) {
+    const startNode = getRegisteredConnectionNode(
 
-        const midX =
+        link.start.panelId,
+        link.start.connectionId
 
-            (start.x + end.x) / 2;
+    );
+
+    const endNode = getRegisteredConnectionNode(
+
+        link.end.panelId,
+        link.end.connectionId
+
+    );
+
+    const startSide = startNode?.dataset.side;
+    const endSide = endNode?.dataset.side;
+
+    //----------------------------------
+    // Exit Distance
+    //----------------------------------
+
+    const EXIT = SETTINGS.cellSize * 0.45;
+
+    const p1 = { ...start };
+    const p2 = { ...end };
+
+    //----------------------------------
+    // Leave Start
+    //----------------------------------
+
+    switch (startSide) {
+
+        case "left":
+            p1.x -= EXIT;
+            break;
+
+        case "right":
+            p1.x += EXIT;
+            break;
+
+        case "top":
+            p1.y -= EXIT;
+            break;
+
+        case "bottom":
+            p1.y += EXIT;
+            break;
+
+    }
+
+    //----------------------------------
+    // Enter End
+    //----------------------------------
+
+    switch (endSide) {
+
+        case "left":
+            p2.x -= EXIT;
+            break;
+
+        case "right":
+            p2.x += EXIT;
+            break;
+
+        case "top":
+            p2.y -= EXIT;
+            break;
+
+        case "bottom":
+            p2.y += EXIT;
+            break;
+
+    }
+
+    //----------------------------------
+    // Horizontal vs Vertical
+    //----------------------------------
+
+    if (Math.abs(p2.x - p1.x) >= Math.abs(p2.y - p1.y)) {
+
+        const midX = (p1.x + p2.x) / 2;
 
         points.push(start);
 
+        points.push(p1);
+
         points.push({
 
             x: midX,
-
-            y: start.y
+            y: p1.y
 
         });
 
         points.push({
 
             x: midX,
-
-            y: end.y
+            y: p2.y
 
         });
+
+        points.push(p2);
 
         points.push(end);
 
     }
 
-    //----------------------------------
-    // Vertical First
-    //----------------------------------
-
     else {
 
-        const midY =
-
-            (start.y + end.y) / 2;
+        const midY = (p1.y + p2.y) / 2;
 
         points.push(start);
 
+        points.push(p1);
+
         points.push({
 
-            x: start.x,
-
+            x: p1.x,
             y: midY
 
         });
 
         points.push({
 
-            x: end.x,
-
+            x: p2.x,
             y: midY
 
         });
+
+        points.push(p2);
 
         points.push(end);
 

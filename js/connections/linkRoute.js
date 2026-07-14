@@ -6,28 +6,37 @@ function createRoute(start, end) {
 
     const points = [];
 
-    const dx = Math.abs(end.x - start.x);
-    const dy = Math.abs(end.y - start.y);
+    const EXIT = SETTINGS.cellSize * 0.40;
+
+    //----------------------------------
+    // Leave Start
+    //----------------------------------
+
+    const p1 = { ...start };
+    const p2 = { ...end };
 
     //----------------------------------
     // Horizontal First
     //----------------------------------
 
-    if (dx >= dy) {
+    if (Math.abs(end.x - start.x) >= Math.abs(end.y - start.y)) {
 
-        const midX = (start.x + end.x) / 2;
+        p1.x += end.x > start.x ? EXIT : -EXIT;
+        p2.x += end.x > start.x ? -EXIT : EXIT;
 
         points.push(start);
 
-        points.push({
-            x: midX,
-            y: start.y
-        });
+        points.push(p1);
 
         points.push({
-            x: midX,
-            y: end.y
+
+            x: p2.x,
+
+            y: p1.y
+
         });
+
+        points.push(p2);
 
         points.push(end);
 
@@ -39,19 +48,22 @@ function createRoute(start, end) {
 
     else {
 
-        const midY = (start.y + end.y) / 2;
+        p1.y += end.y > start.y ? EXIT : -EXIT;
+        p2.y += end.y > start.y ? -EXIT : EXIT;
 
         points.push(start);
 
-        points.push({
-            x: start.x,
-            y: midY
-        });
+        points.push(p1);
 
         points.push({
-            x: end.x,
-            y: midY
+
+            x: p1.x,
+
+            y: p2.y
+
         });
+
+        points.push(p2);
 
         points.push(end);
 
