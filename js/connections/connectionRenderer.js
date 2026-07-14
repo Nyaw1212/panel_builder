@@ -102,6 +102,12 @@ function drawKnockouts(item, side) {
 
         );
 
+        //----------------------------------
+// Routing Side
+//----------------------------------
+
+node.dataset.side = side;
+
         registerConnectionNode(
 
             item.id,

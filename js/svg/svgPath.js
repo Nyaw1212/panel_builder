@@ -8,44 +8,48 @@
 
 function drawSVGPath(link) {
 
-    const start =
-        getConnectionCenter(
-
-            link.start.panelId,
-
-            link.start.connectionId
-
-        );
-
-    const end =
-        getConnectionCenter(
-
-            link.end.panelId,
-
-            link.end.connectionId
-
-        );
-
-    if (!start || !end) return;
-
     //----------------------------------
-    // Path
+    // Geometry
     //----------------------------------
 
-    const midX =
-        (start.x + end.x) / 2;
+    const points = getLinkPoints(link);
 
-    const d = [
-    `M ${start.x} ${start.y}`,
-    `L ${end.x} ${start.y}`,
-    `L ${end.x} ${end.y}`
-].join(" ");
+    if (!points || points.length < 2) {
+
+        return;
+
+    }
+
+    //----------------------------------
+    // Build Path
+    //----------------------------------
+
+    let d =
+
+        `M ${points[0].x} ${points[0].y}`;
+
+    for (
+
+        let i = 1;
+
+        i < points.length;
+
+        i++
+
+    ) {
+
+        d +=
+
+            ` L ${points[i].x} ${points[i].y}`;
+
+    }
 
     //----------------------------------
     // SVG
     //----------------------------------
 
     const path =
+
         document.createElementNS(
 
             "http://www.w3.org/2000/svg",
@@ -54,7 +58,13 @@ function drawSVGPath(link) {
 
         );
 
-    path.setAttribute("d", d);
+    path.setAttribute(
+
+        "d",
+
+        d
+
+    );
 
     applySVGPathStyle(path);
 

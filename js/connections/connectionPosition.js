@@ -142,9 +142,74 @@ function getConnectionCenter(
         y:
             rect.top -
             gridRect.top +
-            (rect.height / 2)+20
+            (rect.height / 2) + 20
 
     };
+
+}
+
+//----------------------------------
+// Connection Exit Point
+//----------------------------------
+
+function getConnectionExitPoint(
+    panelId,
+    connectionId
+) {
+
+    const node =
+        getRegisteredConnectionNode(
+
+            panelId,
+
+            connectionId
+
+        );
+
+    if (!node) return null;
+
+    const point =
+        getConnectionCenter(
+
+            panelId,
+
+            connectionId
+
+        );
+
+    if (!point) return null;
+
+    const OFFSET = 24;
+
+    switch (node.dataset.side) {
+
+        case "left":
+
+            point.x -= OFFSET;
+
+            break;
+
+        case "right":
+
+            point.x += OFFSET;
+
+            break;
+
+        case "top":
+
+            point.y -= OFFSET;
+
+            break;
+
+        case "bottom":
+
+            point.y += OFFSET;
+
+            break;
+
+    }
+
+    return point;
 
 }
 
@@ -155,3 +220,4 @@ function getConnectionCenter(
 window.getKnockoutPositions = getKnockoutPositions;
 window.getNodePosition = getNodePosition;
 window.getConnectionCenter = getConnectionCenter;
+window.getConnectionExitPoint = getConnectionExitPoint;
