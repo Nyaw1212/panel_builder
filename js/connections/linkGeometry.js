@@ -86,6 +86,14 @@ function createRoute(link, startCenter, startExit, endExit, endCenter) {
   }
 
   //----------------------------------
+  // Node Sides
+  //----------------------------------
+
+  const startSide = getNodeSide(link.start.panelId, link.start.connectionId);
+
+  const endSide = getNodeSide(link.end.panelId, link.end.connectionId);
+
+  //----------------------------------
   // Debug
   //----------------------------------
 
@@ -137,17 +145,51 @@ function createRoute(link, startCenter, startExit, endExit, endCenter) {
   );
 
   //----------------------------------
+  // Build Grid Points
+  //----------------------------------
+
+  const gridPoints = [];
+
+  for (let i = 1; i < simplified.length - 1; i++) {
+    gridPoints.push(gridToPixel(simplified[i]));
+  }
+
+  //----------------------------------
+  // First / Last Grid Point
+  //----------------------------------
+
+  const firstGridPoint = gridPoints.length ? gridPoints[0] : endExit;
+
+  const lastGridPoint = gridPoints.length
+    ? gridPoints[gridPoints.length - 1]
+    : startExit;
+
+  //----------------------------------
+  // Transition Points
+  //----------------------------------
+
+  const startTransition = getStartTransition(
+    startExit,
+    firstGridPoint,
+    startSide,
+  );
+
+  const endTransition = getEndTransition(lastGridPoint, endExit, endSide);
+
+  //----------------------------------
   // Build Pixel Route
   //----------------------------------
 
   const points = [startCenter, startExit];
 
-  //----------------------------------
-  // Only Convert Intermediate Cells
-  //----------------------------------
+  if (startTransition) {
+    points.push(startTransition);
+  }
 
-  for (let i = 1; i < simplified.length - 1; i++) {
-    points.push(gridToPixel(simplified[i]));
+  points.push(...gridPoints);
+
+  if (endTransition) {
+    points.push(endTransition);
   }
 
   points.push(endExit, endCenter);

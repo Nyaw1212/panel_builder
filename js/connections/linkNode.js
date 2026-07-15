@@ -2,7 +2,7 @@
 // Link Node
 //----------------------------------
 
-const LINK_NODE_RADIUS = 12;
+const LINK_NODE_SIZE = 24;
 const LINK_DELETE_RADIUS = 8;
 
 //----------------------------------
@@ -10,32 +10,27 @@ const LINK_DELETE_RADIUS = 8;
 //----------------------------------
 
 function getLinkNodePosition(link) {
+  const points = getLinkPoints(link);
 
-    const points = getLinkPoints(link);
+  if (points.length < 2) return null;
 
-    if (points.length < 2) return null;
+  const start = points[0];
+  const end = points[1];
 
-    const start = points[0];
-    const end = points[1];
+  //----------------------------------
+  // Position on horizontal segment
+  //----------------------------------
 
-    //----------------------------------
-    // Position on horizontal segment
-    //----------------------------------
+  const OFFSET = 80;
 
-    const OFFSET = 80;
+  return {
+    x:
+      start.x +
+      Math.sign(end.x - start.x) *
+        Math.min(OFFSET, Math.abs(end.x - start.x) / 2),
 
-    return {
-
-        x: start.x + Math.sign(end.x - start.x) *
-            Math.min(
-                OFFSET,
-                Math.abs(end.x - start.x) / 2
-            ),
-
-        y: start.y
-
-    };
-
+    y: start.y,
+  };
 }
 
 //----------------------------------
@@ -43,208 +38,181 @@ function getLinkNodePosition(link) {
 //----------------------------------
 
 function drawLinkNode(link) {
+  const position = getLinkNodePosition(link);
 
-    const position = getLinkNodePosition(link);
+  if (!position) return;
 
-    if (!position) return;
+  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
-    const group =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "g"
-        );
+  //----------------------------------
+  // Hit Area
+  //----------------------------------
 
-    //----------------------------------
-    // Hit Area
-    //----------------------------------
+  const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
 
-    const hit =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "circle"
-        );
+  hit.setAttribute("cx", position.x);
+  hit.setAttribute("cy", position.y);
+  hit.setAttribute("r", 40);
 
-    hit.setAttribute("cx", position.x);
-    hit.setAttribute("cy", position.y);
-    hit.setAttribute("r", 20);
+  hit.setAttribute("fill", "transparent");
 
-    hit.setAttribute("fill", "transparent");
+  hit.style.pointerEvents = "all";
+  hit.style.cursor = "pointer";
 
-    hit.style.pointerEvents = "all";
-    hit.style.cursor = "pointer";
+  //----------------------------------
+  // Main Square
+  //----------------------------------
 
-    //----------------------------------
-    // Main Circle
-    //----------------------------------
+  const square = document.createElementNS("http://www.w3.org/2000/svg", "rect");
 
-    const circle =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "circle"
-        );
+  square.setAttribute("x", position.x - LINK_NODE_SIZE / 2);
+  square.setAttribute("y", position.y - LINK_NODE_SIZE / 2);
 
-    circle.setAttribute("cx", position.x);
-    circle.setAttribute("cy", position.y);
-    circle.setAttribute("r", LINK_NODE_RADIUS);
+  square.setAttribute("width", LINK_NODE_SIZE);
+  square.setAttribute("height", LINK_NODE_SIZE);
 
-    circle.setAttribute("fill", "#ffffff");
-    circle.setAttribute("stroke", "#2563eb");
-    circle.setAttribute("stroke-width", "2");
+  square.setAttribute("rx", 2);
+  square.setAttribute("ry", 2);
 
-    circle.style.pointerEvents = "none";
+  square.setAttribute("fill", "#ffffff");
+  square.setAttribute("stroke", "#2563eb");
+  square.setAttribute("stroke-width", "2");
 
-    //----------------------------------
-    // Delete Button
-    //----------------------------------
+  square.style.pointerEvents = "none";
 
-    const deleteX = position.x + 20;
-    const deleteY = position.y - 10;
+  //----------------------------------
+  // Delete Button
+  //----------------------------------
 
-    const deleteButton =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "circle"
-        );
+  const deleteX = position.x + 20;
+  const deleteY = position.y - 10;
 
-    deleteButton.setAttribute("cx", deleteX);
-    deleteButton.setAttribute("cy", deleteY);
-    deleteButton.setAttribute("r", LINK_DELETE_RADIUS);
+  const deleteButton = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "circle",
+  );
 
+  deleteButton.setAttribute("cx", deleteX);
+  deleteButton.setAttribute("cy", deleteY);
+  deleteButton.setAttribute("r", LINK_DELETE_RADIUS);
+
+  deleteButton.setAttribute("fill", "#ef4444");
+  deleteButton.setAttribute("stroke", "#ffffff");
+  deleteButton.setAttribute("stroke-width", "2");
+
+  deleteButton.style.pointerEvents = "all";
+  deleteButton.style.cursor = "pointer";
+
+  //----------------------------------
+  // Delete Hover
+  //----------------------------------
+
+  deleteButton.addEventListener("mouseenter", () => {
+    deleteButton.setAttribute("fill", "#dc2626");
+    deleteButton.setAttribute("r", LINK_DELETE_RADIUS + 1);
+  });
+
+  deleteButton.addEventListener("mouseleave", () => {
     deleteButton.setAttribute("fill", "#ef4444");
-    deleteButton.setAttribute("stroke", "#ffffff");
-    deleteButton.setAttribute("stroke-width", "2");
+    deleteButton.setAttribute("r", LINK_DELETE_RADIUS);
+  });
 
-    deleteButton.style.pointerEvents = "all";
-    deleteButton.style.cursor = "pointer";
+  //----------------------------------
+  // Delete Click
+  //----------------------------------
 
-    //----------------------------------
-    // Delete Hover
-    //----------------------------------
+  deleteButton.addEventListener("click", (e) => {
+    e.stopPropagation();
 
-    deleteButton.addEventListener("mouseenter", () => {
+    console.log("Delete Clicked");
 
-        deleteButton.setAttribute("fill", "#dc2626");
-        deleteButton.setAttribute("r", LINK_DELETE_RADIUS + 1);
+    removeLink(link.id);
+  });
 
-    });
+  //----------------------------------
+  // X Line 1
+  //----------------------------------
 
-    deleteButton.addEventListener("mouseleave", () => {
+  const x1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
 
-        deleteButton.setAttribute("fill", "#ef4444");
-        deleteButton.setAttribute("r", LINK_DELETE_RADIUS);
+  x1.setAttribute("x1", deleteX - 3);
+  x1.setAttribute("y1", deleteY - 3);
+  x1.setAttribute("x2", deleteX + 3);
+  x1.setAttribute("y2", deleteY + 3);
 
-    });
+  x1.setAttribute("stroke", "#ffffff");
+  x1.setAttribute("stroke-width", "2");
+  x1.setAttribute("stroke-linecap", "round");
 
-    //----------------------------------
-    // Delete Click
-    //----------------------------------
+  x1.style.pointerEvents = "none";
 
-    deleteButton.addEventListener("click", e => {
+  //----------------------------------
+  // X Line 2
+  //----------------------------------
 
-        e.stopPropagation();
+  const x2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
 
-        console.log("Delete Clicked");
+  x2.setAttribute("x1", deleteX + 3);
+  x2.setAttribute("y1", deleteY - 3);
+  x2.setAttribute("x2", deleteX - 3);
+  x2.setAttribute("y2", deleteY + 3);
 
-        removeLink(link.id);
+  x2.setAttribute("stroke", "#ffffff");
+  x2.setAttribute("stroke-width", "2");
+  x2.setAttribute("stroke-linecap", "round");
 
-    });
+  x2.style.pointerEvents = "none";
 
-    //----------------------------------
-    // X Line 1
-    //----------------------------------
+  //----------------------------------
+  // Hover
+  //----------------------------------
 
-    const x1 =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "line"
-        );
+  hit.addEventListener("mouseenter", () => {
+    const hover = LINK_NODE_SIZE + 6;
 
-    x1.setAttribute("x1", deleteX - 3);
-    x1.setAttribute("y1", deleteY - 3);
-    x1.setAttribute("x2", deleteX + 3);
-    x1.setAttribute("y2", deleteY + 3);
+    square.setAttribute("x", position.x - hover / 2);
+    square.setAttribute("y", position.y - hover / 2);
 
-    x1.setAttribute("stroke", "#ffffff");
-    x1.setAttribute("stroke-width", "2");
-    x1.setAttribute("stroke-linecap", "round");
+    square.setAttribute("width", hover);
+    square.setAttribute("height", hover);
+  });
 
-    x1.style.pointerEvents = "none";
+  hit.addEventListener("mouseleave", () => {
+    square.setAttribute("x", position.x - LINK_NODE_SIZE / 2);
+    square.setAttribute("y", position.y - LINK_NODE_SIZE / 2);
 
-    //----------------------------------
-    // X Line 2
-    //----------------------------------
+    square.setAttribute("width", LINK_NODE_SIZE);
+    square.setAttribute("height", LINK_NODE_SIZE);
+  });
 
-    const x2 =
-        document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "line"
-        );
+  //----------------------------------
+  // Click
+  //----------------------------------
 
-    x2.setAttribute("x1", deleteX + 3);
-    x2.setAttribute("y1", deleteY - 3);
-    x2.setAttribute("x2", deleteX - 3);
-    x2.setAttribute("y2", deleteY + 3);
+  hit.addEventListener("click", async (e) => {
+    e.stopPropagation();
 
-    x2.setAttribute("stroke", "#ffffff");
-    x2.setAttribute("stroke-width", "2");
-    x2.setAttribute("stroke-linecap", "round");
+    console.log("NODE CLICK");
 
-    x2.style.pointerEvents = "none";
+    selectLink(link);
 
-    //----------------------------------
-    // Hover
-    //----------------------------------
+    await openMaterialModal(link.nodes.start);
 
-    hit.addEventListener("mouseenter", () => {
+    drawCanvas();
+  });
 
-        circle.setAttribute(
-            "r",
-            LINK_NODE_RADIUS + 3
-        );
+  //----------------------------------
+  // Build
+  //----------------------------------
 
-    });
+  group.appendChild(hit);
+  group.appendChild(square);
 
-    hit.addEventListener("mouseleave", () => {
+  group.appendChild(deleteButton);
+  group.appendChild(x1);
+  group.appendChild(x2);
 
-        circle.setAttribute(
-            "r",
-            LINK_NODE_RADIUS
-        );
-
-    });
-
-    //----------------------------------
-    // Click
-    //----------------------------------
-
-    hit.addEventListener("click", async e => {
-
-        e.stopPropagation();
-
-        console.log("NODE CLICK");
-
-        selectLink(link);
-
-        // Reuse the existing Material Modal
-        await openMaterialModal(link.nodes.start);
-
-        drawCanvas();
-
-    });
-
-    //----------------------------------
-    // Build
-    //----------------------------------
-
-    group.appendChild(hit);
-    group.appendChild(circle);
-
-    group.appendChild(deleteButton);
-    group.appendChild(x1);
-    group.appendChild(x2);
-
-    svgLayer.appendChild(group);
-
+  svgLayer.appendChild(group);
 }
 
 //----------------------------------
