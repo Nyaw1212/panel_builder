@@ -2,10 +2,6 @@
 // SVG Path
 //----------------------------------
 
-//----------------------------------
-// Draw SVG Path
-//----------------------------------
-
 function drawSVGPath(link) {
 
     //----------------------------------
@@ -14,60 +10,89 @@ function drawSVGPath(link) {
 
     const points = getLinkPoints(link);
 
-    if (!points || points.length < 2) {
-
-        return;
-
-    }
+    if (!points || points.length < 2) return;
 
     //----------------------------------
     // Build Path
     //----------------------------------
 
-    let d =
+    let d = `M ${points[0].x} ${points[0].y}`;
 
-        `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
 
-    for (
-
-        let i = 1;
-
-        i < points.length;
-
-        i++
-
-    ) {
-
-        d +=
-
-            ` L ${points[i].x} ${points[i].y}`;
+        d += ` L ${points[i].x} ${points[i].y}`;
 
     }
 
     //----------------------------------
-    // SVG
+    // Invisible Hit Path
     //----------------------------------
 
-    const path =
-
-        document.createElementNS(
-
-            "http://www.w3.org/2000/svg",
-
-            "path"
-
-        );
-
-    path.setAttribute(
-
-        "d",
-
-        d
-
+    const hit = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
     );
+
+    hit.setAttribute("d", d);
+    hit.setAttribute("fill", "none");
+    hit.setAttribute("stroke", "transparent");
+    hit.setAttribute("stroke-width", "20");
+
+    hit.style.pointerEvents = "stroke";
+    hit.style.cursor = "pointer";
+
+    //----------------------------------
+    // Visible Path
+    //----------------------------------
+
+    const path = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "path"
+    );
+
+    path.setAttribute("d", d);
 
     applySVGPathStyle(path);
 
+    path.style.pointerEvents = "none";
+
+    //----------------------------------
+    // Hover
+    //----------------------------------
+
+    hit.addEventListener("mouseenter", () => {
+
+        path.setAttribute("stroke-width", "5");
+
+    });
+
+    hit.addEventListener("mouseleave", () => {
+
+        path.setAttribute("stroke-width", "3");
+
+    });
+
+    //----------------------------------
+    // Click
+    //----------------------------------
+
+    hit.addEventListener("click", (e) => {
+
+        e.stopPropagation();
+
+        console.log("LINK CLICK");
+
+        selectLink(link);
+
+        drawCanvas();
+
+    });
+
+    //----------------------------------
+    // Build
+    //----------------------------------
+
+    svgLayer.appendChild(hit);
     svgLayer.appendChild(path);
 
 }

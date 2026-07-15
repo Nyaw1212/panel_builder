@@ -20,6 +20,10 @@ function drawLink(link) {
 
     if (!link) return;
 
+    //----------------------------------
+    // Update
+    //----------------------------------
+
     updateLinkGeometry(link);
 
     updateLinkLength(link);
@@ -28,7 +32,16 @@ function drawLink(link) {
 
     updateLinkMaterials(link);
 
+    //----------------------------------
+    // SVG Path
+    //----------------------------------
+
     drawSVGPath(link);
+
+    //----------------------------------
+    // Link Node
+    //----------------------------------
+
     drawLinkNode(link);
 
     //----------------------------------
@@ -37,15 +50,9 @@ function drawLink(link) {
 
     if (typeof drawLinkDeleteButton === "function") {
 
-    drawLinkDeleteButton(link);
+        drawLinkDeleteButton(link);
 
-}
-
-    //----------------------------------
-    // Midpoint Node
-    //----------------------------------
-
-    
+    }
 
 }
 
