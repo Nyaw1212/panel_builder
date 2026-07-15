@@ -7,21 +7,15 @@
 //----------------------------------
 
 function initializeLinkGeometry(link) {
+  if (!link.geometry) {
+    link.geometry = {
+      type: "line",
 
-    if (!link.geometry) {
+      points: [],
+    };
+  }
 
-        link.geometry = {
-
-            type: "line",
-
-            points: []
-
-        };
-
-    }
-
-    return link.geometry;
-
+  return link.geometry;
 }
 
 //----------------------------------
@@ -29,261 +23,150 @@ function initializeLinkGeometry(link) {
 //----------------------------------
 
 function updateLinkGeometry(link) {
+  if (!link) return;
 
-    if (!link) return;
+  //----------------------------------
+  // Connector Centers
+  //----------------------------------
 
-    //----------------------------------
-    // Connector Centers
-    //----------------------------------
+  const startCenter = getConnectionCenter(
+    link.start.panelId,
+    link.start.connectionId,
+  );
 
-    const startCenter = getConnectionCenter(
+  const endCenter = getConnectionCenter(
+    link.end.panelId,
+    link.end.connectionId,
+  );
 
-        link.start.panelId,
-        link.start.connectionId
+  //----------------------------------
+  // Exit Points
+  //----------------------------------
 
-    );
+  const startExit = getNodeExitPoint(
+    link.start.panelId,
+    link.start.connectionId,
+  );
 
-    const endCenter = getConnectionCenter(
+  const endExit = getNodeExitPoint(link.end.panelId, link.end.connectionId);
 
-        link.end.panelId,
-        link.end.connectionId
+  if (!startCenter || !endCenter || !startExit || !endExit) {
+    clearLinkGeometry(link);
 
-    );
+    return;
+  }
 
-    //----------------------------------
-    // Exit Points
-    //----------------------------------
+  //----------------------------------
+  // Build Route
+  //----------------------------------
 
-    const startExit = getNodeExitPoint(
+  const route = createRoute(link, startCenter, startExit, endExit, endCenter);
 
-        link.start.panelId,
-        link.start.connectionId
-
-    );
-
-    const endExit = getNodeExitPoint(
-
-        link.end.panelId,
-        link.end.connectionId
-
-    );
-
-    if (
-
-        !startCenter ||
-        !endCenter ||
-        !startExit ||
-        !endExit
-
-    ) {
-
-        clearLinkGeometry(link);
-
-        return;
-
-    }
-
-    //----------------------------------
-    // Build Route
-    //----------------------------------
-
-    const route = createRoute(
-
-        link,
-        startCenter,
-        startExit,
-        endExit,
-        endCenter
-
-    );
-
-    setLinkGeometry(
-
-        link,
-        route
-
-    );
-
+  setLinkGeometry(link, route);
 }
 
 //----------------------------------
 // Create Route
 //----------------------------------
 
-function createRoute(
+function createRoute(link, startCenter, startExit, endExit, endCenter) {
+  //----------------------------------
+  // Get Grid Cells
+  //----------------------------------
 
-    link,
-    startCenter,
-    startExit,
-    endExit,
-    endCenter
+  const startCell = getNodeGridCell(
+    link.start.panelId,
+    link.start.connectionId,
+  );
 
-) {
+  const endCell = getNodeGridCell(link.end.panelId, link.end.connectionId);
 
-    //----------------------------------
-    // Get Grid Cells
-    //----------------------------------
+  if (!startCell || !endCell) {
+    return [startCenter, endCenter];
+  }
 
-    const startCell = getNodeGridCell(
+  //----------------------------------
+  // Debug
+  //----------------------------------
 
-        link.start.panelId,
-        link.start.connectionId
+  console.group("Pathfinding");
 
-    );
+  console.log("Start Center", startCenter);
+  console.log("Start Exit", startExit);
 
-    const endCell = getNodeGridCell(
+  console.log("End Exit", endExit);
+  console.log("End Center", endCenter);
 
-        link.end.panelId,
-        link.end.connectionId
+  console.log("Start Cell", startCell);
+  console.log("End Cell", endCell);
 
-    );
+  //----------------------------------
+  // Find Path
+  //----------------------------------
 
-    if (!startCell || !endCell) {
+  const cells = findPath(startCell, endCell);
 
-        return [
+  console.log(
+    "Grid Path",
 
-            startCenter,
-            endCenter
+    cells,
+  );
 
-        ];
+  //----------------------------------
+  // No Route
+  //----------------------------------
 
-    }
-
-    //----------------------------------
-    // Debug
-    //----------------------------------
-
-    console.group("Pathfinding");
-
-    console.log("Start Center", startCenter);
-    console.log("Start Exit", startExit);
-
-    console.log("End Exit", endExit);
-    console.log("End Center", endCenter);
-
-    console.log("Start Cell", startCell);
-    console.log("End Cell", endCell);
-
-    //----------------------------------
-    // Find Path
-    //----------------------------------
-
-    const cells = findPath(
-
-        startCell,
-        endCell
-
-    );
-
-    console.log(
-
-        "Grid Path",
-
-        cells
-
-    );
-
-    //----------------------------------
-    // No Route
-    //----------------------------------
-
-    if (!cells.length) {
-
-        console.warn("NO PATH FOUND");
-
-        console.groupEnd();
-
-        return [
-
-            startCenter,
-            startExit,
-            endExit,
-            endCenter
-
-        ];
-
-    }
-
-        //----------------------------------
-    // Compress
-    //----------------------------------
-
-    const simplified = compressGridPath(
-
-        cells
-
-    );
-
-    //----------------------------------
-    // Remove Start / End Cells
-    //----------------------------------
-
-    if (simplified.length > 2) {
-
-        simplified.shift();
-
-        simplified.pop();
-
-    }
-
-    console.log(
-
-        "Simplified Path",
-
-        simplified
-
-    );
-
-    //----------------------------------
-    // Build Pixel Route
-    //----------------------------------
-
-    const points = [
-
-        startCenter,
-        startExit
-
-    ];
-
-    for (const cell of simplified) {
-
-        points.push(
-
-            gridToPixel(cell)
-
-        );
-
-    }
-
-    points.push(
-
-        endExit,
-        endCenter
-
-    );
-
-    //----------------------------------
-    // Optimize
-    //----------------------------------
-
-    const optimized = optimizePixelRoute(
-
-        points
-
-    );
-
-    console.log(
-
-        "Pixel Route",
-
-        optimized
-
-    );
+  if (!cells.length) {
+    console.warn("NO PATH FOUND");
 
     console.groupEnd();
 
-    return optimized;
+    return [startCenter, startExit, endExit, endCenter];
+  }
 
+  //----------------------------------
+  // Compress
+  //----------------------------------
+
+  const simplified = compressGridPath(cells);
+
+  console.log(
+    "Simplified Path",
+
+    simplified,
+  );
+
+  //----------------------------------
+  // Build Pixel Route
+  //----------------------------------
+
+  const points = [startCenter, startExit];
+
+  //----------------------------------
+  // Only Convert Intermediate Cells
+  //----------------------------------
+
+  for (let i = 1; i < simplified.length - 1; i++) {
+    points.push(gridToPixel(simplified[i]));
+  }
+
+  points.push(endExit, endCenter);
+
+  //----------------------------------
+  // Optimize
+  //----------------------------------
+
+  const optimized = optimizePixelRoute(points);
+
+  console.log(
+    "Pixel Route",
+
+    optimized,
+  );
+
+  console.groupEnd();
+
+  return optimized;
 }
 
 //----------------------------------
@@ -291,15 +174,9 @@ function createRoute(
 //----------------------------------
 
 function setLinkGeometry(link, points) {
+  const geometry = initializeLinkGeometry(link);
 
-    const geometry = initializeLinkGeometry(link);
-
-    geometry.points = Array.isArray(points)
-
-        ? [...points]
-
-        : [];
-
+  geometry.points = Array.isArray(points) ? [...points] : [];
 }
 
 //----------------------------------
@@ -307,9 +184,7 @@ function setLinkGeometry(link, points) {
 //----------------------------------
 
 function getLinkGeometry(link) {
-
-    return initializeLinkGeometry(link);
-
+  return initializeLinkGeometry(link);
 }
 
 //----------------------------------
@@ -317,9 +192,7 @@ function getLinkGeometry(link) {
 //----------------------------------
 
 function getLinkPoints(link) {
-
-    return initializeLinkGeometry(link).points;
-
+  return initializeLinkGeometry(link).points;
 }
 
 //----------------------------------
@@ -327,9 +200,7 @@ function getLinkPoints(link) {
 //----------------------------------
 
 function clearLinkGeometry(link) {
-
-    initializeLinkGeometry(link).points = [];
-
+  initializeLinkGeometry(link).points = [];
 }
 
 //----------------------------------

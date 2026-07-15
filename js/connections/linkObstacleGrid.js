@@ -2,121 +2,103 @@
 // Link Obstacle Grid
 //----------------------------------
 
+//----------------------------------
+// Grid Values
+//----------------------------------
+
 const GRID_EMPTY = 0;
 const GRID_BLOCKED = 1;
+const GRID_CLEARANCE = 2;
 
 //----------------------------------
 // Build Grid
 //----------------------------------
 
 function buildObstacleGrid() {
+  //----------------------------------
+  // Grid Size
+  //----------------------------------
+
+  const rows = SETTINGS.rows;
+  const cols = SETTINGS.columns;
+
+  //----------------------------------
+  // Create Empty Grid
+  //----------------------------------
+
+  const grid = [];
+
+  for (let y = 0; y < rows; y++) {
+    grid[y] = [];
+
+    for (let x = 0; x < cols; x++) {
+      grid[y][x] = GRID_EMPTY;
+    }
+  }
+
+  //----------------------------------
+  // Mark Equipment
+  //----------------------------------
+
+  const GRID_CLEARANCE_RADIUS = 1;
+
+  getLayout().forEach((item) => {
+    if (!item) return;
 
     //----------------------------------
-    // Grid Size
+    // Cell Position
     //----------------------------------
 
-    const rows = SETTINGS.rows;
-    const cols = SETTINGS.columns;
+    const startCol = item.startCell % SETTINGS.columns;
+
+    const startRow = Math.floor(item.startCell / SETTINGS.columns);
 
     //----------------------------------
-    // Create Empty Grid
+    // Occupied Cells
     //----------------------------------
 
-    const grid = [];
+    for (let y = 0; y < item.height; y++) {
+      for (let x = 0; x < item.width; x++) {
+        const gx = startCol + x;
+        const gy = startRow + y;
 
-    for (let y = 0; y < rows; y++) {
-
-        grid[y] = [];
-
-        for (let x = 0; x < cols; x++) {
-
-            grid[y][x] = GRID_EMPTY;
-
+        if (gx < 0 || gy < 0 || gx >= cols || gy >= rows) {
+          continue;
         }
 
-    }
-
-    //----------------------------------
-    // Mark Equipment
-    //----------------------------------
-
-    getLayout().forEach(item => {
-
-        if (!item) return;
+        grid[gy][gx] = GRID_BLOCKED;
 
         //----------------------------------
-        // Cell Position
-        //----------------------------------
-
-        const startCol =
-
-            item.startCell %
-
-            SETTINGS.columns;
-
-        const startRow =
-
-            Math.floor(
-
-                item.startCell /
-
-                SETTINGS.columns
-
-            );
-
-        //----------------------------------
-        // Occupied Cells
+        // Add Clearance
         //----------------------------------
 
         for (
-
-            let y = 0;
-
-            y < item.height;
-
-            y++
-
+          let oy = -GRID_CLEARANCE_RADIUS;
+          oy <= GRID_CLEARANCE_RADIUS;
+          oy++
         ) {
+          for (
+            let ox = -GRID_CLEARANCE_RADIUS;
+            ox <= GRID_CLEARANCE_RADIUS;
+            ox++
+          ) {
+            const cx = gx + ox;
+            const cy = gy + oy;
 
-            for (
-
-                let x = 0;
-
-                x < item.width;
-
-                x++
-
-            ) {
-
-                const gx = startCol + x;
-                const gy = startRow + y;
-
-                if (
-
-                    gx < 0 ||
-
-                    gy < 0 ||
-
-                    gx >= cols ||
-
-                    gy >= rows
-
-                ) {
-
-                    continue;
-
-                }
-
-                grid[gy][gx] = GRID_BLOCKED;
-
+            if (cx < 0 || cy < 0 || cx >= cols || cy >= rows) {
+              continue;
             }
 
+            if (grid[cy][cx] === GRID_EMPTY) {
+              grid[cy][cx] = GRID_CLEARANCE;
+            }
+          }
         }
+      }
+    }
+  });
 
-    });
-
-    return grid;
-
+  return grid;
 }
 
 //----------------------------------
@@ -130,11 +112,7 @@ let obstacleGrid = [];
 //----------------------------------
 
 function refreshObstacleGrid() {
-
-    obstacleGrid =
-
-        buildObstacleGrid();
-
+  obstacleGrid = buildObstacleGrid();
 }
 
 //----------------------------------
@@ -142,9 +120,7 @@ function refreshObstacleGrid() {
 //----------------------------------
 
 function getObstacleGrid() {
-
-    return obstacleGrid;
-
+  return obstacleGrid;
 }
 
 //----------------------------------
@@ -152,31 +128,16 @@ function getObstacleGrid() {
 //----------------------------------
 
 function isBlocked(x, y) {
+  if (
+    y < 0 ||
+    x < 0 ||
+    y >= obstacleGrid.length ||
+    x >= obstacleGrid[0].length
+  ) {
+    return true;
+  }
 
-    if (
-
-        y < 0 ||
-
-        x < 0 ||
-
-        y >= obstacleGrid.length ||
-
-        x >= obstacleGrid[0].length
-
-    ) {
-
-        return true;
-
-    }
-
-    return (
-
-        obstacleGrid[y][x] ===
-
-        GRID_BLOCKED
-
-    );
-
+  return obstacleGrid[y][x] === GRID_BLOCKED;
 }
 
 //----------------------------------
@@ -184,27 +145,11 @@ function isBlocked(x, y) {
 //----------------------------------
 
 function pixelToGrid(point) {
+  return {
+    x: Math.floor(point.x / SETTINGS.cellSize),
 
-    return {
-
-        x: Math.floor(
-
-            point.x /
-
-            SETTINGS.cellSize
-
-        ),
-
-        y: Math.floor(
-
-            point.y /
-
-            SETTINGS.cellSize
-
-        )
-
-    };
-
+    y: Math.floor(point.y / SETTINGS.cellSize),
+  };
 }
 
 //----------------------------------
@@ -212,27 +157,11 @@ function pixelToGrid(point) {
 //----------------------------------
 
 function gridToPixel(cell) {
+  return {
+    x: cell.x * SETTINGS.cellSize + SETTINGS.cellSize / 2,
 
-    return {
-
-        x:
-
-            cell.x *
-
-            SETTINGS.cellSize +
-
-            SETTINGS.cellSize / 2,
-
-        y:
-
-            cell.y *
-
-            SETTINGS.cellSize +
-
-            SETTINGS.cellSize / 2
-
-    };
-
+    y: cell.y * SETTINGS.cellSize + SETTINGS.cellSize / 2,
+  };
 }
 
 //----------------------------------
@@ -240,26 +169,19 @@ function gridToPixel(cell) {
 //----------------------------------
 
 function printObstacleGrid() {
-
-    console.table(
-
-        obstacleGrid
-
-    );
-
+  console.table(obstacleGrid);
 }
+
 //----------------------------------
 // Debug Grid
 //----------------------------------
 
 function debugObstacleGrid() {
+  console.group("Obstacle Grid");
 
-    console.group("Obstacle Grid");
+  console.table(obstacleGrid);
 
-    console.table(obstacleGrid);
-
-    console.groupEnd();
-
+  console.groupEnd();
 }
 
 //----------------------------------
@@ -267,26 +189,55 @@ function debugObstacleGrid() {
 //----------------------------------
 
 function debugGridCell(point) {
+  const cell = pixelToGrid(point);
 
-    const cell = pixelToGrid(point);
+  console.log(
+    "Pixel",
 
-    console.log(
+    point,
 
-        "Pixel",
+    "->",
 
-        point,
+    cell,
 
-        "->",
+    "Blocked:",
 
-        cell,
+    isBlocked(
+      cell.x,
 
-        "Blocked:",
-
-        isBlocked(cell.x, cell.y)
-
-    );
-
+      cell.y,
+    ),
+  );
 }
+
+//----------------------------------
+// Cell Cost
+//----------------------------------
+
+function getCellCost(x, y) {
+  if (
+    y < 0 ||
+    x < 0 ||
+    y >= obstacleGrid.length ||
+    x >= obstacleGrid[0].length
+  ) {
+    return Infinity;
+  }
+
+  const value = obstacleGrid[y][x];
+
+  switch (value) {
+    case GRID_CLEARANCE:
+      return 20;
+
+    case GRID_EMPTY:
+      return 10;
+
+    default:
+      return Infinity;
+  }
+}
+
 //----------------------------------
 // Expose
 //----------------------------------
@@ -302,3 +253,4 @@ window.isBlocked = isBlocked;
 window.printObstacleGrid = printObstacleGrid;
 window.debugObstacleGrid = debugObstacleGrid;
 window.debugGridCell = debugGridCell;
+window.getCellCost = getCellCost;

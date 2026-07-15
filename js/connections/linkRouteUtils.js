@@ -7,75 +7,43 @@
 //----------------------------------
 
 function compressGridPath(cells) {
+  if (!cells || cells.length <= 2) {
+    return cells || [];
+  }
 
-    if (!cells || cells.length <= 2) {
+  const result = [cells[0]];
 
-        return cells || [];
+  //----------------------------------
+  // Keep Only Corners
+  //----------------------------------
 
-    }
+  for (let i = 1; i < cells.length - 1; i++) {
+    const prev = cells[i - 1];
+    const curr = cells[i];
+    const next = cells[i + 1];
 
-    const result = [
+    const dx1 = curr.x - prev.x;
+    const dy1 = curr.y - prev.y;
 
-        cells[0]
-
-    ];
-
-    let lastDX = null;
-    let lastDY = null;
+    const dx2 = next.x - curr.x;
+    const dy2 = next.y - curr.y;
 
     //----------------------------------
-    // Keep Only Corners
+    // Direction Changed
     //----------------------------------
 
-    for (let i = 1; i < cells.length; i++) {
-
-        const dx =
-
-            cells[i].x -
-
-            cells[i - 1].x;
-
-        const dy =
-
-            cells[i].y -
-
-            cells[i - 1].y;
-
-        if (
-
-            lastDX !== null &&
-
-            (
-
-                dx !== lastDX ||
-
-                dy !== lastDY
-
-            )
-
-        ) {
-
-            result.push(
-
-                cells[i - 1]
-
-            );
-
-        }
-
-        lastDX = dx;
-        lastDY = dy;
-
+    if (dx1 !== dx2 || dy1 !== dy2) {
+      result.push(curr);
     }
+  }
 
-    result.push(
+  //----------------------------------
+  // Keep Last Cell
+  //----------------------------------
 
-        cells[cells.length - 1]
+  result.push(cells[cells.length - 1]);
 
-    );
-
-    return result;
-
+  return result;
 }
 
 //----------------------------------
@@ -83,41 +51,21 @@ function compressGridPath(cells) {
 //----------------------------------
 
 function removeDuplicatePoints(points) {
+  if (!points || points.length <= 1) {
+    return points || [];
+  }
 
-    if (!points || points.length <= 1) {
+  const cleaned = [];
 
-        return points || [];
+  for (const point of points) {
+    const last = cleaned[cleaned.length - 1];
 
+    if (!last || last.x !== point.x || last.y !== point.y) {
+      cleaned.push(point);
     }
+  }
 
-    const cleaned = [];
-
-    for (const point of points) {
-
-        const last = cleaned[
-
-            cleaned.length - 1
-
-        ];
-
-        if (
-
-            !last ||
-
-            last.x !== point.x ||
-
-            last.y !== point.y
-
-        ) {
-
-            cleaned.push(point);
-
-        }
-
-    }
-
-    return cleaned;
-
+  return cleaned;
 }
 
 //----------------------------------
@@ -125,82 +73,40 @@ function removeDuplicatePoints(points) {
 //----------------------------------
 
 function removeCollinearPoints(points) {
+  if (!points || points.length <= 2) {
+    return points || [];
+  }
 
-    if (!points || points.length <= 2) {
+  const result = [points[0]];
 
-        return points || [];
+  for (let i = 1; i < points.length - 1; i++) {
+    const a = result[result.length - 1];
 
+    const b = points[i];
+    const c = points[i + 1];
+
+    //----------------------------------
+    // Vertical
+    //----------------------------------
+
+    if (a.x === b.x && b.x === c.x) {
+      continue;
     }
 
-    const result = [
+    //----------------------------------
+    // Horizontal
+    //----------------------------------
 
-        points[0]
-
-    ];
-
-    for (
-
-        let i = 1;
-
-        i < points.length - 1;
-
-        i++
-
-    ) {
-
-        const a = result[
-
-            result.length - 1
-
-        ];
-
-        const b = points[i];
-        const c = points[i + 1];
-
-        //----------------------------------
-        // Vertical
-        //----------------------------------
-
-        if (
-
-            a.x === b.x &&
-
-            b.x === c.x
-
-        ) {
-
-            continue;
-
-        }
-
-        //----------------------------------
-        // Horizontal
-        //----------------------------------
-
-        if (
-
-            a.y === b.y &&
-
-            b.y === c.y
-
-        ) {
-
-            continue;
-
-        }
-
-        result.push(b);
-
+    if (a.y === b.y && b.y === c.y) {
+      continue;
     }
 
-    result.push(
+    result.push(b);
+  }
 
-        points[points.length - 1]
+  result.push(points[points.length - 1]);
 
-    );
-
-    return result;
-
+  return result;
 }
 
 //----------------------------------
@@ -208,97 +114,43 @@ function removeCollinearPoints(points) {
 //----------------------------------
 
 function removeDoglegs(points) {
+  if (!points || points.length < 4) {
+    return points || [];
+  }
 
-    if (!points || points.length < 4) {
+  const result = [points[0]];
 
-        return points || [];
+  for (let i = 1; i < points.length - 2; i++) {
+    const a = result[result.length - 1];
 
+    const b = points[i];
+    const c = points[i + 1];
+    const d = points[i + 2];
+
+    //----------------------------------
+    // Vertical Dogleg
+    //----------------------------------
+
+    if (a.x === b.x && c.x === d.x && b.y === c.y && a.x === d.x) {
+      continue;
     }
 
-    const result = [
+    //----------------------------------
+    // Horizontal Dogleg
+    //----------------------------------
 
-        points[0]
-
-    ];
-
-    for (
-
-        let i = 1;
-
-        i < points.length - 2;
-
-        i++
-
-    ) {
-
-        const a = result[
-
-            result.length - 1
-
-        ];
-
-        const b = points[i];
-        const c = points[i + 1];
-        const d = points[i + 2];
-
-        //----------------------------------
-        // Vertical Dogleg
-        //----------------------------------
-
-        if (
-
-            a.x === b.x &&
-            c.x === d.x &&
-            b.y === c.y
-
-        ) {
-
-            if (a.x === d.x) {
-
-                continue;
-
-            }
-
-        }
-
-        //----------------------------------
-        // Horizontal Dogleg
-        //----------------------------------
-
-        if (
-
-            a.y === b.y &&
-            c.y === d.y &&
-            b.x === c.x
-
-        ) {
-
-            if (a.y === d.y) {
-
-                continue;
-
-            }
-
-        }
-
-        result.push(b);
-
+    if (a.y === b.y && c.y === d.y && b.x === c.x && a.y === d.y) {
+      continue;
     }
 
-    result.push(
+    result.push(b);
+  }
 
-        points[points.length - 2]
+  result.push(points[points.length - 2]);
 
-    );
+  result.push(points[points.length - 1]);
 
-    result.push(
-
-        points[points.length - 1]
-
-    );
-
-    return result;
-
+  return result;
 }
 
 //----------------------------------
@@ -306,29 +158,23 @@ function removeDoglegs(points) {
 //----------------------------------
 
 function optimizePixelRoute(points) {
+  let route = points;
 
-    let route = points;
+  let changed = true;
 
-    let changed = true;
+  while (changed) {
+    const before = route.length;
 
-    while (changed) {
+    route = removeDuplicatePoints(route);
 
-        const before = route.length;
+    route = removeCollinearPoints(route);
 
-        route = removeDuplicatePoints(route);
+    route = removeDoglegs(route);
 
-        route = removeCollinearPoints(route);
+    changed = route.length !== before;
+  }
 
-        route = removeDoglegs(route);
-
-        changed =
-
-            route.length !== before;
-
-    }
-
-    return route;
-
+  return route;
 }
 
 //----------------------------------

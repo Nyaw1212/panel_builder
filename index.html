@@ -1,321 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
-
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
 
     <title>Panel Builder</title>
 
-
-    <link rel="stylesheet" href="styles/toolbar.css">
-    <link rel="stylesheet" href="styles/reset.css">
-    <link rel="stylesheet" href="styles/layout.css">
-    <link rel="stylesheet" href="styles/library.css">
-    <link rel="stylesheet" href="styles/canvas.css">
-    <link rel="stylesheet" href="styles/connection.css">
-    <link rel="stylesheet" href="styles/modal.css">
-    <link rel="stylesheet" href="styles/inspector.css">
-    <link rel="stylesheet" href="styles/bom.css">
+    <link rel="stylesheet" href="styles/toolbar.css" />
+    <link rel="stylesheet" href="styles/reset.css" />
+    <link rel="stylesheet" href="styles/layout.css" />
+    <link rel="stylesheet" href="styles/library.css" />
+    <link rel="stylesheet" href="styles/canvas.css" />
+    <link rel="stylesheet" href="styles/connection.css" />
+    <link rel="stylesheet" href="styles/modal.css" />
+    <link rel="stylesheet" href="styles/inspector.css" />
+    <link rel="stylesheet" href="styles/bom.css" />
 
     <!-- Uncomment when toolbar.css exists -->
     <!-- <link rel="stylesheet" href="styles/toolbar.css"> -->
+  </head>
 
-</head>
-
-<body>
-
+  <body>
     <div class="container">
+      <aside class="sidebar">
+        <h2>Library</h2>
 
-        <aside class="sidebar">
+        <input
+          type="text"
+          id="searchBox"
+          placeholder="🔍 Search equipment..."
+        />
 
-            <h2>Library</h2>
+        <div class="library-tabs">
+          <button class="tab active">All</button>
+          <button class="tab">Equipment</button>
+          <button class="tab">Materials</button>
+        </div>
 
-            <input
-                type="text"
-                id="searchBox"
-                placeholder="🔍 Search equipment..."
-            >
+        <div class="equipment-list">
+          <div id="equipmentList"></div>
+        </div>
 
-            <div class="library-tabs">
+        <div class="library-section">
+          <div class="library-title">Presets</div>
 
-                <button class="tab active">All</button>
-                <button class="tab">Equipment</button>
-                <button class="tab">Materials</button>
+          <div id="presetLibrary" class="preset-library"></div>
+        </div>
 
-            </div>
+        <div class="library-section">
+          <div class="library-title">Materials</div>
 
-            <div class="equipment-list">
+          <button class="library-button">Add Material</button>
+        </div>
+      </aside>
 
-                <div id="equipmentList"></div>
-
-            </div>
-
-            <div class="library-section">
-
-                <div class="library-title">
-
-                    Presets
-
-                </div>
-
-                <div
-                    id="presetLibrary"
-                    class="preset-library"
-                ></div>
-
-            </div>
-
-            <div class="library-section">
-
-                <div class="library-title">
-
-                    Materials
-
-                </div>
-
-                <button class="library-button">
-
-                    Add Material
-
-                </button>
-
-            </div>
-
-        </aside>
-
-       <main class="workspace">
-
-    <!--==================================
+      <main class="workspace">
+        <!--==================================
     Workspace Toolbar
     ==================================-->
 
-    <div class="workspace-toolbar">
+        <div class="workspace-toolbar">
+          <button id="newProjectButton">📄 New</button>
 
-        <button id="newProjectButton">
+          <button id="openProjectButton">📂 Open</button>
 
-            📄 New
+          <button id="saveButton">💾 Save</button>
 
-        </button>
+          <button id="bomButton">📋 BOM</button>
+        </div>
 
-        <button id="openProjectButton">
-
-            📂 Open
-
-        </button>
-
-        <button id="saveButton">
-
-            💾 Save
-
-        </button>
-
-        <button id="bomButton">
-
-            📋 BOM
-
-        </button>
-
-    </div>
-
-    <!--==================================
+        <!--==================================
     Layout
     ==================================-->
 
-    <h2>Layout</h2>
+        <h2>Layout</h2>
 
-    <div id="canvasContainer">
+        <div id="canvasContainer">
+          <div id="grid"></div>
 
-        <div id="grid"></div>
+          <div id="previewLayer"></div>
 
-        <div id="previewLayer"></div>
-
-        <svg id="svgLayer"></svg>
-
-    </div>
-
-</main>
-
+          <svg id="svgLayer"></svg>
+        </div>
+      </main>
     </div>
 
     <!-- BOM -->
 
-    <div
-        id="bomPanel"
-        class="bom-panel"
-    >
+    <div id="bomPanel" class="bom-panel">
+      <div class="bom-title">Bill of Materials</div>
 
-        <div class="bom-title">
-
-            Bill of Materials
-
-        </div>
-
-        <div id="bomBody">
-
-            No Materials
-
-        </div>
-
+      <div id="bomBody">No Materials</div>
     </div>
 
     <!-- Link Inspector -->
 
-    <div
-        id="linkInspector"
-        class="link-inspector collapsed"
-    >
+    <div id="linkInspector" class="link-inspector collapsed">
+      <div class="inspector-header">
+        <h3>Link Properties</h3>
+      </div>
 
-        <div class="inspector-header">
-
-            <h3>Link Properties</h3>
-
-        </div>
-
-        <div
-            id="inspectorBody"
-            class="inspector-body"
-        >
-
-            No Link Selected
-
-        </div>
-
+      <div id="inspectorBody" class="inspector-body">No Link Selected</div>
     </div>
 
-   <!-- ========================================= -->
-<!-- Modal -->
-<!-- ========================================= -->
+    <!-- ========================================= -->
+    <!-- Modal -->
+    <!-- ========================================= -->
 
-<div
-    id="equipmentModal"
-    class="modal"
->
-
-    <div class="modal-wrapper">
-
+    <div id="equipmentModal" class="modal">
+      <div class="modal-wrapper">
         <!-- ========================================= -->
         <!-- Connection Assembly -->
         <!-- ========================================= -->
 
-        <div
-            id="assemblyPanel"
-            class="connection-assembly"
-        ></div>
+        <div id="assemblyPanel" class="connection-assembly"></div>
 
         <!-- ========================================= -->
         <!-- Modal Window -->
         <!-- ========================================= -->
 
         <div class="modal-content">
+          <div class="modal-header">
+            <h2>Place Node</h2>
 
-            <div class="modal-header">
+            <button id="closeModal">&times;</button>
+          </div>
 
-                <h2>Place Node</h2>
+          <!-- ========================================= -->
+          <!-- Search -->
+          <!-- ========================================= -->
 
-                <button id="closeModal">
+          <input id="modalSearch" type="text" placeholder="Search node..." />
 
-                    &times;
+          <div class="modal-body">
+            <!-- Left Column -->
 
-                </button>
+            <div class="filter-panel">
+              <div id="modalFilters" class="modal-filters">
+                <!-- Conduit -->
 
-            </div>
+                <div class="filter-group">
+                  <div class="filter-title">Conduit</div>
 
-            <!-- ========================================= -->
-            <!-- Search -->
-            <!-- ========================================= -->
-
-            <input
-                id="modalSearch"
-                type="text"
-                placeholder="Search node..."
-            >
-
-            
-<div class="modal-body">
-
-    <!-- Left Column -->
-
-    <div class="filter-panel">
-
-        <div
-            id="modalFilters"
-            class="modal-filters"
->
-
-            <!-- Conduit -->
-
-            <div class="filter-group">
-
-                <div class="filter-title">
-
-                    Conduit
-
+                  <div id="systemChips" class="chip-container"></div>
                 </div>
 
-                <div
-                    id="systemChips"
-                    class="chip-container"
-                ></div>
+                <!-- Fitting -->
 
-            </div>
+                <div class="filter-group">
+                  <div class="filter-title">Fitting</div>
 
-            <!-- Fitting -->
-
-            <div class="filter-group">
-
-                <div class="filter-title">
-
-                    Fitting
-
+                  <div id="typeChips" class="chip-container"></div>
                 </div>
 
-                <div
-                    id="typeChips"
-                    class="chip-container"
-                ></div>
+                <!-- Size -->
 
-            </div>
+                <div class="filter-group">
+                  <div class="filter-title">Size</div>
 
-            <!-- Size -->
-
-            <div class="filter-group">
-
-                <div class="filter-title">
-
-                    Size
-
+                  <div id="sizeChips" class="chip-container"></div>
                 </div>
-
-                <div
-                    id="sizeChips"
-                    class="chip-container"
-                ></div>
-
+              </div>
             </div>
 
+            <!-- Right Column -->
+
+            <div class="library-panel">
+              <div id="modalList" class="modal-list"></div>
+            </div>
+          </div>
+          <!-- modal-body -->
         </div>
-
+        <!-- modal-content -->
+      </div>
+      <!-- modal-wrapper -->
     </div>
-
-    <!-- Right Column -->
-
-    <div class="library-panel">
-
-        <div
-            id="modalList"
-            class="modal-list"
-        ></div>
-
-    </div>
-    
-</div><!-- modal-body -->
-
-</div><!-- modal-content -->
-
-</div><!-- modal-wrapper -->
-
-</div><!-- equipmentModal -->
+    <!-- equipmentModal -->
 
     <!-- ========================================= -->
     <!-- Data -->
@@ -329,7 +188,7 @@
 
     <script src="js/core/config.js"></script>
 
-<script src="js/core/keyboard.js"></script>
+    <script src="js/core/keyboard.js"></script>
 
     <script src="js/core/performance.js"></script>
     <!-- ========================================= -->
@@ -340,26 +199,25 @@
     <script src="js/layout/selectionManager.js"></script>
     <script src="js/layout/clipboardManager.js"></script>
     <script src="js/layout/pasteManager.js"></script>
-<script src="js/layout/equipmentManager.js"></script>
-<script src="js/layout/placement.js"></script>
-<script src="js/layout/preview.js"></script>
-<script src="js/layout/presetPlacement.js"></script>
-<script src="js/layout/renderer.js"></script>
-<script src="js/layout/dragManager.js"></script>
-<script src="js/layout/deleteManager.js"></script>
-<script src="js/materials/materialLookup.js"></script>
+    <script src="js/layout/equipmentManager.js"></script>
+    <script src="js/layout/placement.js"></script>
+    <script src="js/layout/preview.js"></script>
+    <script src="js/layout/presetPlacement.js"></script>
+    <script src="js/layout/renderer.js"></script>
+    <script src="js/layout/dragManager.js"></script>
+    <script src="js/layout/deleteManager.js"></script>
+    <script src="js/materials/materialLookup.js"></script>
 
+    <!-- ========================================= -->
+    <!-- Equipment -->
+    <!-- ========================================= -->
 
-<!-- ========================================= -->
-<!-- Equipment -->
-<!-- ========================================= -->
+    <script src="js/equipment/equipmentMaterialRenderer.js"></script>
+    <script src="js/equipment/equipmentMaterialModal.js"></script>
+    <script src="js/equipment/equipmentNode.js"></script>
+    <script src="js/equipment/equipmentPreview.js"></script>
 
-<script src="js/equipment/equipmentMaterialRenderer.js"></script>
-<script src="js/equipment/equipmentMaterialModal.js"></script>
-<script src="js/equipment/equipmentNode.js"></script>
-<script src="js/equipment/equipmentPreview.js"></script>
-
-<script src="js/layout/canvas.js"></script>
+    <script src="js/layout/canvas.js"></script>
 
     <!-- ========================================= -->
     <!-- SVG -->
@@ -371,60 +229,60 @@
     <script src="js/svg/svgRenderer.js"></script>
 
     <!-- ========================================= -->
-<!-- Connections -->
-<!-- ========================================= -->
+    <!-- Connections -->
+    <!-- ========================================= -->
 
-<script src="js/connections/connectionFactory.js"></script>
-<script src="js/connections/connectionHardware.js"></script>
-<script src="js/connections/connectionUtils.js"></script>
-<script src="js/connections/connections.js"></script>
+    <script src="js/connections/connectionFactory.js"></script>
+    <script src="js/connections/connectionHardware.js"></script>
+    <script src="js/connections/connectionUtils.js"></script>
+    <script src="js/connections/connections.js"></script>
 
-<script src="js/connections/nodeGenerator.js"></script>
-<script src="js/connections/connectionIdentity.js"></script>
-<script src="js/connections/connectionRegistry.js"></script>
-<script src="js/connections/connectionPosition.js"></script>
-<script src="js/connections/connectionPreview.js"></script>
-<script src="js/connections/connectionRenderer.js"></script>
+    <script src="js/connections/nodeGenerator.js"></script>
+    <script src="js/connections/connectionIdentity.js"></script>
+    <script src="js/connections/connectionRegistry.js"></script>
+    <script src="js/connections/connectionPosition.js"></script>
+    <script src="js/connections/connectionPreview.js"></script>
+    <script src="js/connections/connectionRenderer.js"></script>
 
-<!-- ========================================= -->
-<!-- Link Routing -->
-<!-- ========================================= -->
+    <!-- ========================================= -->
+    <!-- Link Routing -->
+    <!-- ========================================= -->
 
-<!-- Link Routing -->
+    <!-- Link Routing -->
 
-<script src="js/connections/linkObstacleGrid.js"></script>
-<script src="js/connections/linkGridHelper.js"></script>
-<script src="js/connections/linkPathfinder.js"></script>
-<script src="js/connections/linkRouteUtils.js"></script>
-<script src="js/connections/linkNodeExit.js"></script>
-<script src="js/connections/linkGeometry.js"></script>
+    <script src="js/connections/linkObstacleGrid.js"></script>
+    <script src="js/connections/linkGridHelper.js"></script>
+    <script src="js/connections/linkPathfinder.js"></script>
+    <script src="js/connections/linkRouteUtils.js"></script>
+    <script src="js/connections/linkNodeExit.js"></script>
+    <script src="js/connections/linkGeometry.js"></script>
 
-<!-- Optional (Legacy Router - Keep Disabled) -->
-<!--
+    <!-- Optional (Legacy Router - Keep Disabled) -->
+    <!--
 <script src="js/connections/linkObstacleRouter.js"></script>
 <script src="js/connections/linkObstacleCollision.js"></script>
 <script src="js/connections/linkRouteBuilder.js"></script>
 <script src="js/connections/linkRouteOptimizer.js"></script>
 -->
 
-<!-- ========================================= -->
-<!-- Link Processing -->
-<!-- ========================================= -->
+    <!-- ========================================= -->
+    <!-- Link Processing -->
+    <!-- ========================================= -->
 
-<script src="js/connections/linkLength.js"></script>
-<script src="js/connections/linkAssembly.js"></script>
-<script src="js/connections/linkMaterials.js"></script>
+    <script src="js/connections/linkLength.js"></script>
+    <script src="js/connections/linkAssembly.js"></script>
+    <script src="js/connections/linkMaterials.js"></script>
 
-<script src="js/connections/linkRenderer.js"></script>
-<script src="js/connections/linkNode.js"></script>
-<script src="js/connections/linkManager.js"></script>
-<script src="js/connections/linkSelection.js"></script>
-<script src="js/connections/linkEditor.js"></script>
+    <script src="js/connections/linkRenderer.js"></script>
+    <script src="js/connections/linkNode.js"></script>
+    <script src="js/connections/linkManager.js"></script>
+    <script src="js/connections/linkSelection.js"></script>
+    <script src="js/connections/linkEditor.js"></script>
 
-<script src="js/connections/nodeHover.js"></script>
-<script src="js/connections/nodeClipboard.js"></script>
-<script src="js/connections/nodePaste.js"></script>
-    
+    <script src="js/connections/nodeHover.js"></script>
+    <script src="js/connections/nodeClipboard.js"></script>
+    <script src="js/connections/nodePaste.js"></script>
+
     <!-- ========================================= -->
     <!-- UI -->
     <!-- ========================================= -->
@@ -433,12 +291,12 @@
 
     <script src="js/ui/modal.js"></script>
 
-<script src="js/ui/modalFilters.js"></script>
+    <script src="js/ui/modalFilters.js"></script>
 
-<script src="js/ui/modalSearch.js"></script>
-<script src="js/ui/modalEquipment.js"></script>
-<script src="js/ui/modalHardware.js"></script>
-<script src="js/ui/modalRenderer.js"></script>
+    <script src="js/ui/modalSearch.js"></script>
+    <script src="js/ui/modalEquipment.js"></script>
+    <script src="js/ui/modalHardware.js"></script>
+    <script src="js/ui/modalRenderer.js"></script>
 
     <script src="js/ui/assemblyPicker.js"></script>
     <script src="js/ui/linkDeleteButton.js"></script>
@@ -454,7 +312,6 @@
     <script src="js/ui/linkInspectorRenderer.js"></script>
     <script src="js/ui/linkInspectorEvents.js"></script>
     <script src="js/ui/linkInspector.js"></script>
-    
 
     <!-- ========================================= -->
     <!-- BOM -->
@@ -474,7 +331,6 @@
     <script src="js/project/projectManager.js"></script>
     <script src="js/projectDraft.js"></script>
     <script src="js/project/projectNew.js"></script>
-    
 
     <!-- ========================================= -->
     <!-- Storage -->
@@ -486,8 +342,8 @@
     <!-- API -->
     <!-- ========================================= -->
 
-<script src="api/cacheManager.js"></script>
-<script src="api/projectApi.js"></script>
+    <script src="api/cacheManager.js"></script>
+    <script src="api/projectApi.js"></script>
 
     <!-- ========================================= -->
     <!-- Project UI -->
@@ -502,7 +358,5 @@
     <!-- ========================================= -->
 
     <script src="js/core/main.js"></script>
-
-</body>
-
+  </body>
 </html>
