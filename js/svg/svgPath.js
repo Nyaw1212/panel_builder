@@ -57,18 +57,62 @@ function drawSVGPath(link) {
     path.style.pointerEvents = "none";
 
     //----------------------------------
-    // Hover
+    // Hover Enter
     //----------------------------------
 
-    hit.addEventListener("mouseenter", () => {
+    hit.addEventListener("mouseenter", (e) => {
 
         path.setAttribute("stroke-width", "5");
 
+        if (typeof showLinkHover === "function") {
+
+            showLinkHover(
+                link,
+                e.clientX,
+                e.clientY
+            );
+
+        }
+
     });
+
+    //----------------------------------
+    // Hover Move
+    //----------------------------------
+
+    hit.addEventListener("mousemove", (e) => {
+
+        if (typeof moveLinkHover === "function") {
+
+            moveLinkHover(
+                e.clientX,
+                e.clientY
+            );
+
+        }
+
+    });
+
+    //----------------------------------
+    // Hover Leave
+    //----------------------------------
 
     hit.addEventListener("mouseleave", () => {
 
-        path.setAttribute("stroke-width", "3");
+        path.setAttribute("stroke-width", "4");
+
+        setTimeout(() => {
+
+            if (
+                typeof isLinkHoverActive === "function" &&
+                !isLinkHoverActive()
+            ) {
+
+                hideLinkHover();
+
+            }
+
+        }, 100);
 
     });
 

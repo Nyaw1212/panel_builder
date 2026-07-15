@@ -10,27 +10,25 @@ const LINK_DELETE_RADIUS = 8;
 //----------------------------------
 
 function getLinkNodePosition(link) {
-  const points = getLinkPoints(link);
 
-  if (points.length < 2) return null;
+    const points = getLinkPoints(link);
 
-  const start = points[0];
-  const end = points[1];
+    if (!points || points.length < 2) return null;
 
-  //----------------------------------
-  // Position on horizontal segment
-  //----------------------------------
+    const start = points[0];
+    const end = points[1];
 
-  const OFFSET = 80;
+    //----------------------------------
+    // Center of First Segment
+    //----------------------------------
 
-  return {
-    x:
-      start.x +
-      Math.sign(end.x - start.x) *
-        Math.min(OFFSET, Math.abs(end.x - start.x) / 2),
+    return {
 
-    y: start.y,
-  };
+        x: (start.x + end.x) / 2,
+        y: (start.y + end.y) / 2
+
+    };
+
 }
 
 //----------------------------------
