@@ -28,7 +28,7 @@ MODAL WINDOW
 
 .modal-content{
 
-    width:1100px;
+    width:2100px;
 
     max-width:95vw;
 
@@ -167,7 +167,7 @@ LIST
 
     display:grid;
 
-    grid-template-columns:repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 
     gap:12px;
 
@@ -529,7 +529,8 @@ Assembly Card
 
     flex:0 0 auto;
 
-    width:88px;
+    width:140px;          /* was 88px */
+    min-height:170px;
 
     display:flex;
 
@@ -537,9 +538,9 @@ Assembly Card
 
     align-items:center;
 
-    gap:6px;
+    gap:10px;
 
-    padding:10px;
+    padding:8px;
 
     border:1px solid #dcdcdc;
 
@@ -555,9 +556,9 @@ Assembly Image
 
 .assembly-image{
 
-    width:52px;
+    width:100px;
 
-    height:52px;
+    height:100px;
 
     object-fit:contain;
 
@@ -569,7 +570,7 @@ Assembly Code
 
 .assembly-code{
 
-    font-size:11px;
+    font-size:18px;
 
     font-weight:600;
 
@@ -603,13 +604,13 @@ Remove Button
 
     position:absolute;
 
-    top:4px;
+    top:6px;
 
-    right:4px;
+    right:6px;
 
-    width:18px;
+    width:28px;
 
-    height:18px;
+    height:28px;
 
     border:none;
 
@@ -619,7 +620,7 @@ Remove Button
 
     color:#fff;
 
-    font-size:11px;
+    font-size:14px;
 
     line-height:18px;
 
@@ -680,7 +681,7 @@ Detached Assembly Panel
 
 #assemblyPanel{
 
-    width: fit-content;
+   
 
     min-width: 700px;
 
@@ -736,7 +737,7 @@ Assembly Quantity
 
     margin-top:2px;
 
-    font-size:11px;
+    font-size:18px;
 
     font-weight:600;
 

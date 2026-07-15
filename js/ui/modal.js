@@ -225,16 +225,19 @@ function buildModalList(searchText = "") {
 
         list.sort((a, b) => {
 
-            const favA = Number(a.Favorite) === 1;
-            const favB = Number(b.Favorite) === 1;
+    const priorityA = Number(a.Favorite || 0);
+    const priorityB = Number(b.Favorite || 0);
 
-            if (favA && !favB) return -1;
-            if (!favA && favB) return 1;
+    if (priorityA !== priorityB) {
 
-            return (a.CatalogNumber || "")
-                .localeCompare(b.CatalogNumber || "");
+        return priorityB - priorityA;
 
-        });
+    }
+
+    return (a.CatalogNumber || "")
+        .localeCompare(b.CatalogNumber || "");
+
+});
 
     }
 

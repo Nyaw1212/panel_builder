@@ -9,14 +9,32 @@ function buildModalCard(item) {
         : "";
 
     //----------------------------------
-    // Favorite
-    //----------------------------------
+// Favorite (0-5 Stars)
+//----------------------------------
 
-    const favorite = Number(item.Favorite) === 1;
+const priority = Math.max(
 
-    const card = document.createElement("div");
+    0,
 
-    card.className = "equipment";
+    Math.min(
+
+        Number(item.Favorite || 0),
+
+        5
+
+    )
+
+);
+
+const stars = Array(priority)
+
+    .fill("⭐")
+
+    .join(" ");
+
+const card = document.createElement("div");
+
+card.className = "equipment";
 
     //----------------------------------
     // Selected
@@ -46,8 +64,8 @@ function buildModalCard(item) {
 
     card.innerHTML = `
 
-        ${favorite
-            ? `<div class="favorite-badge">★</div>`
+        ${priority > 0
+            ? `<div class="favorite-badge">${stars}</div>`
             : ""}
 
         <img

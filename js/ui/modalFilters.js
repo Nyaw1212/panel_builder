@@ -2,8 +2,8 @@
 // Modal Filter State
 //----------------------------------
 
-let selectedSystem = "EMT";
-let selectedType = "HUB";
+let selectedSystem = "All";
+let selectedType = "All";
 let selectedSize = '2"';
 
 //----------------------------------
@@ -12,8 +12,8 @@ let selectedSize = '2"';
 
 function resetModalFilters() {
 
-    selectedSystem = "EMT";
-    selectedType = "HUB";
+    selectedSystem = "All";
+    selectedType = "All";
     selectedSize = '2"';
 
 }
@@ -244,6 +244,28 @@ function buildFilterChips(list) {
 function applyModalFilters(list) {
 
     //----------------------------------
+    // Hide Wire / Pipe by Default
+    //----------------------------------
+
+    if (
+
+        selectedType !== "PIPE" &&
+
+        selectedType !== "WIRE"
+
+    ) {
+
+        list = list.filter(item =>
+
+            item.NodeType !== "PIPE" &&
+
+            item.NodeType !== "WIRE"
+
+        );
+
+    }
+
+    //----------------------------------
     // Conduit
     //----------------------------------
 
@@ -258,7 +280,7 @@ function applyModalFilters(list) {
     }
 
     //----------------------------------
-    // Fitting
+    // Type
     //----------------------------------
 
     if (selectedType !== "All") {
