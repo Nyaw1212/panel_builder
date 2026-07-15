@@ -67,7 +67,6 @@ function drawSVGPath(link) {
         if (typeof showLinkHover === "function") {
 
             showLinkHover(
-                link,
                 e.clientX,
                 e.clientY
             );
@@ -101,18 +100,11 @@ function drawSVGPath(link) {
 
         path.setAttribute("stroke-width", "4");
 
-        setTimeout(() => {
+        if (typeof hideLinkHover === "function") {
 
-            if (
-                typeof isLinkHoverActive === "function" &&
-                !isLinkHoverActive()
-            ) {
+            hideLinkHover();
 
-                hideLinkHover();
-
-            }
-
-        }, 100);
+        }
 
     });
 
