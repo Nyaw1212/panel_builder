@@ -135,6 +135,10 @@
             <!-- Left Column -->
 
             <div class="filter-panel">
+              <!-- ========================================= -->
+              <!-- Connection Hardware Filters -->
+              <!-- ========================================= -->
+
               <div id="modalFilters" class="modal-filters">
                 <!-- Conduit -->
 
@@ -158,6 +162,25 @@
                   <div class="filter-title">Size</div>
 
                   <div id="sizeChips" class="chip-container"></div>
+                </div>
+              </div>
+
+              <!-- ========================================= -->
+              <!-- Equipment Component Filters -->
+              <!-- ========================================= -->
+
+              <div
+                id="equipmentFilters"
+                class="modal-filters"
+                style="display: none"
+              >
+                <div class="filter-group">
+                  <div class="filter-title">Component</div>
+
+                  <div
+                    id="equipmentComponentChips"
+                    class="chip-container"
+                  ></div>
                 </div>
               </div>
             </div>
@@ -212,10 +235,13 @@
     <!-- Equipment -->
     <!-- ========================================= -->
 
-    <script src="js/equipment/equipmentMaterialRenderer.js"></script>
-    <script src="js/equipment/equipmentMaterialModal.js"></script>
     <script src="js/equipment/equipmentNode.js"></script>
+    <script src="js/equipment/equipmentCardRenderer.js"></script>
+    <script src="js/equipment/equipmentCardModal.js"></script>
     <script src="js/equipment/equipmentPreview.js"></script>
+    <script src="js/equipment/equipmentCardFilters.js"></script>
+    <script src="js/equipment/equipmentCardLibrary.js"></script>
+    <script src="js/equipment/equipmentCardSelection.js"></script>
 
     <script src="js/layout/canvas.js"></script>
 

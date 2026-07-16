@@ -15,97 +15,77 @@ let autoSaveEnabled = false;
 //----------------------------------
 
 function drawCanvas() {
+  //----------------------------------
+  // Remove Floating Link Delete
+  //----------------------------------
 
-    //----------------------------------
-    // Remove Floating Link Delete
-    //----------------------------------
+  if (typeof removeLinkDeleteButton === "function") {
+    removeLinkDeleteButton();
+  }
 
-    if (typeof removeLinkDeleteButton === "function") {
+  //----------------------------------
+  // Draw Grid
+  //----------------------------------
 
-        removeLinkDeleteButton();
+  drawGrid();
 
-    }
+  //----------------------------------
+  // Draw Equipment
+  //----------------------------------
 
-    //----------------------------------
-    // Draw Grid
-    //----------------------------------
+  drawPlacedItems();
 
-    drawGrid();
+  //----------------------------------
+  // Build Obstacle Grid
+  //----------------------------------
 
-    //----------------------------------
-    // Draw Equipment
-    //----------------------------------
+  if (typeof refreshObstacleGrid === "function") {
+    refreshObstacleGrid();
+  }
 
-    drawPlacedItems();
+  //----------------------------------
+  // Debug Grid
+  //----------------------------------
 
-        //----------------------------------
-    // Build Obstacle Grid
-    //----------------------------------
+  if (typeof debugObstacleGrid === "function") {
+    debugObstacleGrid();
+  }
 
-    if (typeof refreshObstacleGrid === "function") {
+  //----------------------------------
+  // Clear SVG
+  //----------------------------------
 
-        refreshObstacleGrid();
+  if (typeof clearSVG === "function") {
+    clearSVG();
+  }
 
-    }
+  //----------------------------------
+  // Draw Connections
+  //----------------------------------
 
-    //----------------------------------
-    // Debug Grid
-    //----------------------------------
+  drawConnections();
 
-    if (typeof debugObstacleGrid === "function") {
+  //----------------------------------
+  // Draw Links
+  //----------------------------------
 
-        debugObstacleGrid();
+  drawLinks();
 
-    }
+  //----------------------------------
+  // Update BOM
+  //----------------------------------
 
-    //----------------------------------
-    // Clear SVG
-    //----------------------------------
+  if (typeof renderBOM === "function") {
+    renderBOM();
+  }
 
-    if (typeof clearSVG === "function") {
+  //----------------------------------
+  // Auto Save Draft
+  //----------------------------------
 
-        clearSVG();
-
-    }
-
-    //----------------------------------
-    // Draw Connections
-    //----------------------------------
-
-    drawConnections();
-
-    //----------------------------------
-    // Draw Links
-    //----------------------------------
-
-    drawLinks();
-
-    //----------------------------------
-    // Update BOM
-    //----------------------------------
-
-    if (typeof renderBOM === "function") {
-
-        renderBOM();
-
-    }
-
-    //----------------------------------
-    // Auto Save Draft
-    //----------------------------------
-
-    if (
-
-        autoSaveEnabled &&
-
-        typeof saveDraft === "function"
-
-    ) {
-
-        saveDraft();
-
-    }
-
+  if (autoSaveEnabled && typeof saveDraft === "function") {
+    saveDraft();
+  }
 }
 
 //----------------------------------
@@ -113,114 +93,95 @@ function drawCanvas() {
 //----------------------------------
 
 function drawGrid() {
+  grid.innerHTML = "";
 
-    grid.innerHTML = "";
+  //----------------------------------
+  // Dynamic Grid Style
+  //----------------------------------
+
+  grid.style.display = "grid";
+
+  grid.style.gridTemplateColumns = `repeat(${SETTINGS.columns}, ${SETTINGS.cellSize}px)`;
+
+  grid.style.gridAutoRows = `${SETTINGS.cellSize}px`;
+
+  grid.style.gap = `${SETTINGS.gap}px`;
+
+  //----------------------------------
+  // Draw Cells
+  //----------------------------------
+
+  for (let index = 0; index < getGridSize(); index++) {
+    const cell = document.createElement("div");
+
+    cell.className = "cell";
+
+    cell.dataset.index = index;
 
     //----------------------------------
-    // Dynamic Grid Style
+    // Preview follows cursor
     //----------------------------------
 
-    grid.style.display = "grid";
+    cell.onmouseenter = () => {
+      const preset = getCurrentPreset();
 
-    grid.style.gridTemplateColumns =
-        `repeat(${SETTINGS.columns}, ${SETTINGS.cellSize}px)`;
+      if (!preset) return;
 
-    grid.style.gridAutoRows =
-        `${SETTINGS.cellSize}px`;
-
-    grid.style.gap =
-        `${SETTINGS.gap}px`;
+      movePlacementPreview(index);
+    };
 
     //----------------------------------
-    // Draw Cells
+    // Click
     //----------------------------------
 
-    for (let index = 0; index < getGridSize(); index++) {
+    cell.onclick = () => {
+      const item = getItem(index);
 
-        const cell = document.createElement("div");
+      //----------------------------------
+      // Existing Equipment
+      //----------------------------------
 
-        cell.className = "cell";
+      if (item) {
+        // Selection handled by dragManager.js
 
-        cell.dataset.index = index;
+        return;
+      }
 
-        //----------------------------------
-        // Preview follows cursor
-        //----------------------------------
+      //----------------------------------
+      // Empty Cell
+      //----------------------------------
 
-        cell.onmouseenter = () => {
+      SelectionManager.clear();
 
-            const preset = getCurrentPreset();
+      //----------------------------------
+      // Preset Placement
+      //----------------------------------
 
-            if (!preset) return;
+      const preset = getCurrentPreset();
 
-            movePlacementPreview(index);
+      if (preset) {
+        const placed = placePreset(
+          preset,
 
-        };
+          index,
+        );
 
-        //----------------------------------
-        // Click
-        //----------------------------------
+        if (placed) {
+          hidePlacementPreview();
+        }
 
-        cell.onclick = () => {
+        return;
+      }
 
-            const item = getItem(index);
+      //----------------------------------
+      // Manual Placement
+      //----------------------------------
 
-            //----------------------------------
-            // Existing Equipment
-            //----------------------------------
+      openModal(index);
+    };
 
-            if (item) {
-
-                // Selection handled by dragManager.js
-
-                return;
-
-            }
-
-            //----------------------------------
-            // Empty Cell
-            //----------------------------------
-
-            SelectionManager.clear();
-
-            //----------------------------------
-            // Preset Placement
-            //----------------------------------
-
-            const preset = getCurrentPreset();
-
-            if (preset) {
-
-                const placed = placePreset(
-
-                    preset,
-
-                    index
-
-                );
-
-                if (placed) {
-
-                    hidePlacementPreview();
-
-                }
-
-                return;
-
-            }
-
-            //----------------------------------
-            // Manual Placement
-            //----------------------------------
-
-            openModal(index);
-
-        };
-
-        grid.appendChild(cell);
-
-    }
-
+    grid.appendChild(cell);
+  }
 }
 
 //----------------------------------
@@ -228,199 +189,173 @@ function drawGrid() {
 //----------------------------------
 
 function drawPlacedItems() {
+  const drawn = new Set();
 
-    const drawn = new Set();
+  getLayout().forEach((item) => {
+    if (!item) return;
 
-    getLayout().forEach(item => {
+    if (drawn.has(item.id)) return;
 
-        if (!item) return;
+    drawn.add(item.id);
 
-        if (drawn.has(item.id)) return;
+    const cell = grid.querySelector(`[data-index="${item.startCell}"]`);
 
-        drawn.add(item.id);
+    if (!cell) return;
 
-        const cell = grid.querySelector(
+    const image = item.data.DriveFileID
+      ? `https://drive.google.com/thumbnail?id=${item.data.DriveFileID}&sz=w300`
+      : "";
 
-            `[data-index="${item.startCell}"]`
+    const isSelected = SelectionManager.isSelected(item);
 
-        );
+    //----------------------------------
+    // Card
+    //----------------------------------
 
-        if (!cell) return;
+    const card = document.createElement("div");
 
-        const image = item.data.DriveFileID
-            ? `https://drive.google.com/thumbnail?id=${item.data.DriveFileID}&sz=w300`
-            : "";
+    card.className = "panel-card";
 
-        const isSelected = SelectionManager.isSelected(item);
+    card.style.position = "absolute";
+    card.style.left = "0";
+    card.style.top = "0";
 
-        //----------------------------------
-        // Card
-        //----------------------------------
+    card.style.width = `${item.width * (SETTINGS.cellSize + SETTINGS.gap) - SETTINGS.gap}px`;
 
-        const card = document.createElement("div");
+    card.style.height = `${item.height * (SETTINGS.cellSize + SETTINGS.gap) - SETTINGS.gap}px`;
 
-        card.className = "panel-card";
+    card.style.boxSizing = "border-box";
 
-        card.style.position = "absolute";
-        card.style.left = "0";
-        card.style.top = "0";
+    card.style.padding = "8px";
 
-        card.style.width =
-            `${item.width * (SETTINGS.cellSize + SETTINGS.gap) - SETTINGS.gap}px`;
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.alignItems = "center";
+    card.style.justifyContent = "center";
+    card.style.gap = "6px";
 
-        card.style.height =
-            `${item.height * (SETTINGS.cellSize + SETTINGS.gap) - SETTINGS.gap}px`;
+    card.style.background = "#EAF3FF";
+    card.style.borderRadius = "2px";
 
-        card.style.boxSizing = "border-box";
+    if (isSelected) {
+      card.style.border = "3px solid #2196F3";
+    } else {
+      card.style.border = "2px solid transparent";
+    }
 
-        card.style.padding = "8px";
+    //----------------------------------
+    // Remove Button
+    //----------------------------------
 
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
-        card.style.alignItems = "center";
-        card.style.justifyContent = "center";
-        card.style.gap = "6px";
+    const remove = document.createElement("button");
 
-        card.style.background = "#EAF3FF";
-        card.style.borderRadius = "2px";
+    remove.className = "panel-remove";
 
-        if (isSelected) {
+    remove.innerHTML = "✕";
 
-            card.style.border = "3px solid #2196F3";
+    remove.onclick = (e) => {
+      e.stopPropagation();
 
-        }
-        else {
+      removeItem(item.startCell);
 
-            card.style.border = "2px solid transparent";
+      drawCanvas();
+    };
 
-        }
+    card.appendChild(remove);
 
-        //----------------------------------
-        // Remove Button
-        //----------------------------------
+    //----------------------------------
+    // Image
+    //----------------------------------
 
-        const remove = document.createElement("button");
+    const img = document.createElement("img");
 
-        remove.className = "panel-remove";
+    img.className = "canvas-image";
 
-        remove.innerHTML = "✕";
+    img.src = image;
 
-        remove.onclick = e => {
+    //----------------------------------
+    // Dynamic Image Size
+    //----------------------------------
 
-            e.stopPropagation();
+    const imageWidth = item.width * SETTINGS.cellSize * 0.55;
 
-            removeItem(item.startCell);
+    const imageHeight = item.height * SETTINGS.cellSize * 0.55;
 
-            drawCanvas();
+    img.style.width = `${imageWidth}px`;
+    img.style.height = `${imageHeight}px`;
 
-        };
+    img.style.maxWidth = "100%";
+    img.style.maxHeight = "100%";
 
-        card.appendChild(remove);
+    img.style.objectFit = "contain";
+    img.style.pointerEvents = "none";
+    img.draggable = false;
 
-        //----------------------------------
-        // Image
-        //----------------------------------
+    //----------------------------------
+    // Catalog
+    //----------------------------------
 
-        const img = document.createElement("img");
+    const code = document.createElement("div");
 
-        img.className = "canvas-image";
+    code.className = "canvas-code";
 
-        img.src = image;
+    code.textContent = item.data.CatalogNumber;
 
-        //----------------------------------
-        // Dynamic Image Size
-        //----------------------------------
+    code.style.textAlign = "center";
+    code.style.fontSize = "11px";
+    code.style.fontWeight = "600";
+    code.style.pointerEvents = "none";
 
-        const imageWidth =
-            item.width * SETTINGS.cellSize * 0.55;
+    //----------------------------------
+    // Description
+    //----------------------------------
 
-        const imageHeight =
-            item.height * SETTINGS.cellSize * 0.55;
+    const desc = document.createElement("div");
 
-        img.style.width = `${imageWidth}px`;
-        img.style.height = `${imageHeight}px`;
+    desc.className = "canvas-desc";
 
-        img.style.maxWidth = "100%";
-        img.style.maxHeight = "100%";
+    desc.textContent = `${item.data.Size || ""} ${item.data.Type || ""}`;
 
-        img.style.objectFit = "contain";
-        img.style.pointerEvents = "none";
-        img.draggable = false;
+    desc.style.textAlign = "center";
+    desc.style.fontSize = "10px";
+    desc.style.pointerEvents = "none";
 
-        //----------------------------------
-        // Catalog
-        //----------------------------------
+    //----------------------------------
+    // Assemble Card
+    //----------------------------------
 
-        const code = document.createElement("div");
+    card.appendChild(img);
 
-        code.className = "canvas-code";
+    card.appendChild(code);
 
-        code.textContent = item.data.CatalogNumber;
+    card.appendChild(desc);
 
-        code.style.textAlign = "center";
-        code.style.fontSize = "11px";
-        code.style.fontWeight = "600";
-        code.style.pointerEvents = "none";
+    //----------------------------------
+    // Enable Drag
+    //----------------------------------
 
-        //----------------------------------
-        // Description
-        //----------------------------------
+    if (typeof enableDrag === "function") {
+      enableDrag(card, item);
+    }
 
-        const desc = document.createElement("div");
+    //----------------------------------
+    // Equipment Node
+    //----------------------------------
 
-        desc.className = "canvas-desc";
+    if (typeof drawEquipmentNode === "function") {
+      drawEquipmentNode(
+        card,
 
-        desc.textContent =
-            `${item.data.Size || ""} ${item.data.Type || ""}`;
+        item,
+      );
+    }
 
-        desc.style.textAlign = "center";
-        desc.style.fontSize = "10px";
-        desc.style.pointerEvents = "none";
+    //----------------------------------
+    // Add to Cell
+    //----------------------------------
 
-        //----------------------------------
-        // Assemble Card
-        //----------------------------------
-
-        card.appendChild(img);
-
-        card.appendChild(code);
-
-        card.appendChild(desc);
-
-        //----------------------------------
-        // Enable Drag
-        //----------------------------------
-
-        if (typeof enableDrag === "function") {
-
-            enableDrag(card, item);
-
-        }
-
-        //----------------------------------
-        // Equipment Node
-        //----------------------------------
-
-        if (typeof drawEquipmentNode === "function") {
-
-            drawEquipmentNode(
-
-                card,
-
-                item
-
-            );
-
-        }
-
-        //----------------------------------
-        // Add to Cell
-        //----------------------------------
-
-        cell.appendChild(card);
-
-    });
-
+    cell.appendChild(card);
+  });
 }
 
 //----------------------------------

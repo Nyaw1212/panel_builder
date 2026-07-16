@@ -746,3 +746,60 @@ Assembly Quantity
     text-align:center;
 
 }
+/*==================================
+Equipment Component Chips
+==================================*/
+
+.equipment-chip{
+
+    width:100%;
+
+    padding:12px 16px;
+
+    border:1px solid #334155;
+
+    border-radius:8px;
+
+    background:#334155;
+
+    color:#ffffff;
+
+    font-size:13px;
+
+    font-weight:700;
+
+    letter-spacing:.5px;
+
+    cursor:pointer;
+
+    transition:.15s;
+
+}
+
+.equipment-chip:hover{
+
+    background:#475569;
+
+    border-color:#475569;
+
+    transform:translateY(-1px);
+
+}
+
+.equipment-chip.active{
+
+    background:#0F172A;
+
+    border-color:#0F172A;
+
+    color:#ffffff;
+
+}
+
+.equipment-chip:focus{
+
+    outline:none;
+
+    box-shadow:0 0 0 3px rgba(51,65,85,.25);
+
+}

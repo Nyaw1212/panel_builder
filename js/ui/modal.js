@@ -7,8 +7,15 @@ const modalList = document.getElementById("modalList");
 const modalSearch = document.getElementById("modalSearch");
 const closeModal = document.getElementById("closeModal");
 
+//----------------------------------
 // Filter UI
-const modalFilters = document.getElementById("modalFilters");
+//----------------------------------
+
+const modalFilters =
+    document.getElementById("modalFilters");
+
+const equipmentFilters =
+    document.getElementById("equipmentFilters");
 
 //----------------------------------
 // State
@@ -18,6 +25,7 @@ let modalMode = "equipment";
 let modalTitle = "Place Node";
 let modalSource = [];
 let modalOnSelect = null;
+
 let currentCell = null;
 let currentConnection = null;
 
@@ -69,13 +77,29 @@ function openPickerModal(
 
     modalSearch.value = "";
 
+    //----------------------------------
+    // Filters
+    //----------------------------------
+
     if (modalFilters) {
 
         modalFilters.style.display = "none";
 
     }
 
-    document.querySelector(".modal-header h2").textContent = title;
+    if (equipmentFilters) {
+
+        equipmentFilters.style.display = "none";
+
+    }
+
+    //----------------------------------
+
+    document.querySelector(
+
+        ".modal-header h2"
+
+    ).textContent = title;
 
     buildModalList();
 
@@ -103,13 +127,29 @@ function openModal(index) {
 
     modalSearch.value = "";
 
+    //----------------------------------
+    // Filters
+    //----------------------------------
+
     if (modalFilters) {
 
         modalFilters.style.display = "none";
 
     }
 
-    document.querySelector(".modal-header h2").textContent = modalTitle;
+    if (equipmentFilters) {
+
+        equipmentFilters.style.display = "none";
+
+    }
+
+    //----------------------------------
+
+    document.querySelector(
+
+        ".modal-header h2"
+
+    ).textContent = modalTitle;
 
     buildModalList();
 
@@ -137,14 +177,24 @@ async function openMaterialModal(connection) {
 
     modalSearch.value = "";
 
+    //----------------------------------
+    // Filters
+    //----------------------------------
+
     if (modalFilters) {
 
         modalFilters.style.display = "grid";
 
     }
 
+    if (equipmentFilters) {
+
+        equipmentFilters.style.display = "none";
+
+    }
+
     //----------------------------------
-    // Filters (safe)
+    // Reset
     //----------------------------------
 
     if (typeof resetModalFilters === "function") {
@@ -153,17 +203,31 @@ async function openMaterialModal(connection) {
 
     }
 
+    //----------------------------------
+    // Build Chips
+    //----------------------------------
+
     if (typeof buildFilterChips === "function") {
 
         buildFilterChips(
 
-            getHardwareModalList(modalSource)
+            getHardwareModalList(
+
+                modalSource
+
+            )
 
         );
 
     }
 
-    document.querySelector(".modal-header h2").textContent = modalTitle;
+    //----------------------------------
+
+    document.querySelector(
+
+        ".modal-header h2"
+
+    ).textContent = modalTitle;
 
     buildModalList();
 
@@ -183,7 +247,11 @@ function buildModalList(searchText = "") {
     // Selected Hardware
     //----------------------------------
 
-    if (modalMode === "material") {
+    if (
+
+        modalMode === "material"
+
+    ) {
 
         buildHardwarePanel();
 
@@ -199,7 +267,11 @@ function buildModalList(searchText = "") {
     // Equipment
     //----------------------------------
 
-    if (modalMode === "equipment") {
+    if (
+
+        modalMode === "equipment"
+
+    ) {
 
         list = getEquipmentModalList(list);
 
@@ -209,35 +281,57 @@ function buildModalList(searchText = "") {
     // Hardware
     //----------------------------------
 
-    else if (modalMode === "material") {
+    else if (
+
+        modalMode === "material"
+
+    ) {
 
         list = getHardwareModalList(list);
 
-        if (typeof applyModalFilters === "function") {
+        if (
+
+            typeof applyModalFilters === "function"
+
+        ) {
 
             list = applyModalFilters(list);
 
         }
 
         //----------------------------------
-        // Favorites First
+        // Favorites
         //----------------------------------
 
         list.sort((a, b) => {
 
-    const priorityA = Number(a.Favorite || 0);
-    const priorityB = Number(b.Favorite || 0);
+            const priorityA =
+                Number(a.Favorite || 0);
 
-    if (priorityA !== priorityB) {
+            const priorityB =
+                Number(b.Favorite || 0);
 
-        return priorityB - priorityA;
+            if (
 
-    }
+                priorityA !== priorityB
 
-    return (a.CatalogNumber || "")
-        .localeCompare(b.CatalogNumber || "");
+            ) {
 
-});
+                return priorityB - priorityA;
+
+            }
+
+            return (
+
+                a.CatalogNumber || ""
+
+            ).localeCompare(
+
+                b.CatalogNumber || ""
+
+            );
+
+        });
 
     }
 
@@ -265,21 +359,34 @@ function buildModalList(searchText = "") {
 // Search
 //----------------------------------
 
-modalSearch.addEventListener("input", () => {
+modalSearch.addEventListener(
 
-    buildModalList(
+    "input",
 
-        modalSearch.value
+    () => {
 
-    );
+        buildModalList(
 
-});
+            modalSearch.value
+
+        );
+
+    }
+
+);
 
 //----------------------------------
 // Expose
 //----------------------------------
 
-window.openModal = openModal;
-window.openMaterialModal = openMaterialModal;
-window.openPickerModal = openPickerModal;
-window.buildModalList = buildModalList;
+window.openModal =
+    openModal;
+
+window.openMaterialModal =
+    openMaterialModal;
+
+window.openPickerModal =
+    openPickerModal;
+
+window.buildModalList =
+    buildModalList;
