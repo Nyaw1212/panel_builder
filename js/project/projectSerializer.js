@@ -3,9 +3,7 @@
 //----------------------------------
 
 function serializeEquipmentData(data) {
-
-    return structuredClone(data);
-
+  return structuredClone(data);
 }
 
 //----------------------------------
@@ -13,31 +11,27 @@ function serializeEquipmentData(data) {
 //----------------------------------
 
 function serializeConnection(connection) {
+  return {
+    id: connection.id,
 
-    return {
+    side: connection.side,
 
-        id: connection.id,
+    offset: connection.offset,
 
-        side: connection.side,
+    connected: connection.connected,
 
-        offset: connection.offset,
+    hardware: structuredClone(connection.hardware),
 
-        connected: connection.connected,
+    wires: structuredClone(connection.wires),
 
-        hardware: structuredClone(connection.hardware),
+    materials: structuredClone(connection.materials),
 
-        wires: structuredClone(connection.wires),
+    conduit: structuredClone(connection.conduit),
 
-        materials: structuredClone(connection.materials),
+    conduitLength: connection.conduitLength,
 
-        conduit: structuredClone(connection.conduit),
-
-        conduitLength: connection.conduitLength,
-
-        notes: connection.notes
-
-    };
-
+    notes: connection.notes,
+  };
 }
 
 //----------------------------------
@@ -45,67 +39,47 @@ function serializeConnection(connection) {
 //----------------------------------
 
 function serializeItem(item) {
+  const connections = {};
 
-    const connections = {};
+  CONNECTION_SIDES.forEach((side) => {
+    connections[side] = item.connections[side].map(serializeConnection);
+  });
 
-    CONNECTION_SIDES.forEach(side => {
+  return {
+    //----------------------------------
+    // Identity
+    //----------------------------------
 
-        connections[side] =
+    id: item.id,
 
-            item.connections[side].map(
+    //----------------------------------
+    // Layout
+    //----------------------------------
 
-                serializeConnection
+    startCell: item.startCell,
 
-            );
+    width: item.width,
 
-    });
+    height: item.height,
 
-    return {
+    rotation: item.rotation || 0,
 
-        //----------------------------------
-        // Identity
-        //----------------------------------
+    //----------------------------------
+    // Equipment
+    //----------------------------------
 
-        id: item.id,
+    data: serializeEquipmentData(item.data),
 
-        //----------------------------------
-        // Layout
-        //----------------------------------
+    preset: item.preset || "",
 
-        startCell: item.startCell,
+    materials: structuredClone(item.materials || []),
 
-        width: item.width,
+    //----------------------------------
+    // Connections
+    //----------------------------------
 
-        height: item.height,
-
-        rotation: item.rotation || 0,
-
-        //----------------------------------
-        // Equipment
-        //----------------------------------
-
-        data: serializeEquipmentData(
-
-            item.data
-
-        ),
-
-        preset: item.preset || "",
-
-        materials: structuredClone(
-
-            item.materials || []
-
-        ),
-
-        //----------------------------------
-        // Connections
-        //----------------------------------
-
-        connections
-
-    };
-
+    connections,
+  };
 }
 
 //----------------------------------
@@ -113,29 +87,21 @@ function serializeItem(item) {
 //----------------------------------
 
 function serializeLayout() {
+  const uniqueItems = [];
 
-    const uniqueItems = [];
+  const seen = new Set();
 
-    const seen = new Set();
+  getLayout().forEach((item) => {
+    if (!item) return;
 
-    getLayout().forEach(item => {
+    if (seen.has(item.id)) return;
 
-        if (!item) return;
+    seen.add(item.id);
 
-        if (seen.has(item.id)) return;
+    uniqueItems.push(serializeItem(item));
+  });
 
-        seen.add(item.id);
-
-        uniqueItems.push(
-
-            serializeItem(item)
-
-        );
-
-    });
-
-    return uniqueItems;
-
+  return uniqueItems;
 }
 
 //----------------------------------
@@ -143,25 +109,21 @@ function serializeLayout() {
 //----------------------------------
 
 function serializeLink(link) {
+  return {
+    id: link.id,
 
-    return {
+    start: structuredClone(link.start),
 
-        id: link.id,
+    end: structuredClone(link.end),
 
-        start: structuredClone(link.start),
+    conduit: structuredClone(link.conduit),
 
-        end: structuredClone(link.end),
+    assembly: structuredClone(link.assembly),
 
-        conduit: structuredClone(link.conduit),
+    materials: structuredClone(link.materials),
 
-        assembly: structuredClone(link.assembly),
-
-        materials: structuredClone(link.materials),
-
-        geometry: structuredClone(link.geometry)
-
-    };
-
+    geometry: structuredClone(link.geometry),
+  };
 }
 
 //----------------------------------
@@ -169,13 +131,7 @@ function serializeLink(link) {
 //----------------------------------
 
 function serializeLinks() {
-
-    return getLinks().map(
-
-        serializeLink
-
-    );
-
+  return getLinks().map(serializeLink);
 }
 
 //----------------------------------
@@ -183,75 +139,81 @@ function serializeLinks() {
 //----------------------------------
 
 function serializeMaterialSummary() {
+  const map = {};
 
-    const map = {};
+  const seen = new Set();
 
-    const seen = new Set();
+  //----------------------------------
+  // Helper
+  //----------------------------------
 
-    getLayout().forEach(item => {
+  function addMaterial(item, qty = 1) {
+    if (!item?.CatalogNumber) return;
 
-        if (!item) return;
+    const key = item.CatalogNumber;
 
-        if (seen.has(item.id)) return;
+    if (!map[key]) {
+      map[key] = {
+        CatalogNumber: item.CatalogNumber,
 
-        seen.add(item.id);
+        Description: item.Description || "",
 
-        if (!item.data?.CatalogNumber) return;
+        Type: item.Type || "",
 
-        const key = item.data.CatalogNumber;
+        InventoryCategory:
+    item.inventoryCategory ||
+    item.InventoryCategory ||
+    item.category ||
+    "",
 
-        if (!map[key]) {
+        Supplier: item.Supplier || "",
 
-            map[key] = {
+        VendorCode: item.VendorCode || "",
 
-                CatalogNumber: key,
+        Price: Number(item.Price) || 0,
 
-                Qty: 0
+        Qty: 0,
+      };
+    }
 
-            };
+    map[key].Qty += qty;
+  }
 
-        }
+  //----------------------------------
+  // Equipment
+  //----------------------------------
 
-        map[key].Qty++;
+  getLayout().forEach((item) => {
+    if (!item) return;
 
+    if (seen.has(item.id)) return;
+
+    seen.add(item.id);
+
+    addMaterial(item.data);
+  });
+
+  //----------------------------------
+  // Generated BOM
+  //----------------------------------
+
+  const bom = generateBOM();
+
+  Object.values(bom).forEach((group) => {
+    if (!Array.isArray(group)) return;
+
+    group.forEach((item) => {
+      addMaterial(item, item.Qty || 1);
     });
+  });
 
-    const bom = generateBOM();
+  //----------------------------------
+  // Sort
+  //----------------------------------
 
-    bom.fittings.forEach(item => {
+  return Object.values(map)
 
-        if (!item?.CatalogNumber) return;
-
-        const key = item.CatalogNumber;
-
-        if (!map[key]) {
-
-            map[key] = {
-
-                CatalogNumber: key,
-
-                Qty: 0
-
-            };
-
-        }
-
-        map[key].Qty += item.Qty;
-
-    });
-
-    return Object.values(map)
-
-        .sort((a, b) =>
-
-            a.CatalogNumber.localeCompare(
-
-                b.CatalogNumber
-
-            )
-
-        );
-
+    .sort((a, b) => a.CatalogNumber.localeCompare(b.CatalogNumber));
 }
 
 //----------------------------------
@@ -259,65 +221,43 @@ function serializeMaterialSummary() {
 //----------------------------------
 
 function serializeProject() {
+  const project = getProjectState();
 
-    const project = getProjectState();
+  return {
+    id: project.id,
 
-    return {
+    version: project.version,
 
-        id: project.id,
+    jobName: project.jobName,
 
-        version: project.version,
+    address: project.address,
 
-        jobName: project.jobName,
+    layout: serializeLayout(),
 
-        address: project.address,
+    links: serializeLinks(),
 
-        layout: serializeLayout(),
+    materialSummary: serializeMaterialSummary(),
 
-        links: serializeLinks(),
-
-        materialSummary:
-
-            serializeMaterialSummary(),
-
-        savedAt: Date.now()
-
-    };
-
+    savedAt: Date.now(),
+  };
 }
 
 //----------------------------------
 // Expose
 //----------------------------------
 
-window.serializeEquipmentData =
+window.serializeEquipmentData = serializeEquipmentData;
 
-    serializeEquipmentData;
+window.serializeConnection = serializeConnection;
 
-window.serializeConnection =
+window.serializeItem = serializeItem;
 
-    serializeConnection;
+window.serializeLayout = serializeLayout;
 
-window.serializeItem =
+window.serializeLink = serializeLink;
 
-    serializeItem;
+window.serializeLinks = serializeLinks;
 
-window.serializeLayout =
+window.serializeMaterialSummary = serializeMaterialSummary;
 
-    serializeLayout;
-
-window.serializeLink =
-
-    serializeLink;
-
-window.serializeLinks =
-
-    serializeLinks;
-
-window.serializeMaterialSummary =
-
-    serializeMaterialSummary;
-
-window.serializeProject =
-
-    serializeProject;
+window.serializeProject = serializeProject;

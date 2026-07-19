@@ -78,9 +78,9 @@ function getFittingBOM() {
 
         .sort((a, b) =>
 
-            a.CatalogNumber.localeCompare(
+            String(a.CatalogNumber || "").localeCompare(
 
-                b.CatalogNumber
+                String(b.CatalogNumber || "")
 
             )
 
@@ -166,25 +166,9 @@ function mergeMaterial(
 
     map[key] = {
 
-        CatalogNumber:
+        ...structuredClone(material),
 
-            material.CatalogNumber,
-
-        Description:
-
-            material.Description,
-
-        Size:
-
-            material.Size,
-
-        Type:
-
-            material.Type,
-
-        Qty: qty,
-
-        Material: material
+        Qty: qty
 
     };
 
@@ -215,5 +199,4 @@ function printBOM() {
 //----------------------------------
 
 window.generateBOM = generateBOM;
-
 window.printBOM = printBOM;
