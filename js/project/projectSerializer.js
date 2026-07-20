@@ -1,37 +1,98 @@
 //----------------------------------
+// Safe Clone
+//----------------------------------
+
+function cloneSerializable(value) {
+
+  if (
+    value === undefined
+  ) {
+    return undefined;
+  }
+
+  if (
+    typeof structuredClone ===
+    "function"
+  ) {
+
+    return structuredClone(
+      value
+    );
+
+  }
+
+  return JSON.parse(
+    JSON.stringify(
+      value
+    )
+  );
+
+}
+
+//----------------------------------
 // Serialize Equipment Data
 //----------------------------------
 
 function serializeEquipmentData(data) {
-  return structuredClone(data);
+
+  return cloneSerializable(
+    data
+  );
+
 }
 
 //----------------------------------
 // Serialize Connection
 //----------------------------------
 
-function serializeConnection(connection) {
+function serializeConnection(
+  connection
+) {
+
   return {
-    id: connection.id,
 
-    side: connection.side,
+    id:
+      connection.id,
 
-    offset: connection.offset,
+    side:
+      connection.side,
 
-    connected: connection.connected,
+    offset:
+      connection.offset,
 
-    hardware: structuredClone(connection.hardware),
+    connected:
+      connection.connected,
 
-    wires: structuredClone(connection.wires),
+    hardware:
+      cloneSerializable(
+        connection.hardware || []
+      ),
 
-    materials: structuredClone(connection.materials),
+    wires:
+      cloneSerializable(
+        connection.wires || []
+      ),
 
-    conduit: structuredClone(connection.conduit),
+    materials:
+      cloneSerializable(
+        connection.materials || []
+      ),
 
-    conduitLength: connection.conduitLength,
+    conduit:
+      cloneSerializable(
+        connection.conduit || null
+      ),
 
-    notes: connection.notes,
+    conduitLength:
+      Number(
+        connection.conduitLength || 0
+      ),
+
+    notes:
+      connection.notes || ""
+
   };
+
 }
 
 //----------------------------------
@@ -39,52 +100,79 @@ function serializeConnection(connection) {
 //----------------------------------
 
 function serializeItem(item) {
+
   const connections = {};
 
-  CONNECTION_SIDES.forEach((side) => {
-    connections[side] =
-      item.connections[side].map(
-        serializeConnection
-      );
-  });
+  CONNECTION_SIDES.forEach(
+    side => {
+
+      const sideConnections =
+        item.connections?.[side] || [];
+
+      connections[side] =
+        sideConnections.map(
+          serializeConnection
+        );
+
+    }
+  );
 
   return {
+
     //----------------------------------
     // Identity
     //----------------------------------
 
-    id: item.id,
+    id:
+      item.id,
 
     //----------------------------------
     // Layout
     //----------------------------------
 
-    startCell: item.startCell,
+    startCell:
+      item.startCell,
 
-    width: item.width,
+    width:
+      Number(
+        item.width || 1
+      ),
 
-    height: item.height,
+    height:
+      Number(
+        item.height || 1
+      ),
 
-    rotation: item.rotation || 0,
+    rotation:
+      Number(
+        item.rotation || 0
+      ),
 
     //----------------------------------
     // Equipment
     //----------------------------------
 
-    data: serializeEquipmentData(item.data),
+    data:
+      serializeEquipmentData(
+        item.data
+      ),
 
-    preset: item.preset || "",
+    preset:
+      item.preset || "",
 
-    materials: structuredClone(
-      item.materials || []
-    ),
+    materials:
+      cloneSerializable(
+        item.materials || []
+      ),
 
     //----------------------------------
     // Connections
     //----------------------------------
 
-    connections,
+    connections
+
   };
+
 }
 
 //----------------------------------
@@ -92,23 +180,39 @@ function serializeItem(item) {
 //----------------------------------
 
 function serializeLayout() {
+
   const uniqueItems = [];
 
   const seen = new Set();
 
-  getLayout().forEach((item) => {
-    if (!item) return;
+  getLayout().forEach(
+    item => {
 
-    if (seen.has(item.id)) return;
+      if (!item) return;
 
-    seen.add(item.id);
+      if (
+        seen.has(
+          item.id
+        )
+      ) {
+        return;
+      }
 
-    uniqueItems.push(
-      serializeItem(item)
-    );
-  });
+      seen.add(
+        item.id
+      );
+
+      uniqueItems.push(
+        serializeItem(
+          item
+        )
+      );
+
+    }
+  );
 
   return uniqueItems;
+
 }
 
 //----------------------------------
@@ -116,21 +220,44 @@ function serializeLayout() {
 //----------------------------------
 
 function serializeLink(link) {
+
   return {
-    id: link.id,
 
-    start: structuredClone(link.start),
+    id:
+      link.id,
 
-    end: structuredClone(link.end),
+    start:
+      cloneSerializable(
+        link.start
+      ),
 
-    conduit: structuredClone(link.conduit),
+    end:
+      cloneSerializable(
+        link.end
+      ),
 
-    assembly: structuredClone(link.assembly),
+    conduit:
+      cloneSerializable(
+        link.conduit || null
+      ),
 
-    materials: structuredClone(link.materials),
+    assembly:
+      cloneSerializable(
+        link.assembly || null
+      ),
 
-    geometry: structuredClone(link.geometry),
+    materials:
+      cloneSerializable(
+        link.materials || []
+      ),
+
+    geometry:
+      cloneSerializable(
+        link.geometry || null
+      )
+
   };
+
 }
 
 //----------------------------------
@@ -138,9 +265,11 @@ function serializeLink(link) {
 //----------------------------------
 
 function serializeLinks() {
+
   return getLinks().map(
     serializeLink
   );
+
 }
 
 //----------------------------------
@@ -148,6 +277,7 @@ function serializeLinks() {
 //----------------------------------
 
 function serializeMaterialSummary() {
+
   const map = {};
 
   const seen = new Set();
@@ -157,9 +287,13 @@ function serializeMaterialSummary() {
   //----------------------------------
 
   function normalizeCategory(value) {
-    return String(value || "")
+
+    return String(
+      value || ""
+    )
       .trim()
       .toUpperCase();
+
   }
 
   //----------------------------------
@@ -171,25 +305,34 @@ function serializeMaterialSummary() {
     qty = 1,
     fallbackCategory = ""
   ) {
+
     if (!item) return;
 
-    const catalogNumber = String(
-      item.CatalogNumber ??
-      item.catalogNumber ??
-      ""
-    ).trim();
+    const catalogNumber =
+      String(
+        item.CatalogNumber ??
+        item.catalogNumber ??
+        ""
+      ).trim();
 
-    if (!catalogNumber) return;
+    if (!catalogNumber) {
+      return;
+    }
 
-    const category = normalizeCategory(
-      item.InventoryCategory ??
-      item.inventoryCategory ??
-      item.category ??
-      fallbackCategory
-    );
+    const category =
+      normalizeCategory(
+        item.InventoryCategory ??
+        item.inventoryCategory ??
+        item.category ??
+        fallbackCategory
+      );
 
-    if (!map[catalogNumber]) {
+    if (
+      !map[catalogNumber]
+    ) {
+
       map[catalogNumber] = {
+
         CatalogNumber:
           catalogNumber,
 
@@ -223,8 +366,10 @@ function serializeMaterialSummary() {
             0
           ) || 0,
 
-        Qty: 0,
+        Qty: 0
+
       };
+
     }
 
     //----------------------------------
@@ -232,11 +377,15 @@ function serializeMaterialSummary() {
     //----------------------------------
 
     if (
-      !map[catalogNumber].InventoryCategory &&
+      !map[catalogNumber]
+        .InventoryCategory &&
       category
     ) {
-      map[catalogNumber].InventoryCategory =
+
+      map[catalogNumber]
+        .InventoryCategory =
         category;
+
     }
 
     //----------------------------------
@@ -244,50 +393,70 @@ function serializeMaterialSummary() {
     //----------------------------------
 
     if (
-      !map[catalogNumber].Description
+      !map[catalogNumber]
+        .Description
     ) {
-      map[catalogNumber].Description =
+
+      map[catalogNumber]
+        .Description =
         item.Description ??
         item.description ??
         "";
+
     }
 
     if (
-      !map[catalogNumber].Type
+      !map[catalogNumber]
+        .Type
     ) {
-      map[catalogNumber].Type =
+
+      map[catalogNumber]
+        .Type =
         item.Type ??
         item.type ??
         "";
+
     }
 
     if (
-      !map[catalogNumber].Supplier
+      !map[catalogNumber]
+        .Supplier
     ) {
-      map[catalogNumber].Supplier =
+
+      map[catalogNumber]
+        .Supplier =
         item.Supplier ??
         item.supplier ??
         "";
+
     }
 
     if (
-      !map[catalogNumber].VendorCode
+      !map[catalogNumber]
+        .VendorCode
     ) {
-      map[catalogNumber].VendorCode =
+
+      map[catalogNumber]
+        .VendorCode =
         item.VendorCode ??
         item.vendorCode ??
         "";
+
     }
 
     if (
-      !map[catalogNumber].Price
+      !map[catalogNumber]
+        .Price
     ) {
-      map[catalogNumber].Price =
+
+      map[catalogNumber]
+        .Price =
         Number(
           item.Price ??
           item.price ??
           0
         ) || 0;
+
     }
 
     //----------------------------------
@@ -295,94 +464,182 @@ function serializeMaterialSummary() {
     //----------------------------------
 
     map[catalogNumber].Qty +=
-      Number(qty) || 0;
+      Number(
+        qty
+      ) || 0;
+
   }
 
   //----------------------------------
   // Equipment = BOS
   //----------------------------------
 
-  getLayout().forEach((item) => {
-    if (!item) return;
+  getLayout().forEach(
+    item => {
 
-    if (seen.has(item.id)) return;
+      if (!item) return;
 
-    seen.add(item.id);
+      if (
+        seen.has(
+          item.id
+        )
+      ) {
+        return;
+      }
 
-    addMaterial(
-      item.data,
-      1,
-      "BOS"
-    );
-  });
+      seen.add(
+        item.id
+      );
+
+      addMaterial(
+        item.data,
+        1,
+        "BOS"
+      );
+
+    }
+  );
 
   //----------------------------------
   // Generated BOM = VAN
   //----------------------------------
 
-  const bom = generateBOM();
+  const bom =
+    generateBOM();
 
   Object.values(
     bom || {}
-  ).forEach((group) => {
-    if (!Array.isArray(group)) {
-      return;
-    }
+  ).forEach(
+    group => {
 
-    group.forEach((item) => {
-      addMaterial(
-        item,
-        item.Qty ??
-        item.qty ??
-        item.Quantity ??
-        1,
-        "VAN"
+      if (
+        !Array.isArray(
+          group
+        )
+      ) {
+        return;
+      }
+
+      group.forEach(
+        item => {
+
+          addMaterial(
+            item,
+            item.Qty ??
+            item.qty ??
+            item.Quantity ??
+            1,
+            "VAN"
+          );
+
+        }
       );
-    });
-  });
+
+    }
+  );
 
   //----------------------------------
   // Sort
   //----------------------------------
 
-  return Object.values(map)
-    .sort((a, b) =>
+  return Object.values(
+    map
+  ).sort(
+    (a, b) =>
       a.CatalogNumber.localeCompare(
         b.CatalogNumber
       )
-    );
+  );
+
 }
 
 //----------------------------------
-// Serialize Project
+// Serialize Project Core
+//----------------------------------
+
+function serializeProjectCore() {
+
+  const project =
+    getProjectState();
+
+  return {
+
+    id:
+      project.id,
+
+    version:
+      project.version,
+
+    jobName:
+      project.jobName || "",
+
+    address:
+      project.address || "",
+
+    electrician:
+      project.electrician || "",
+
+    lender:
+      project.lender || "",
+
+    model:
+      project.model || "",
+
+    layout:
+      serializeLayout(),
+
+    links:
+      serializeLinks(),
+
+    materialSummary:
+      serializeMaterialSummary()
+
+  };
+
+}
+
+//----------------------------------
+// Serialize Project For Save
 //----------------------------------
 
 function serializeProject() {
-  const project = getProjectState();
 
   return {
-    id: project.id,
 
-    version: project.version,
+    ...serializeProjectCore(),
 
-    jobName: project.jobName,
+    savedAt:
+      Date.now()
 
-    address: project.address,
-
-    layout: serializeLayout(),
-
-    links: serializeLinks(),
-
-    materialSummary:
-      serializeMaterialSummary(),
-
-    savedAt: Date.now(),
   };
+
+}
+
+//----------------------------------
+// Serialize Project For History
+//----------------------------------
+
+function serializeProjectHistory() {
+
+  /*
+   * History snapshots must not contain
+   * changing timestamps such as savedAt.
+   *
+   * Otherwise every history capture appears
+   * different even when the project did not
+   * actually change.
+   */
+
+  return serializeProjectCore();
+
 }
 
 //----------------------------------
 // Expose
 //----------------------------------
+
+window.cloneSerializable =
+  cloneSerializable;
 
 window.serializeEquipmentData =
   serializeEquipmentData;
@@ -405,5 +662,11 @@ window.serializeLinks =
 window.serializeMaterialSummary =
   serializeMaterialSummary;
 
+window.serializeProjectCore =
+  serializeProjectCore;
+
 window.serializeProject =
   serializeProject;
+
+window.serializeProjectHistory =
+  serializeProjectHistory;

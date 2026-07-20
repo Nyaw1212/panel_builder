@@ -5,279 +5,1068 @@
 let projectDialog = null;
 
 //----------------------------------
+// Theme
+//----------------------------------
+
+const PROJECT_DIALOG_THEME = {
+    overlay: "rgba(2, 8, 20, 0.76)",
+    card: "#111827",
+    cardAlt: "#0f172a",
+    border: "#334155",
+    borderHover: "#475569",
+    text: "#f8fafc",
+    mutedText: "#cbd5e1",
+    primary: "#2563eb",
+    primaryHover: "#1d4ed8",
+    secondary: "#1e293b",
+    secondaryHover: "#334155"
+};
+
+//----------------------------------
+// Style Helpers
+//----------------------------------
+
+function styleProjectDialogInput(input) {
+
+    Object.assign(input.style, {
+        width: "100%",
+        boxSizing: "border-box",
+        marginTop: "6px",
+        marginBottom: "16px",
+        padding: "11px 12px",
+        background: PROJECT_DIALOG_THEME.cardAlt,
+        color: PROJECT_DIALOG_THEME.text,
+        border: `1px solid ${PROJECT_DIALOG_THEME.border}`,
+        borderRadius: "7px",
+        outline: "none",
+        fontSize: "14px",
+        fontFamily: "inherit",
+        transition:
+            "border-color .15s ease, box-shadow .15s ease"
+    });
+
+    input.addEventListener("focus", () => {
+        input.style.borderColor =
+            PROJECT_DIALOG_THEME.primary;
+
+        input.style.boxShadow =
+            "0 0 0 3px rgba(37, 99, 235, 0.20)";
+    });
+
+    input.addEventListener("blur", () => {
+        input.style.borderColor =
+            PROJECT_DIALOG_THEME.border;
+
+        input.style.boxShadow =
+            "none";
+    });
+
+}
+
+function styleProjectDialogLabel(label) {
+
+    Object.assign(label.style, {
+        display: "block",
+        color: PROJECT_DIALOG_THEME.mutedText,
+        fontSize: "13px",
+        fontWeight: "600"
+    });
+
+}
+
+function styleProjectDialogButton(
+    button,
+    variant = "secondary"
+) {
+
+    const isPrimary =
+        variant === "primary";
+
+    const background =
+        isPrimary
+            ? PROJECT_DIALOG_THEME.primary
+            : PROJECT_DIALOG_THEME.secondary;
+
+    const hoverBackground =
+        isPrimary
+            ? PROJECT_DIALOG_THEME.primaryHover
+            : PROJECT_DIALOG_THEME.secondaryHover;
+
+    Object.assign(button.style, {
+        minHeight: "38px",
+        padding: "9px 16px",
+        background,
+        color: "#ffffff",
+        border:
+            isPrimary
+                ? "1px solid #3b82f6"
+                : `1px solid ${PROJECT_DIALOG_THEME.borderHover}`,
+        borderRadius: "7px",
+        fontWeight: "600",
+        fontFamily: "inherit",
+        cursor: "pointer",
+        transition:
+            "background .15s ease, transform .05s ease"
+    });
+
+    button.addEventListener("mouseenter", () => {
+        button.style.background =
+            hoverBackground;
+    });
+
+    button.addEventListener("mouseleave", () => {
+        button.style.background =
+            background;
+    });
+
+    button.addEventListener("mousedown", () => {
+        button.style.transform =
+            "translateY(1px)";
+    });
+
+    button.addEventListener("mouseup", () => {
+        button.style.transform =
+            "translateY(0)";
+    });
+
+}
+
+//----------------------------------
+// Normalize Text
+//----------------------------------
+
+function normalizeProjectDetailValue(value) {
+
+    return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+
+}
+
+//----------------------------------
+// Parse Pasted Project Details
+//----------------------------------
+
+function parseProjectDetails(text) {
+
+    const raw =
+        String(text || "").trim();
+
+    if (!raw) {
+        return null;
+    }
+
+    const knownLenders = [
+        "concert",
+        "propel",
+        "solrite",
+        "enfin",
+        "goodleap",
+        "everbright",
+        "sungage"
+    ];
+
+    let values = [];
+
+    if (raw.includes("\t")) {
+
+        values =
+            raw
+                .split(/\t+/)
+                .map(value => value.trim())
+                .filter(Boolean);
+
+    }
+    else if (raw.includes("/")) {
+
+        values =
+            raw
+                .split(/\s*\/\s*/)
+                .map(value => value.trim())
+                .filter(Boolean);
+
+    }
+    else {
+
+        values =
+            raw
+                .split(/\r?\n| {2,}/)
+                .map(value => value.trim())
+                .filter(Boolean);
+
+    }
+
+    if (!values.length) {
+        return null;
+    }
+
+    console.log(
+        "Parsed Raw Values:",
+        values
+    );
+
+    let lender = "";
+
+    const lenderIndex =
+        values.findIndex(value => {
+
+            const normalizedValue =
+                normalizeProjectDetailValue(value);
+
+            return knownLenders.some(
+                knownLender =>
+                    normalizedValue === knownLender ||
+                    normalizedValue.includes(knownLender)
+            );
+
+        });
+
+    if (lenderIndex !== -1) {
+
+        const normalizedLenderValue =
+            normalizeProjectDetailValue(
+                values[lenderIndex]
+            );
+
+        const matchedLender =
+            knownLenders.find(
+                knownLender =>
+                    normalizedLenderValue === knownLender ||
+                    normalizedLenderValue.includes(knownLender)
+            );
+
+        if (matchedLender) {
+
+            lender =
+                matchedLender
+                    .charAt(0)
+                    .toUpperCase() +
+                matchedLender.slice(1);
+
+        }
+
+    }
+
+    const streetClues = [
+        " st",
+        " street",
+        " rd",
+        " road",
+        " ln",
+        " lane",
+        " dr",
+        " drive",
+        " ave",
+        " avenue",
+        " blvd",
+        " boulevard",
+        " ct",
+        " court",
+        " way",
+        " pkwy",
+        " parkway",
+        " hwy",
+        " highway",
+        " cir",
+        " circle",
+        " pl",
+        " place",
+        " trl",
+        " trail"
+    ];
+
+    const addressIndex =
+        values.findIndex(value => {
+
+            const normalizedValue =
+                normalizeProjectDetailValue(value);
+
+            const hasNumber =
+                /\d+/.test(value);
+
+            const hasStreetClue =
+                streetClues.some(
+                    clue =>
+                        normalizedValue.includes(clue)
+                );
+
+            const hasCityStateZip =
+                /,\s*[a-z]{2}\s+\d{5}(?:-\d{4})?$/i
+                    .test(value);
+
+            return (
+                hasNumber &&
+                (
+                    hasStreetClue ||
+                    hasCityStateZip
+                )
+            );
+
+        });
+
+    function isDate(value) {
+
+        return (
+            /^\d{1,2}\/\d{1,2}\/\d{2,4}$/
+                .test(
+                    String(value).trim()
+                )
+        );
+
+    }
+
+    const ignoredStatuses = [
+        "new order",
+        "revision",
+        "revised",
+        "cancelled",
+        "canceled",
+        "complete",
+        "completed",
+        "pending",
+        "on hold",
+        "approved",
+        "ready",
+        "in progress",
+        "submitted"
+    ];
+
+    const jobName =
+        values[0] || "";
+
+    const address =
+        addressIndex !== -1
+            ? values[addressIndex]
+            : values[1] || "";
+
+    let electrician = "";
+
+    const addressPosition =
+        addressIndex !== -1
+            ? addressIndex
+            : 1;
+
+    for (
+        let index = addressPosition + 1;
+        index < values.length;
+        index++
+    ) {
+
+        const value =
+            values[index];
+
+        const normalizedValue =
+            normalizeProjectDetailValue(value);
+
+        if (
+            !value ||
+            isDate(value) ||
+            index === lenderIndex ||
+            ignoredStatuses.includes(
+                normalizedValue
+            )
+        ) {
+            continue;
+        }
+
+        electrician = value;
+
+        break;
+
+    }
+
+    if (
+        !electrician &&
+        values.length >= 3
+    ) {
+
+        electrician =
+            values[2] || "";
+
+    }
+
+    if (
+        !lender &&
+        values.length === 4
+    ) {
+
+        lender =
+            values[3] || "";
+
+    }
+
+    return {
+        jobName,
+        address,
+        electrician,
+        lender
+    };
+
+}
+
+//----------------------------------
+// Apply Parsed Details
+//----------------------------------
+
+function applyParsedProjectDetails(
+    parsed,
+    fields
+) {
+
+    if (!parsed || !fields) {
+        return;
+    }
+
+    fields.jobInput.value =
+        parsed.jobName || "";
+
+    fields.addressInput.value =
+        parsed.address || "";
+
+    fields.electricianInput.value =
+        parsed.electrician || "";
+
+    fields.lenderInput.value =
+        parsed.lender || "";
+
+}
+
+//----------------------------------
 // Show
 //----------------------------------
 
 function showProjectDialog() {
 
-    //----------------------------------
-    // Already Created
-    //----------------------------------
-
     if (projectDialog) {
 
-        const project = getProjectState();
+        const project =
+            getProjectState();
 
-        document.getElementById("projectJobName").value =
+        document
+            .getElementById("projectJobName")
+            .value =
             project.jobName || "";
 
-        document.getElementById("projectAddress").value =
+        document
+            .getElementById("projectAddress")
+            .value =
             project.address || "";
 
-        projectDialog.style.display = "flex";
+        document
+            .getElementById("projectElectrician")
+            .value =
+            project.electrician || "";
+
+        document
+            .getElementById("projectLender")
+            .value =
+            project.lender || "";
+
+        document
+            .getElementById("projectModel")
+            .value =
+            project.model || "";
+
+        document
+            .getElementById("projectPasteDetails")
+            .value = "";
+
+        projectDialog.style.display =
+            "flex";
 
         return;
 
     }
 
-    //----------------------------------
-    // Overlay
-    //----------------------------------
+    projectDialog =
+        document.createElement("div");
 
-    projectDialog = document.createElement("div");
+    projectDialog.id =
+        "projectDialog";
 
-    projectDialog.id = "projectDialog";
+    KeyboardManagerV2.register(
+    projectDialog,
+    {
+        close: hideProjectDialog,
 
-    Object.assign(projectDialog.style, {
+        save: () => {
+            saveButton.click();
+        },
 
-        position: "fixed",
+        confirm: () => {
+            saveButton.click();
+        },
 
-        left: "0",
+        closeOnOverlay: true,
+        closeOnEscape: true,
+        enterToConfirm: true,
+        ctrlEnterToConfirm: true,
+        priority: 100
+    }
+);
 
-        top: "0",
+    Object.assign(
+        projectDialog.style,
+        {
+            position: "fixed",
+            inset: "0",
+            width: "100vw",
+            height: "100vh",
+            boxSizing: "border-box",
+            padding: "20px",
+            background:
+                PROJECT_DIALOG_THEME.overlay,
+            backdropFilter:
+                "blur(5px)",
+            WebkitBackdropFilter:
+                "blur(5px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: "9999"
+        }
+    );
 
-        width: "100vw",
-
-        height: "100vh",
-
-        background: "rgba(0,0,0,.45)",
-
-        display: "flex",
-
-        alignItems: "center",
-
-        justifyContent: "center",
-
-        zIndex: "9999"
-
-    });
-
-    //----------------------------------
-    // Card
-    //----------------------------------
-
-    const card = document.createElement("div");
+    const card =
+        document.createElement("div");
 
     Object.assign(card.style, {
-
-        width: "420px",
-
-        background: "#fff",
-
-        borderRadius: "10px",
-
+        width: "460px",
+        maxWidth: "100%",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        boxSizing: "border-box",
+        background:
+            "linear-gradient(180deg, #111827 0%, #0b1120 100%)",
+        color: PROJECT_DIALOG_THEME.text,
+        border:
+            `1px solid ${PROJECT_DIALOG_THEME.border}`,
+        borderRadius: "12px",
         padding: "24px",
-
-        boxShadow: "0 10px 30px rgba(0,0,0,.2)"
-
+        boxShadow:
+            "0 22px 70px rgba(0, 0, 0, 0.58)",
+        scrollbarWidth: "thin",
+        scrollbarColor:
+            "#475569 #0b1120"
     });
 
-    //----------------------------------
-    // Title
-    //----------------------------------
+    const title =
+        document.createElement("h2");
 
-    const title = document.createElement("h2");
+    title.textContent =
+        "Save Project";
 
-    title.textContent = "Save Project";
-
-    title.style.margin = "0 0 20px 0";
-
-    //----------------------------------
-    // Project Name
-    //----------------------------------
-
-    const jobLabel = document.createElement("label");
-
-    jobLabel.textContent = "Project Name";
-
-    const jobInput = document.createElement("input");
-
-    jobInput.id = "projectJobName";
-
-    jobInput.type = "text";
-
-    jobInput.placeholder = "Enter Project Name";
-
-    Object.assign(jobInput.style, {
-
-        width: "100%",
-
-        marginTop: "6px",
-
-        marginBottom: "16px",
-
-        padding: "10px"
-
+    Object.assign(title.style, {
+        margin: "0 0 20px 0",
+        color: PROJECT_DIALOG_THEME.text,
+        fontSize: "20px",
+        fontWeight: "700"
     });
 
-    //----------------------------------
-    // Address
-    //----------------------------------
+    const pasteLabel =
+        document.createElement("label");
 
-    const addressLabel = document.createElement("label");
+    pasteLabel.textContent =
+        "Paste Project Details";
 
-    addressLabel.textContent = "Address";
+    styleProjectDialogLabel(
+        pasteLabel
+    );
 
-    const addressInput = document.createElement("input");
+    const pasteInput =
+        document.createElement("textarea");
 
-    addressInput.id = "projectAddress";
+    pasteInput.id =
+        "projectPasteDetails";
 
-    addressInput.type = "text";
+    pasteInput.rows =
+        4;
 
-    addressInput.placeholder = "Enter Address";
+    pasteInput.placeholder =
+        "Paste tab-separated data or:\nJob Name / Address / Electrician / Lender";
 
-    Object.assign(addressInput.style, {
+    styleProjectDialogInput(
+        pasteInput
+    );
 
-        width: "100%",
+    pasteInput.style.resize =
+        "vertical";
 
-        marginTop: "6px",
+    const parseButton =
+        document.createElement("button");
 
-        marginBottom: "20px",
+    parseButton.type =
+        "button";
 
-        padding: "10px"
+    parseButton.textContent =
+        "Parse Details";
 
-    });
+    styleProjectDialogButton(
+        parseButton,
+        "secondary"
+    );
 
-    //----------------------------------
-    // Existing Values
-    //----------------------------------
+    Object.assign(
+        parseButton.style,
+        {
+            width: "100%",
+            marginBottom: "20px"
+        }
+    );
 
-    const project = getProjectState();
+    const jobLabel =
+        document.createElement("label");
 
-    jobInput.value = project.jobName || "";
+    jobLabel.textContent =
+        "Project Name";
 
-    addressInput.value = project.address || "";
+    styleProjectDialogLabel(
+        jobLabel
+    );
 
-    //----------------------------------
-    // Buttons
-    //----------------------------------
+    const jobInput =
+        document.createElement("input");
 
-    const buttonRow = document.createElement("div");
+    jobInput.id =
+        "projectJobName";
 
-    buttonRow.style.display = "flex";
+    jobInput.type =
+        "text";
 
-    buttonRow.style.justifyContent = "flex-end";
+    jobInput.placeholder =
+        "Enter Project Name";
 
-    buttonRow.style.gap = "10px";
+    styleProjectDialogInput(
+        jobInput
+    );
 
-    //----------------------------------
-    // Cancel
-    //----------------------------------
+    const addressLabel =
+        document.createElement("label");
 
-    const cancelButton = document.createElement("button");
+    addressLabel.textContent =
+        "Address";
 
-    cancelButton.textContent = "Cancel";
+    styleProjectDialogLabel(
+        addressLabel
+    );
 
-    cancelButton.onclick = hideProjectDialog;
+    const addressInput =
+        document.createElement("input");
 
-    //----------------------------------
-    // Save
-    //----------------------------------
+    addressInput.id =
+        "projectAddress";
 
-    const saveButton = document.createElement("button");
+    addressInput.type =
+        "text";
 
-    saveButton.textContent = "Save";
+    addressInput.placeholder =
+        "Enter Address";
 
-    saveButton.onclick = async () => {
+    styleProjectDialogInput(
+        addressInput
+    );
 
-        const jobName = jobInput.value.trim();
+    const electricianLabel =
+        document.createElement("label");
 
-        const address = addressInput.value.trim();
+    electricianLabel.textContent =
+        "Electrician";
 
-        if (!jobName) {
+    styleProjectDialogLabel(
+        electricianLabel
+    );
 
-            alert("Project Name is required.");
+    const electricianInput =
+        document.createElement("input");
+
+    electricianInput.id =
+        "projectElectrician";
+
+    electricianInput.type =
+        "text";
+
+    electricianInput.placeholder =
+        "Enter Electrician";
+
+    styleProjectDialogInput(
+        electricianInput
+    );
+
+    const lenderLabel =
+        document.createElement("label");
+
+    lenderLabel.textContent =
+        "Lender";
+
+    styleProjectDialogLabel(
+        lenderLabel
+    );
+
+    const lenderInput =
+        document.createElement("input");
+
+    lenderInput.id =
+        "projectLender";
+
+    lenderInput.type =
+        "text";
+
+    lenderInput.placeholder =
+        "Enter Lender";
+
+    styleProjectDialogInput(
+        lenderInput
+    );
+
+    const modelLabel =
+        document.createElement("label");
+
+    modelLabel.textContent =
+        "Model";
+
+    styleProjectDialogLabel(
+        modelLabel
+    );
+
+    const modelInput =
+        document.createElement("input");
+
+    modelInput.id =
+        "projectModel";
+
+    modelInput.type =
+        "text";
+
+    modelInput.placeholder =
+        "Enter Model";
+
+    styleProjectDialogInput(
+        modelInput
+    );
+
+    const fields = {
+        jobInput,
+        addressInput,
+        electricianInput,
+        lenderInput,
+        modelInput
+    };
+
+    parseButton.onclick = () => {
+
+        const parsed =
+            parseProjectDetails(
+                pasteInput.value
+            );
+
+        if (!parsed) {
+
+            alert(
+                "Unable to parse the pasted details."
+            );
 
             return;
 
         }
 
-        //----------------------------------
-        // Update ONE Project State
-        //----------------------------------
+        applyParsedProjectDetails(
+            parsed,
+            fields
+        );
 
-        setProjectState({
-
-            ...getProjectState(),
-
-            jobName,
-
-            address
-
-        });
-
-        console.log("Project State");
-
-        console.log(getProjectState());
-
-        //----------------------------------
-        // Save
-        //----------------------------------
-
-        const result = await saveCurrentProject();
-
-        console.log(result);
-
-        if (result.success) {
-
-            hideProjectDialog();
-
-            alert("Project Saved!");
-
-        }
-        else {
-
-            alert("Save Failed.");
-
-        }
+        console.log(
+            "Parsed Project Details",
+            parsed
+        );
 
     };
 
-    //----------------------------------
-    // Build
-    //----------------------------------
+    pasteInput.addEventListener(
+        "paste",
+        () => {
 
-    buttonRow.appendChild(cancelButton);
+            setTimeout(
+                () => {
 
-    buttonRow.appendChild(saveButton);
+                    const parsed =
+                        parseProjectDetails(
+                            pasteInput.value
+                        );
+
+                    if (!parsed) {
+                        return;
+                    }
+
+                    applyParsedProjectDetails(
+                        parsed,
+                        fields
+                    );
+
+                },
+                0
+            );
+
+        }
+    );
+
+    const project =
+        getProjectState();
+
+    jobInput.value =
+        project.jobName || "";
+
+    addressInput.value =
+        project.address || "";
+
+    electricianInput.value =
+        project.electrician || "";
+
+    lenderInput.value =
+        project.lender || "";
+
+    modelInput.value =
+        project.model || "";
+
+    const buttonRow =
+        document.createElement("div");
+
+    Object.assign(
+        buttonRow.style,
+        {
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "10px",
+            marginTop: "4px"
+        }
+    );
+
+    const cancelButton =
+        document.createElement("button");
+
+    cancelButton.type =
+        "button";
+
+    cancelButton.textContent =
+        "Cancel";
+
+    styleProjectDialogButton(
+        cancelButton,
+        "secondary"
+    );
+
+    cancelButton.onclick =
+        hideProjectDialog;
+
+    const saveButton =
+        document.createElement("button");
+
+    saveButton.type =
+        "button";
+
+    saveButton.textContent =
+        "Save";
+
+    styleProjectDialogButton(
+        saveButton,
+        "primary"
+    );
+
+    saveButton.onclick =
+        async () => {
+
+            const jobName =
+                jobInput.value.trim();
+
+            const address =
+                addressInput.value.trim();
+
+            const electrician =
+                electricianInput
+                    .value
+                    .trim();
+
+            const lender =
+                lenderInput
+                    .value
+                    .trim();
+
+            const model =
+                modelInput
+                    .value
+                    .trim();
+
+            if (!jobName) {
+
+                alert(
+                    "Project Name is required."
+                );
+
+                jobInput.focus();
+
+                return;
+
+            }
+
+            saveButton.disabled =
+                true;
+
+            saveButton.textContent =
+                "Saving...";
+
+            saveButton.style.opacity =
+                "0.7";
+
+            saveButton.style.cursor =
+                "wait";
+
+            try {
+
+                setProjectState({
+                    ...getProjectState(),
+                    jobName,
+                    address,
+                    electrician,
+                    lender,
+                    model
+                });
+
+                console.log(
+                    "Project State"
+                );
+
+                console.log(
+                    getProjectState()
+                );
+
+                const result =
+                    await saveCurrentProject();
+
+                console.log(result);
+
+                if (result.success) {
+
+                    hideProjectDialog();
+
+                    alert(
+                        "Project Saved!"
+                    );
+
+                }
+                else {
+
+                    alert(
+                        result.message ||
+                        "Save Failed."
+                    );
+
+                }
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Project Save Failed:",
+                    error
+                );
+
+                alert(
+                    error?.message ||
+                    "Save Failed."
+                );
+
+            }
+            finally {
+
+                saveButton.disabled =
+                    false;
+
+                saveButton.textContent =
+                    "Save";
+
+                saveButton.style.opacity =
+                    "1";
+
+                saveButton.style.cursor =
+                    "pointer";
+
+            }
+
+        };
+
+    projectDialog.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target ===
+                projectDialog
+            ) {
+
+                hideProjectDialog();
+
+            }
+
+        }
+    );
+
+    projectDialog.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key === "Escape") {
+                hideProjectDialog();
+            }
+
+        }
+    );
+
+    buttonRow.appendChild(
+        cancelButton
+    );
+
+    buttonRow.appendChild(
+        saveButton
+    );
 
     card.appendChild(title);
-
+    card.appendChild(pasteLabel);
+    card.appendChild(pasteInput);
+    card.appendChild(parseButton);
     card.appendChild(jobLabel);
-
     card.appendChild(jobInput);
-
     card.appendChild(addressLabel);
-
     card.appendChild(addressInput);
-
+    card.appendChild(electricianLabel);
+    card.appendChild(electricianInput);
+    card.appendChild(lenderLabel);
+    card.appendChild(lenderInput);
+    card.appendChild(modelLabel);
+    card.appendChild(modelInput);
     card.appendChild(buttonRow);
 
     projectDialog.appendChild(card);
 
-    document.body.appendChild(projectDialog);
+    document.body.appendChild(
+        projectDialog
+    );
+
+    jobInput.focus();
 
 }
-    
+
 //----------------------------------
 // Hide
 //----------------------------------
 
 function hideProjectDialog() {
 
-    if (!projectDialog) return;
+    if (!projectDialog) {
+        return;
+    }
 
-    projectDialog.style.display = "none";
+    projectDialog.style.display =
+        "none";
 
 }
 
@@ -285,6 +1074,11 @@ function hideProjectDialog() {
 // Expose
 //----------------------------------
 
-window.showProjectDialog = showProjectDialog;
+window.showProjectDialog =
+    showProjectDialog;
 
-window.hideProjectDialog = hideProjectDialog;
+window.hideProjectDialog =
+    hideProjectDialog;
+
+window.parseProjectDetails =
+    parseProjectDetails;

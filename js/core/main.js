@@ -15,175 +15,221 @@ let presets = [];
 //----------------------------------
 
 async function init() {
+  PERF.start("Application Startup");
 
-    PERF.start("Application Startup");
+  try {
+    //----------------------------------
+    // Load MML
+    //----------------------------------
 
-    try {
+    PERF.start("Load MML");
 
-        //----------------------------------
-        // Load MML
-        //----------------------------------
+    const mml = await API.getMML();
 
-        PERF.start("Load MML");
+    PERF.end("Load MML");
 
-        const mml = await API.getMML();
+    //----------------------------------
+    // Load Presets
+    //----------------------------------
 
-        PERF.end("Load MML");
+    PERF.start("Load Presets");
 
-        //----------------------------------
-        // Load Presets
-        //----------------------------------
+    presets = await API.getPresets();
 
-        PERF.start("Load Presets");
+    PERF.end("Load Presets");
 
-        presets = await API.getPresets();
+    //----------------------------------
+    // Split MML
+    //----------------------------------
 
-        PERF.end("Load Presets");
+    PERF.start("Split MML");
 
-        //----------------------------------
-        // Split MML
-        //----------------------------------
+    equipment = mml.filter((item) => item.Placeable);
 
-        PERF.start("Split MML");
+    materials = mml.filter((item) => !item.Placeable);
 
-        equipment = mml.filter(item => item.Placeable);
+    PERF.end("Split MML");
 
-        materials = mml.filter(item => !item.Placeable);
+    //----------------------------------
+    // Expose Global Data
+    //----------------------------------
 
-        PERF.end("Split MML");
+    window.equipment = equipment;
+    window.materials = materials;
+    window.presets = presets;
 
-        //----------------------------------
-        // Expose Global Data
-        //----------------------------------
+    //----------------------------------
+    // Initialization Summary
+    //----------------------------------
 
-        window.equipment = equipment;
-        window.materials = materials;
-        window.presets = presets;
+    console.group("Initialization");
 
-        //----------------------------------
-        // Initialization Summary
-        //----------------------------------
+    console.log(`Equipment : ${equipment.length}`);
 
-        console.group("Initialization");
+    console.table(equipment.slice(0, 3));
 
-        console.log(`Equipment : ${equipment.length}`);
-        console.table(equipment.slice(0, 3));
+    console.log(`Materials : ${materials.length}`);
 
-        console.log(`Materials : ${materials.length}`);
-        console.table(materials.slice(0, 3));
+    console.table(materials.slice(0, 3));
 
-        console.log(`Presets : ${presets.length}`);
-        console.table(presets.slice(0, 3));
+    console.log(`Presets : ${presets.length}`);
 
-        console.groupEnd();
+    console.table(presets.slice(0, 3));
 
-        //----------------------------------
-        // Initialize SVG
-        //----------------------------------
+    console.groupEnd();
 
-        PERF.start("Initialize SVG");
+    //----------------------------------
+    // Initialize SVG
+    //----------------------------------
 
-        initializeSVG();
+    PERF.start("Initialize SVG");
 
-        PERF.end("Initialize SVG");
+    initializeSVG();
 
-        //----------------------------------
-        // Equipment Library
-        //----------------------------------
+    PERF.end("Initialize SVG");
 
-        PERF.start("Equipment Library");
+    //----------------------------------
+    // Equipment Library
+    //----------------------------------
 
-        buildEquipmentLibrary();
+    PERF.start("Equipment Library");
 
-        PERF.end("Equipment Library");
+    buildEquipmentLibrary();
 
-        //----------------------------------
-        // Preset Library
-        //----------------------------------
+    PERF.end("Equipment Library");
 
-        PERF.start("Preset Library");
+    //----------------------------------
+    // Preset Library
+    //----------------------------------
 
-        buildPresetLibrary();
+    PERF.start("Preset Library");
 
-        PERF.end("Preset Library");
+    buildPresetLibrary();
 
-        //----------------------------------
-        // Toolbar
-        //----------------------------------
+    PERF.end("Preset Library");
 
-        if (typeof initializeToolbar === "function") {
+    //----------------------------------
+    // Toolbar
+    //----------------------------------
 
-            PERF.start("Toolbar");
+    if (typeof initializeToolbar === "function") {
+      PERF.start("Toolbar");
 
-            initializeToolbar();
+      initializeToolbar();
 
-            PERF.end("Toolbar");
+      PERF.end("Toolbar");
+    }
 
-        }
+    //----------------------------------
+    // Draw Empty Canvas
+    //----------------------------------
 
-        //----------------------------------
-        // Draw Empty Canvas
-        //----------------------------------
+    PERF.start("Draw Canvas");
 
-        PERF.start("Draw Canvas");
+    drawCanvas();
 
-        drawCanvas();
+    PERF.end("Draw Canvas");
 
-        PERF.end("Draw Canvas");
+    //----------------------------------
+    // Restore Draft
+    //----------------------------------
 
-        //----------------------------------
-        // Restore Draft
-        //----------------------------------
+    if (
+      typeof loadDraft === "function" &&
+      typeof deserializeProject === "function"
+    ) {
+      const draft = loadDraft();
 
-        if (
+      if (draft) {
+        PERF.start("Restore Draft");
 
-            typeof loadDraft === "function" &&
-            typeof deserializeProject === "function"
+        console.log("Restoring Draft...");
 
-        ) {
+        await deserializeProject(draft);
 
-            const draft = loadDraft();
+        console.log("Draft Restored Successfully");
 
-            if (draft) {
+        PERF.end("Restore Draft");
+      }
+    }
 
-                PERF.start("Restore Draft");
+    //----------------------------------
+    // Initialize History Manager
+    //----------------------------------
 
-                console.log("Restoring Draft...");
+    if (
+      window.HistoryManagerV2 &&
+      typeof window.HistoryManagerV2.init === "function"
+    ) {
+      if (typeof serializeProject !== "function") {
+        throw new Error("HistoryManagerV2 requires serializeProject().");
+      }
 
-                deserializeProject(draft);
+      if (typeof deserializeProject !== "function") {
+        throw new Error("HistoryManagerV2 requires deserializeProject().");
+      }
 
-                console.log("Draft Restored Successfully");
+      PERF.start("Initialize History");
 
-                PERF.end("Restore Draft");
+      window.HistoryManagerV2.init({
+        serializer: () => {
+          return serializeProjectHistory();
+        },
 
+        restorer: async (state) => {
+          //----------------------------------
+          // Prevent Auto Save During Restore
+          //----------------------------------
+
+          const previousAutoSaveState =
+            typeof autoSaveEnabled !== "undefined" ? autoSaveEnabled : false;
+
+          if (typeof autoSaveEnabled !== "undefined") {
+            autoSaveEnabled = false;
+          }
+
+          try {
+            await deserializeProject(state);
+
+            if (typeof drawCanvas === "function") {
+              drawCanvas();
             }
+          } finally {
+            if (typeof autoSaveEnabled !== "undefined") {
+              autoSaveEnabled = previousAutoSaveState;
+            }
+          }
+        },
 
-        }
+        maxEntries: 100,
 
-        //----------------------------------
-        // Enable Auto Save
-        //----------------------------------
+        captureDelay: 150,
+      });
 
-        autoSaveEnabled = true;
+      PERF.end("Initialize History");
 
-        console.log("Auto Save Enabled");
-
-    }
-    catch (err) {
-
-        console.error("INITIALIZATION FAILED");
-        console.error(err);
-        console.error(err.stack);
-
-        alert(err.message);
-
-    }
-    finally {
-
-        PERF.end("Application Startup");
-
+      console.log("History Manager Enabled");
+    } else {
+      console.warn("HistoryManagerV2 was not found.");
     }
 
+    //----------------------------------
+    // Enable Auto Save
+    //----------------------------------
+
+    autoSaveEnabled = true;
+
+    console.log("Auto Save Enabled");
+  } catch (err) {
+    console.error("INITIALIZATION FAILED");
+
+    console.error(err);
+    console.error(err.stack);
+
+    alert(err.message);
+  } finally {
+    PERF.end("Application Startup");
+  }
 }
 
 //----------------------------------
@@ -191,54 +237,47 @@ async function init() {
 //----------------------------------
 
 function handleConnectionClick(item, connection) {
+  if (!pendingLink) {
+    pendingLink = {
+      item,
+      connection,
+    };
 
-    if (!pendingLink) {
+    drawCanvas();
 
-        pendingLink = {
+    return;
+  }
 
-            item,
-            connection
-
-        };
-
-        drawCanvas();
-
-        return;
-
-    }
-
-    if (
-
-        pendingLink.item.id === item.id &&
-        pendingLink.connection.id === connection.id
-
-    ) {
-
-        pendingLink = null;
-
-        drawCanvas();
-
-        return;
-
-    }
-
-    createLink(
-
-        pendingLink,
-
-        {
-
-            item,
-            connection
-
-        }
-
-    );
-
+  if (
+    pendingLink.item.id === item.id &&
+    pendingLink.connection.id === connection.id
+  ) {
     pendingLink = null;
 
     drawCanvas();
 
+    return;
+  }
+
+  createLink(pendingLink, {
+    item,
+    connection,
+  });
+
+  pendingLink = null;
+
+  drawCanvas();
+
+  //----------------------------------
+  // Capture Link Creation
+  //----------------------------------
+
+  if (
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture === "function"
+  ) {
+    window.HistoryManagerV2.capture("Connection created");
+  }
 }
 
 //----------------------------------
@@ -246,9 +285,7 @@ function handleConnectionClick(item, connection) {
 //----------------------------------
 
 function getEquipment() {
-
-    return equipment;
-
+  return equipment;
 }
 
 //----------------------------------
@@ -256,9 +293,7 @@ function getEquipment() {
 //----------------------------------
 
 function getMaterials() {
-
-    return materials;
-
+  return materials;
 }
 
 //----------------------------------
@@ -266,9 +301,7 @@ function getMaterials() {
 //----------------------------------
 
 function getPresetList() {
-
-    return presets;
-
+  return presets;
 }
 
 //----------------------------------
@@ -276,8 +309,14 @@ function getPresetList() {
 //----------------------------------
 
 window.getEquipment = getEquipment;
+
 window.getMaterials = getMaterials;
+
 window.getPresetList = getPresetList;
+
+window.handleConnectionClick = handleConnectionClick;
+
+window.init = init;
 
 //----------------------------------
 // Start Application

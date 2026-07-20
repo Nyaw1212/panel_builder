@@ -157,10 +157,10 @@ const MaterialDebugPanelV2 = (() => {
   }
 
   //----------------------------------
-  // Get Project Serializer Data
+  // Get Serialized Project
   //----------------------------------
 
-  function getProjectMaterials() {
+  function getSerializedProject() {
     if (
       typeof window.serializeProject !==
       "function"
@@ -169,28 +169,11 @@ const MaterialDebugPanelV2 = (() => {
         "MaterialDebugPanelV2: serializeProject() is not available."
       );
 
-      return [];
+      return null;
     }
 
     try {
-      const project =
-        window.serializeProject();
-
-      if (
-        !project ||
-        !Array.isArray(
-          project.materialSummary
-        )
-      ) {
-        console.warn(
-          "MaterialDebugPanelV2: project.materialSummary is missing.",
-          project
-        );
-
-        return [];
-      }
-
-      return project.materialSummary;
+      return window.serializeProject();
     }
     catch (error) {
       console.error(
@@ -198,8 +181,584 @@ const MaterialDebugPanelV2 = (() => {
         error
       );
 
+      return null;
+    }
+  }
+
+  //----------------------------------
+  // Get Project Materials
+  //----------------------------------
+
+  function getProjectMaterials() {
+    const project =
+      getSerializedProject();
+
+    if (!project) {
       return [];
     }
+
+    //----------------------------------
+    // Serializer Material Summary
+    //----------------------------------
+
+    const serializerMaterials =
+      Array.isArray(
+        project.materialSummary
+      )
+        ? project.materialSummary
+        : [];
+
+    //----------------------------------
+    // API Preset BOM Materials
+    //----------------------------------
+
+    const presetMaterials =
+      getProjectPresetMaterials(
+        project
+      );
+
+    //----------------------------------
+    // Prevent Existing Material Duplicate
+    //----------------------------------
+
+    const serializerCatalogs =
+      new Set(
+        serializerMaterials.map(
+          material =>
+            String(
+              material.CatalogNumber ??
+              material.catalogNumber ??
+              ""
+            )
+              .trim()
+              .toUpperCase()
+        )
+      );
+
+    const supplementalPresetMaterials =
+      presetMaterials.filter(material => {
+        const catalogNumber =
+          String(
+            material.CatalogNumber ??
+            material.catalogNumber ??
+            ""
+          )
+            .trim()
+            .toUpperCase();
+
+        return (
+          catalogNumber &&
+          !serializerCatalogs.has(
+            catalogNumber
+          )
+        );
+      });
+
+    //----------------------------------
+    // Combine And Aggregate
+    //----------------------------------
+
+    return mergeMaterials([
+      ...serializerMaterials,
+      ...supplementalPresetMaterials
+    ]);
+  }
+
+  //----------------------------------
+  // Get Preset Materials From API
+  //----------------------------------
+
+  function getProjectPresetMaterials(
+    project
+  ) {
+    if (!Array.isArray(window.presets)) {
+      console.warn(
+        "MaterialDebugPanelV2: window.presets is not available."
+      );
+
+      return [];
+    }
+
+    const placements =
+      findPresetPlacements(project);
+
+    const materials = [];
+
+    placements.forEach(placement => {
+      const presetCode =
+        String(
+          placement.presetCode || ""
+        )
+          .trim()
+          .toUpperCase();
+
+      if (!presetCode) {
+        return;
+      }
+
+      const placementQty =
+        Number(
+          placement.qty
+        ) || 1;
+
+      const presetRows =
+        window.presets.filter(row => {
+          const rowPreset =
+            String(
+              row.PRESET ??
+              row.Preset ??
+              row.preset ??
+              ""
+            )
+              .trim()
+              .toUpperCase();
+
+          return (
+            rowPreset === presetCode
+          );
+        });
+
+      presetRows.forEach(
+        presetMaterial => {
+          const catalogNumber =
+            String(
+              presetMaterial.CatalogNumber ??
+              presetMaterial.catalogNumber ??
+              presetMaterial["Catalog Number"] ??
+              ""
+            ).trim();
+
+          if (!catalogNumber) {
+            return;
+          }
+
+          const presetQty =
+            Number(
+              presetMaterial.QTY ??
+              presetMaterial.Qty ??
+              presetMaterial.qty ??
+              0
+            ) || 0;
+
+          if (presetQty <= 0) {
+            return;
+          }
+
+          const equipment =
+            findEquipmentByCatalogNumber(
+              catalogNumber
+            );
+
+          const description =
+            equipment?.Description ??
+            equipment?.description ??
+            presetMaterial.DESCRIPTION ??
+            presetMaterial.Description ??
+            presetMaterial.description ??
+            "";
+
+          let inventoryCategory =
+            equipment?.InventoryCategory ??
+            equipment?.inventoryCategory ??
+            equipment?.category ??
+            presetMaterial.InventoryCategory ??
+            presetMaterial.inventoryCategory ??
+            presetMaterial.category ??
+            "";
+
+          //----------------------------------
+          // Preset Fuse Fallback
+          //----------------------------------
+
+          if (
+            !inventoryCategory &&
+            /^FRNR/i.test(catalogNumber)
+          ) {
+            inventoryCategory = "BOS";
+          }
+
+          materials.push({
+            CatalogNumber:
+              catalogNumber,
+
+            Qty:
+              presetQty *
+              placementQty,
+
+            Description:
+              description,
+
+            InventoryCategory:
+              inventoryCategory,
+
+            source:
+              "API_PRESET",
+
+            preset:
+              presetCode
+          });
+        }
+      );
+    });
+
+    return materials;
+  }
+
+  //----------------------------------
+  // Find Preset Placements
+  //----------------------------------
+
+  function findPresetPlacements(
+    project
+  ) {
+    const placements = [];
+
+    const visited =
+      new WeakSet();
+
+    const placementKeys =
+      new Set();
+
+    function walk(
+      value,
+      path = "project"
+    ) {
+      if (
+        !value ||
+        typeof value !== "object"
+      ) {
+        return;
+      }
+
+      if (visited.has(value)) {
+        return;
+      }
+
+      visited.add(value);
+
+      //----------------------------------
+      // Do Not Read Material Summary
+      //----------------------------------
+
+      if (
+        path ===
+        "project.materialSummary"
+      ) {
+        return;
+      }
+
+      //----------------------------------
+      // Arrays
+      //----------------------------------
+
+      if (Array.isArray(value)) {
+        value.forEach(
+          (item, index) => {
+            walk(
+              item,
+              `${path}[${index}]`
+            );
+          }
+        );
+
+        return;
+      }
+
+      //----------------------------------
+      // Detect Preset Code
+      //----------------------------------
+
+      const presetCode =
+        getPresetCode(value);
+
+      if (presetCode) {
+        const placementId =
+          getPlacementIdentity(
+            value,
+            path
+          );
+
+        const key =
+          `${placementId}|${presetCode}`;
+
+        if (!placementKeys.has(key)) {
+          placementKeys.add(key);
+
+          placements.push({
+            presetCode,
+            qty:
+              getPlacementQuantity(
+                value
+              ),
+            item:
+              value,
+            path
+          });
+        }
+      }
+
+      //----------------------------------
+      // Continue Traversal
+      //----------------------------------
+
+      Object.entries(value)
+        .forEach(
+          ([key, child]) => {
+            if (
+              key ===
+              "materialSummary"
+            ) {
+              return;
+            }
+
+            walk(
+              child,
+              `${path}.${key}`
+            );
+          }
+        );
+    }
+
+    walk(project);
+
+    return placements;
+  }
+
+  //----------------------------------
+  // Get Preset Code
+  //----------------------------------
+
+  function getPresetCode(item) {
+    const value =
+      item.preset ??
+      item.presetCode ??
+      item.PRESET ??
+      item.Preset ??
+      item.templatePreset ??
+      item.templateCode ??
+      "";
+
+    const presetCode =
+      String(value || "")
+        .trim()
+        .toUpperCase();
+
+    if (!presetCode) {
+      return "";
+    }
+
+    if (!Array.isArray(window.presets)) {
+      return "";
+    }
+
+    const exists =
+      window.presets.some(row =>
+        String(
+          row.PRESET ??
+          row.Preset ??
+          row.preset ??
+          ""
+        )
+          .trim()
+          .toUpperCase() ===
+        presetCode
+      );
+
+    return exists
+      ? presetCode
+      : "";
+  }
+
+  //----------------------------------
+  // Get Placement Identity
+  //----------------------------------
+
+  function getPlacementIdentity(
+    item,
+    fallbackPath
+  ) {
+    return String(
+      item.id ??
+      item.itemId ??
+      item.nodeId ??
+      item.placementId ??
+      item.instanceId ??
+      item.uuid ??
+      item.cellId ??
+      item.startCellId ??
+      fallbackPath
+    );
+  }
+
+  //----------------------------------
+  // Get Placement Quantity
+  //----------------------------------
+
+  function getPlacementQuantity(item) {
+    const quantity =
+      Number(
+        item.Qty ??
+        item.qty ??
+        item.quantity ??
+        item.count ??
+        1
+      );
+
+    return quantity > 0
+      ? quantity
+      : 1;
+  }
+
+  //----------------------------------
+  // Find Equipment By Catalog Number
+  //----------------------------------
+
+  function findEquipmentByCatalogNumber(
+    catalogNumber
+  ) {
+    if (
+      typeof window.getEquipment !==
+      "function"
+    ) {
+      return null;
+    }
+
+    try {
+      const equipment =
+        window.getEquipment();
+
+      if (!Array.isArray(equipment)) {
+        return null;
+      }
+
+      return equipment.find(item => {
+        const itemCatalogNumber =
+          String(
+            item.CatalogNumber ??
+            item.catalogNumber ??
+            ""
+          ).trim();
+
+        return (
+          itemCatalogNumber ===
+          catalogNumber
+        );
+      }) || null;
+    }
+    catch (error) {
+      console.warn(
+        "MaterialDebugPanelV2: Equipment lookup failed.",
+        catalogNumber,
+        error
+      );
+
+      return null;
+    }
+  }
+
+  //----------------------------------
+  // Merge Materials
+  //----------------------------------
+
+  function mergeMaterials(materials) {
+    const merged =
+      new Map();
+
+    materials.forEach(material => {
+      const catalogNumber =
+        String(
+          material.CatalogNumber ??
+          material.catalogNumber ??
+          ""
+        ).trim();
+
+      if (!catalogNumber) {
+        return;
+      }
+
+      const quantity =
+        Number(
+          material.Qty ??
+          material.qty ??
+          material.quantity ??
+          0
+        ) || 0;
+
+      if (quantity <= 0) {
+        return;
+      }
+
+      const inventoryCategory =
+        String(
+          material.InventoryCategory ??
+          material.inventoryCategory ??
+          material.category ??
+          ""
+        ).trim();
+
+      //----------------------------------
+      // Category Included In Key
+      //----------------------------------
+
+      const key =
+        [
+          catalogNumber.toUpperCase(),
+          inventoryCategory.toUpperCase()
+        ].join("|");
+
+      if (!merged.has(key)) {
+        merged.set(key, {
+          CatalogNumber:
+            catalogNumber,
+
+          Qty:
+            0,
+
+          Description:
+            material.Description ??
+            material.description ??
+            "",
+
+          InventoryCategory:
+            inventoryCategory
+        });
+      }
+
+      const existing =
+        merged.get(key);
+
+      existing.Qty +=
+        quantity;
+
+      //----------------------------------
+      // Fill Missing Details
+      //----------------------------------
+
+      if (!existing.Description) {
+        existing.Description =
+          material.Description ??
+          material.description ??
+          "";
+      }
+
+      if (!existing.InventoryCategory) {
+        existing.InventoryCategory =
+          inventoryCategory;
+      }
+    });
+
+    return Array.from(
+      merged.values()
+    ).sort(
+      (a, b) =>
+        String(
+          a.CatalogNumber
+        ).localeCompare(
+          String(
+            b.CatalogNumber
+          )
+        )
+    );
   }
 
   //----------------------------------
@@ -273,10 +832,11 @@ const MaterialDebugPanelV2 = (() => {
       return;
     }
 
-    refreshTimer = window.setInterval(
-      refresh,
-      1500
-    );
+    refreshTimer =
+      window.setInterval(
+        refresh,
+        1500
+      );
   }
 
   //----------------------------------
@@ -455,7 +1015,12 @@ const MaterialDebugPanelV2 = (() => {
     stopAutoRefresh,
 
     getMaterials:
-      getProjectMaterials
+      getProjectMaterials,
+
+    getPresetMaterials:
+      getProjectPresetMaterials,
+
+    findPresetPlacements
   };
 })();
 

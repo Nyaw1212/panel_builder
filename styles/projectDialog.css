@@ -1,0 +1,131 @@
+/*=====================================
+PROJECT DIALOG
+=====================================*/
+
+.project-dialog-overlay{
+
+    position:fixed;
+
+    inset:0;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:rgba(2,8,20,.72);
+
+    backdrop-filter:blur(4px);
+
+    z-index:9999;
+
+}
+
+.project-dialog{
+
+    width:460px;
+
+    max-width:calc(100vw - 40px);
+
+    max-height:90vh;
+
+    overflow:auto;
+
+    background:#111827;
+
+    color:#e5e7eb;
+
+    border:1px solid #334155;
+
+    border-radius:12px;
+
+    padding:24px;
+
+    box-shadow:
+        0 20px 60px rgba(0,0,0,.55);
+
+}
+
+.project-dialog h2{
+
+    margin:0 0 20px;
+
+    color:#f8fafc;
+
+}
+
+.project-dialog label{
+
+    display:block;
+
+    margin-bottom:6px;
+
+    color:#cbd5e1;
+
+    font-size:13px;
+
+    font-weight:600;
+
+}
+
+.project-dialog input,
+.project-dialog textarea{
+
+    width:100%;
+
+    box-sizing:border-box;
+
+    margin-bottom:16px;
+
+    padding:10px 12px;
+
+    background:#0f172a;
+
+    color:#f8fafc;
+
+    border:1px solid #334155;
+
+    border-radius:6px;
+
+}
+
+.project-dialog input:focus,
+.project-dialog textarea:focus{
+
+    border-color:#3b82f6;
+
+    outline:none;
+
+    box-shadow:
+        0 0 0 3px rgba(59,130,246,.18);
+
+}
+
+.project-dialog button{
+
+    border:none;
+
+    border-radius:6px;
+
+    padding:10px 16px;
+
+    cursor:pointer;
+
+}
+
+.project-dialog .save{
+
+    background:#2563eb;
+
+    color:white;
+
+}
+
+.project-dialog .cancel{
+
+    background:#334155;
+
+    color:white;
+
+}

@@ -9,11 +9,13 @@ let currentPreset = "";
 //----------------------------------
 
 function setCurrentPreset(preset) {
+  currentPreset =
+    String(preset || "").trim();
 
-    currentPreset = preset || "";
-
-    console.log("Current Preset:", currentPreset);
-
+  console.log(
+    "Current Preset:",
+    currentPreset
+  );
 }
 
 //----------------------------------
@@ -21,9 +23,7 @@ function setCurrentPreset(preset) {
 //----------------------------------
 
 function getCurrentPreset() {
-
-    return currentPreset;
-
+  return currentPreset;
 }
 
 //----------------------------------
@@ -31,21 +31,315 @@ function getCurrentPreset() {
 //----------------------------------
 
 function clearCurrentPreset() {
+  currentPreset = "";
 
-    currentPreset = "";
+  //----------------------------------
+  // Remove Highlight
+  //----------------------------------
 
-    //----------------------------------
-    // Remove Highlight
-    //----------------------------------
+  document
+    .querySelectorAll(
+      ".preset-button"
+    )
+    .forEach(button => {
+      button.classList.remove(
+        "selected"
+      );
+    });
 
-    document
-        .querySelectorAll(".preset-button")
-        .forEach(button =>
-            button.classList.remove("selected")
-        );
+  console.log(
+    "Preset Cleared"
+  );
+}
 
-    console.log("Preset Cleared");
+//----------------------------------
+// Normalize Text
+//----------------------------------
 
+function normalizePresetText(value) {
+  return String(value ?? "")
+    .trim();
+}
+
+//----------------------------------
+// Normalize Preset Code
+//----------------------------------
+
+function normalizePresetCode(value) {
+  return normalizePresetText(value)
+    .toUpperCase();
+}
+
+//----------------------------------
+// Get Row Preset Code
+//----------------------------------
+
+function getRowPresetCode(row) {
+  if (!row) {
+    return "";
+  }
+
+  return normalizePresetText(
+    row.PRESET ??
+    row.Preset ??
+    row.preset ??
+    row.PresetCode ??
+    row.presetCode ??
+    row.Code ??
+    row.code ??
+    ""
+  );
+}
+
+//----------------------------------
+// Get Row Catalog Number
+//----------------------------------
+
+function getRowCatalogNumber(row) {
+  if (!row) {
+    return "";
+  }
+
+  return normalizePresetText(
+    row.CatalogNumber ??
+    row.catalogNumber ??
+    row.CATALOGNUMBER ??
+    row.Catalog ??
+    row.catalog ??
+    ""
+  );
+}
+
+//----------------------------------
+// Get Row Quantity
+//----------------------------------
+
+function getRowQuantity(row) {
+  if (!row) {
+    return 0;
+  }
+
+  const quantity =
+    Number(
+      row.Qty ??
+      row.qty ??
+      row.QTY ??
+      row.Quantity ??
+      row.quantity ??
+      row.Items ??
+      row.items ??
+      1
+    );
+
+  return Number.isFinite(quantity) &&
+    quantity > 0
+    ? quantity
+    : 1;
+}
+
+//----------------------------------
+// Get Equipment Library
+//----------------------------------
+
+function getEquipmentLibrary() {
+  if (
+    typeof window.getEquipment !==
+    "function"
+  ) {
+    return [];
+  }
+
+  try {
+    const equipment =
+      window.getEquipment();
+
+    return Array.isArray(equipment)
+      ? equipment
+      : [];
+  }
+  catch (error) {
+    console.warn(
+      "Unable to read equipment library.",
+      error
+    );
+
+    return [];
+  }
+}
+
+//----------------------------------
+// Find Equipment By Catalog Number
+//----------------------------------
+
+function findEquipmentByCatalogNumber(
+  catalogNumber
+) {
+  const target =
+    normalizePresetCode(
+      catalogNumber
+    );
+
+  if (!target) {
+    return null;
+  }
+
+  return (
+    getEquipmentLibrary().find(item => {
+      return (
+        normalizePresetCode(
+          getRowCatalogNumber(item)
+        ) === target
+      );
+    }) || null
+  );
+}
+
+//----------------------------------
+// Get API Preset Rows
+//----------------------------------
+
+function getApiPresetRows(preset) {
+  const targetPreset =
+    normalizePresetCode(preset);
+
+  if (!targetPreset) {
+    return [];
+  }
+
+  return (
+    Array.isArray(window.presets)
+      ? window.presets
+      : []
+  ).filter(row => {
+    return (
+      normalizePresetCode(
+        getRowPresetCode(row)
+      ) === targetPreset
+    );
+  });
+}
+
+//----------------------------------
+// Convert Preset Row To Material
+//----------------------------------
+
+function createPresetMaterial(row) {
+  const catalogNumber =
+    getRowCatalogNumber(row);
+
+  if (!catalogNumber) {
+    return null;
+  }
+
+  const equipment =
+    findEquipmentByCatalogNumber(
+      catalogNumber
+    );
+
+  const description =
+    normalizePresetText(
+      row.Description ??
+      row.description ??
+      equipment?.Description ??
+      equipment?.description ??
+      ""
+    );
+
+  const inventoryCategory =
+    normalizePresetText(
+      row.InventoryCategory ??
+      row.inventoryCategory ??
+      row.Inventory_Category ??
+      row.Category ??
+      row.category ??
+      equipment?.InventoryCategory ??
+      equipment?.inventoryCategory ??
+      equipment?.category ??
+      ""
+    );
+
+  return {
+    catalogNumber,
+    description,
+    inventoryCategory,
+    qty:
+      getRowQuantity(row)
+  };
+}
+
+//----------------------------------
+// Get API Preset Materials
+//----------------------------------
+
+function getApiPresetMaterials(preset) {
+  const rows =
+    getApiPresetRows(preset);
+
+  const materials =
+    rows
+      .map(createPresetMaterial)
+      .filter(Boolean);
+
+  //----------------------------------
+  // Aggregate Duplicate Materials
+  //----------------------------------
+
+  const merged =
+    new Map();
+
+  materials.forEach(material => {
+    const key =
+      [
+        normalizePresetCode(
+          material.catalogNumber
+        ),
+        normalizePresetCode(
+          material.inventoryCategory
+        )
+      ].join("|");
+
+    if (!merged.has(key)) {
+      merged.set(key, {
+        catalogNumber:
+          material.catalogNumber,
+
+        description:
+          material.description,
+
+        inventoryCategory:
+          material.inventoryCategory,
+
+        qty:
+          0
+      });
+    }
+
+    const existing =
+      merged.get(key);
+
+    existing.qty +=
+      Number(material.qty) || 0;
+
+    if (
+      !existing.description &&
+      material.description
+    ) {
+      existing.description =
+        material.description;
+    }
+
+    if (
+      !existing.inventoryCategory &&
+      material.inventoryCategory
+    ) {
+      existing.inventoryCategory =
+        material.inventoryCategory;
+    }
+  });
+
+  return Array.from(
+    merged.values()
+  );
 }
 
 //----------------------------------
@@ -53,67 +347,140 @@ function clearCurrentPreset() {
 //----------------------------------
 
 function getPresetEquipment(preset) {
+  if (!preset) {
+    return null;
+  }
 
-    if (!preset) {
+  //----------------------------------
+  // First API Row Of Preset
+  //----------------------------------
 
-        return null;
+  const presetRows =
+    getApiPresetRows(preset);
 
-    }
+  const presetRow =
+    presetRows[0];
 
-    //----------------------------------
-    // First Row Of Preset
-    //----------------------------------
-
-    const presetRow = (window.presets || []).find(
-
-        row => row.PRESET === preset
-
+  if (!presetRow) {
+    console.warn(
+      "Preset not found:",
+      preset
     );
 
-    if (!presetRow) {
+    return null;
+  }
 
-        console.warn(
+  //----------------------------------
+  // Find Main Equipment
+  //----------------------------------
 
-            "Preset not found:",
-
-            preset
-
-        );
-
-        return null;
-
-    }
-
-    //----------------------------------
-    // Find Equipment
-    //----------------------------------
-
-    const equipment = getEquipment().find(
-
-        item =>
-
-            item.CatalogNumber ===
-
-            presetRow.CatalogNumber
-
+  const catalogNumber =
+    getRowCatalogNumber(
+      presetRow
     );
 
-    if (!equipment) {
+  const equipment =
+    findEquipmentByCatalogNumber(
+      catalogNumber
+    );
 
-        console.warn(
+  if (!equipment) {
+    console.warn(
+      "Equipment not found:",
+      catalogNumber
+    );
 
-            "Equipment not found:",
+    return null;
+  }
 
-            presetRow.CatalogNumber
+  return equipment;
+}
 
-        );
+//----------------------------------
+// Create Main Equipment Material
+//----------------------------------
 
-        return null;
+function createMainEquipmentMaterial(
+  equipment
+) {
+  if (!equipment) {
+    return null;
+  }
 
-    }
+  const catalogNumber =
+    getRowCatalogNumber(
+      equipment
+    );
 
-    return equipment;
+  if (!catalogNumber) {
+    return null;
+  }
 
+  return {
+    catalogNumber,
+
+    description:
+      normalizePresetText(
+        equipment.Description ??
+        equipment.description ??
+        ""
+      ),
+
+    inventoryCategory:
+      normalizePresetText(
+        equipment.InventoryCategory ??
+        equipment.inventoryCategory ??
+        equipment.category ??
+        ""
+      ),
+
+    qty: 1
+  };
+}
+
+//----------------------------------
+// Ensure Main Equipment Is Included
+//----------------------------------
+
+function ensureMainEquipmentMaterial(
+  materials,
+  equipment
+) {
+  const result =
+    Array.isArray(materials)
+      ? [...materials]
+      : [];
+
+  const mainMaterial =
+    createMainEquipmentMaterial(
+      equipment
+    );
+
+  if (!mainMaterial) {
+    return result;
+  }
+
+  const mainCatalog =
+    normalizePresetCode(
+      mainMaterial.catalogNumber
+    );
+
+  const exists =
+    result.some(material => {
+      return (
+        normalizePresetCode(
+          material.catalogNumber
+        ) === mainCatalog
+      );
+    });
+
+  if (!exists) {
+    result.unshift(
+      mainMaterial
+    );
+  }
+
+  return result;
 }
 
 //----------------------------------
@@ -121,97 +488,153 @@ function getPresetEquipment(preset) {
 //----------------------------------
 
 function placePreset(
-
-    preset,
-
-    startCell
-
+  preset,
+  startCell
 ) {
+  console.group(
+    "Place Preset"
+  );
 
-    console.group("Place Preset");
+  console.log(
+    "Preset:",
+    preset
+  );
 
-    console.log("Preset:", preset);
+  console.log(
+    "Cell:",
+    startCell
+  );
 
-    console.log("Cell:", startCell);
+  //----------------------------------
+  // Lookup Equipment
+  //----------------------------------
 
-    //----------------------------------
-    // Lookup Equipment
-    //----------------------------------
-
-    const equipment =
-
-        getPresetEquipment(
-
-            preset
-
-        );
-
-    if (!equipment) {
-
-        console.warn(
-
-            "Unable to locate preset equipment."
-
-        );
-
-        console.groupEnd();
-
-        return null;
-
-    }
-
-    console.log(
-
-        "Equipment:",
-
-        equipment.CatalogNumber
-
+  const equipment =
+    getPresetEquipment(
+      preset
     );
 
-    //----------------------------------
-    // Place Equipment
-    //----------------------------------
-
-    const placedItem = placeItem(
-
-        equipment,
-
-        startCell,
-
-        preset
-
+  if (!equipment) {
+    console.warn(
+      "Unable to locate preset equipment."
     );
-
-    if (!placedItem) {
-
-        console.warn(
-
-            "Placement Failed."
-
-        );
-
-        console.groupEnd();
-
-        return null;
-
-    }
-
-    //----------------------------------
-    // Draw
-    //----------------------------------
-
-    drawCanvas();
-
-    //----------------------------------
-    // Exit Placement Mode
-    //----------------------------------
-
-    clearCurrentPreset();
 
     console.groupEnd();
 
-    return placedItem;
+    return null;
+  }
 
+  console.log(
+    "Equipment:",
+    equipment.CatalogNumber ??
+    equipment.catalogNumber
+  );
+
+  //----------------------------------
+  // Get All API Preset Materials
+  //----------------------------------
+
+  const presetMaterials =
+    ensureMainEquipmentMaterial(
+      getApiPresetMaterials(
+        preset
+      ),
+      equipment
+    );
+
+  console.log(
+    "Preset Materials:",
+    presetMaterials
+  );
+
+  //----------------------------------
+  // Place Equipment
+  //----------------------------------
+
+  const placedItem =
+    placeItem(
+      equipment,
+      startCell,
+      preset
+    );
+
+  if (!placedItem) {
+    console.warn(
+      "Placement Failed."
+    );
+
+    console.groupEnd();
+
+    return null;
+  }
+
+  //----------------------------------
+  // Store Preset Information
+  //----------------------------------
+
+  placedItem.preset =
+    normalizePresetText(
+      preset
+    );
+
+  //----------------------------------
+  // Store Complete Preset BOM
+  //----------------------------------
+
+  placedItem.materials =
+    presetMaterials.map(
+      material => ({
+        catalogNumber:
+          material.catalogNumber,
+
+        description:
+          material.description,
+
+        inventoryCategory:
+          material.inventoryCategory,
+
+        qty:
+          Number(
+            material.qty
+          ) || 0
+      })
+    );
+
+  console.log(
+    "Placed Item Materials:",
+    placedItem.materials
+  );
+
+  //----------------------------------
+  // Draw
+  //----------------------------------
+
+  drawCanvas();
+
+  //----------------------------------
+  // Refresh Material Summary
+  //----------------------------------
+
+  if (
+    window.MaterialDebugPanelV2 &&
+    typeof (
+      window.MaterialDebugPanelV2
+        .refresh
+    ) === "function"
+  ) {
+    window.MaterialDebugPanelV2
+      .refresh();
+  }
+
+  //----------------------------------
+  // Exit Placement Mode
+  //----------------------------------
+
+  clearCurrentPreset();
+
+  console.groupEnd();
+
+  return placedItem;
 }
 
 //----------------------------------
@@ -219,21 +642,22 @@ function placePreset(
 //----------------------------------
 
 window.setCurrentPreset =
-
-    setCurrentPreset;
+  setCurrentPreset;
 
 window.getCurrentPreset =
-
-    getCurrentPreset;
+  getCurrentPreset;
 
 window.clearCurrentPreset =
-
-    clearCurrentPreset;
+  clearCurrentPreset;
 
 window.getPresetEquipment =
+  getPresetEquipment;
 
-    getPresetEquipment;
+window.getApiPresetRows =
+  getApiPresetRows;
+
+window.getApiPresetMaterials =
+  getApiPresetMaterials;
 
 window.placePreset =
-
-    placePreset;
+  placePreset;
