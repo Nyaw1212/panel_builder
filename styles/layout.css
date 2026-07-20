@@ -2,24 +2,89 @@
 APPLICATION LAYOUT
 =====================================*/
 
-.container{
+.container {
 
-    display:grid;
+    display: grid;
 
-    grid-template-columns:280px 1fr;
+    grid-template-columns: 280px 1fr;
 
-    height:100vh;
+    height: 100vh;
 
-    overflow:hidden;
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at top,
+            rgba(37,99,235,.05),
+            transparent 40%
+        ),
+        #0b1120;
 
 }
 
-.workspace{
+/*=====================================
+WORKSPACE
+=====================================*/
 
-    padding:20px;
+.workspace {
 
-    padding-bottom:240px;
+    position: relative;
 
-    overflow:auto;
+    padding: 20px;
+
+    padding-bottom: 240px;
+
+    overflow: auto;
+
+    background:
+        linear-gradient(
+            180deg,
+            #0f172a 0%,
+            #111827 100%
+        );
+
+    scrollbar-width: thin;
+
+    scrollbar-color: #475569 #0b1120;
+
+}
+
+/*=====================================
+WORKSPACE SCROLLBAR
+=====================================*/
+
+.workspace::-webkit-scrollbar {
+
+    width: 10px;
+
+    height: 10px;
+
+}
+
+.workspace::-webkit-scrollbar-track {
+
+    background: #0b1120;
+
+}
+
+.workspace::-webkit-scrollbar-thumb {
+
+    background: #334155;
+
+    border-radius: 999px;
+
+    border: 2px solid #0b1120;
+
+}
+
+.workspace::-webkit-scrollbar-thumb:hover {
+
+    background: #475569;
+
+}
+
+.workspace::-webkit-scrollbar-corner {
+
+    background: #0b1120;
 
 }

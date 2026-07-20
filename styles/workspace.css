@@ -2,15 +2,15 @@
 Workspace Toolbar
 =====================================*/
 
-.workspace-toolbar{
+.workspace-toolbar {
 
-    display:flex;
+    display: flex;
 
-    align-items:center;
+    align-items: center;
 
-    gap:8px;
+    gap: 8px;
 
-    margin-bottom:10px;
+    margin-bottom: 10px;
 
 }
 
@@ -18,37 +18,51 @@ Workspace Toolbar
 Toolbar Buttons
 =====================================*/
 
-.workspace-toolbar button{
+.workspace-toolbar button {
 
-    display:flex;
+    display: flex;
 
-    align-items:center;
+    align-items: center;
 
-    justify-content:center;
+    justify-content: center;
 
-    gap:6px;
+    gap: 6px;
 
-    min-width:90px;
+    min-width: 90px;
 
-    height:34px;
+    height: 34px;
 
-    padding:0 14px;
+    padding: 0 14px;
 
-    border:1px solid #d1d5db;
+    border: 1px solid #334155;
 
-    border-radius:8px;
+    border-radius: 8px;
 
-    background:#ffffff;
+    background:
+        linear-gradient(
+            145deg,
+            #1e293b,
+            #0f172a
+        );
 
-    color:#374151;
+    color: #e2e8f0;
 
-    font-size:13px;
+    font-size: 13px;
 
-    font-weight:600;
+    font-weight: 600;
 
-    cursor:pointer;
+    cursor: pointer;
 
-    transition:all .15s ease;
+    box-shadow:
+        0 4px 12px rgba(0,0,0,.22),
+        inset 0 1px 0 rgba(255,255,255,.03);
+
+    transition:
+        background .18s ease,
+        border-color .18s ease,
+        color .18s ease,
+        box-shadow .18s ease,
+        transform .18s ease;
 
 }
 
@@ -56,13 +70,22 @@ Toolbar Buttons
 Hover
 =====================================*/
 
-.workspace-toolbar button:hover{
+.workspace-toolbar button:hover {
 
-    background:#eff6ff;
+    background:
+        linear-gradient(
+            145deg,
+            #23324a,
+            #162033
+        );
 
-    border-color:#2563eb;
+    border-color: #60a5fa;
 
-    color:#2563eb;
+    color: #ffffff;
+
+    box-shadow:
+        0 6px 18px rgba(0,0,0,.28),
+        0 0 14px rgba(37,99,235,.18);
 
 }
 
@@ -70,11 +93,20 @@ Hover
 Active
 =====================================*/
 
-.workspace-toolbar button:active{
+.workspace-toolbar button:active {
 
-    transform:translateY(1px);
+    transform: scale(.97);
 
-    background:#dbeafe;
+    background:
+        linear-gradient(
+            145deg,
+            #1d4ed8,
+            #1e3a8a
+        );
+
+    border-color: #60a5fa;
+
+    color: #ffffff;
 
 }
 
@@ -82,10 +114,12 @@ Active
 Focus
 =====================================*/
 
-.workspace-toolbar button:focus{
+.workspace-toolbar button:focus {
 
-    outline:none;
+    outline: none;
 
-    box-shadow:0 0 0 3px rgba(37,99,235,.18);
+    box-shadow:
+        0 0 0 3px rgba(37,99,235,.22),
+        0 6px 18px rgba(0,0,0,.28);
 
 }

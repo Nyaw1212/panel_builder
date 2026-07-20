@@ -1,462 +1,628 @@
-/*----------------------------------
-Connection Node
-----------------------------------*/
+/*=====================================
+CONNECTION NODE
+=====================================*/
 
 .connection-node {
-  position: absolute;
 
-  width: 18px;
-  height: 18px;
+    position: absolute;
 
-  box-sizing: border-box;
+    width: 18px;
+    height: 18px;
 
-  border-radius: 50%;
+    box-sizing: border-box;
 
-  background: #ffffff;
+    display: flex;
 
-  border: 2px solid #888;
+    align-items: center;
+    justify-content: center;
 
-  display: flex;
+    overflow: visible;
 
-  align-items: center;
+    border: 2px solid #64748b;
 
-  justify-content: center;
+    border-radius: 50%;
 
-  overflow: visible;
+    background: #f8fafc;
 
-  cursor: pointer;
+    cursor: pointer;
 
-  z-index: 600;
+    z-index: 600;
 
-  transition:
-    transform 0.15s,
-    border-color 0.15s,
-    background 0.15s,
-    box-shadow 0.15s;
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, .35);
+
+    transition:
+        transform .18s cubic-bezier(.2, 1.4, .35, 1),
+        background .18s ease,
+        border-color .18s ease,
+        box-shadow .18s ease;
+
 }
 
-/*----------------------------------
-Empty Knockout
-----------------------------------*/
+/*=====================================
+EMPTY CONNECTION HOVER
+=====================================*/
 
 .connection-node:hover {
-  transform: scale(1.2);
 
-  border-color: #2196f3;
+    z-index: 9999;
 
-  box-shadow: 0 0 10px rgba(33, 150, 243, 0.35);
+    border-color: #60a5fa;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 8px 18px rgba(0, 0, 0, .38),
+        0 0 14px rgba(59, 130, 246, .48);
+
+    animation:
+        floatConnector .8s ease-in-out infinite;
+
 }
 
-/*----------------------------------
-Installed Hardware
-----------------------------------*/
+/*=====================================
+INSTALLED HARDWARE
+=====================================*/
 
 .connection-node.occupied {
-  background: #ffffff;
 
-  border-color: #2196f3;
+    background: #f8fafc;
 
-  box-shadow: 0 0 8px rgba(33, 150, 243, 0.25);
+    border-color: #3b82f6;
+
+    box-shadow:
+        0 0 8px rgba(59, 130, 246, .35);
+
 }
 
-/*----------------------------------
-Hardware Thumbnail
-----------------------------------*/
+/*=====================================
+HARDWARE THUMBNAIL
+=====================================*/
 
 .connection-image {
-  width: 100%;
 
-  height: 100%;
+    width: 100%;
+    height: 100%;
 
-  object-fit: contain;
+    object-fit: contain;
 
-  border-radius: 50%;
+    border-radius: 50%;
 
-  pointer-events: none;
-}
+    pointer-events: none;
 
-/*----------------------------------
-No Thumbnail
-----------------------------------*/
+    transition:
+        transform .18s ease;
 
-.connection-node.occupied:not(:has(.connection-image)) {
-  background: #2196f3;
-}
-
-.connection-node.occupied:not(:has(.connection-image))::after {
-  content: "";
-
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-
-  background: white;
-}
-
-/*----------------------------------
-Hardware Count Badge
-----------------------------------*/
-
-.connection-badge {
-  position: absolute;
-
-  top: -8px;
-  right: -8px;
-
-  width: 16px;
-  height: 16px;
-
-  border-radius: 50%;
-
-  background: #ff5722;
-
-  color: white;
-
-  font-size: 10px;
-
-  font-weight: bold;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  border: 2px solid white;
-
-  box-sizing: border-box;
-
-  z-index: 700;
-
-  pointer-events: none;
-}
-
-/*----------------------------------
-Connected (Future)
-----------------------------------*/
-
-.connection-node.connected {
-  border-color: #2ecc71;
-
-  box-shadow: 0 0 8px rgba(46, 204, 113, 0.35);
-}
-
-.connection-node.connected:not(:has(.connection-image)) {
-  background: #2ecc71;
-}
-
-.connection-node.connected:not(:has(.connection-image))::after {
-  content: "";
-
-  width: 6px;
-  height: 6px;
-
-  border-radius: 50%;
-
-  background: white;
-}
-
-/*----------------------------------
-Disabled
-----------------------------------*/
-
-.connection-node.disabled {
-  opacity: 0.35;
-
-  pointer-events: none;
-}
-
-/*----------------------------------
-Selected Hardware Panel
-----------------------------------*/
-
-.selected-hardware {
-  background: #f8fafc;
-
-  border: 1px solid #d1d5db;
-
-  border-radius: 8px;
-
-  padding: 12px;
-
-  margin-bottom: 16px;
-}
-
-/*----------------------------------
-Selected Title
-----------------------------------*/
-
-.selected-title {
-  font-size: 14px;
-
-  font-weight: 700;
-
-  margin-bottom: 10px;
-}
-
-/*----------------------------------
-Selected Item
-----------------------------------*/
-
-.selected-item {
-  display: flex;
-
-  justify-content: space-between;
-
-  align-items: center;
-
-  gap: 10px;
-
-  padding: 8px 0;
-
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.selected-item:last-child {
-  border-bottom: none;
-}
-
-/*----------------------------------
-Empty
-----------------------------------*/
-
-.selected-empty {
-  color: #888;
-
-  font-style: italic;
-
-  padding: 10px 0;
-}
-
-/*----------------------------------
-Remove Hardware
-----------------------------------*/
-
-.remove-hardware {
-  width: 28px;
-  height: 28px;
-
-  border: none;
-
-  border-radius: 6px;
-
-  background: #ef4444;
-
-  color: white;
-
-  font-weight: bold;
-
-  cursor: pointer;
-}
-
-.remove-hardware:hover {
-  background: #dc2626;
-}
-
-/*----------------------------------
-Done Button
-----------------------------------*/
-
-.save-connection {
-  width: 100%;
-
-  margin-top: 14px;
-
-  padding: 10px;
-
-  border: none;
-
-  border-radius: 8px;
-
-  background: #2196f3;
-
-  color: white;
-
-  font-weight: 600;
-
-  cursor: pointer;
-}
-
-.save-connection:hover {
-  background: #1976d2;
-}
-/*----------------------------------
-Pop Animation
-----------------------------------*/
-
-.connection-node {
-  transition:
-    transform 0.18s cubic-bezier(0.2, 1.4, 0.35, 1),
-    box-shadow 0.18s,
-    border-color 0.18s;
-}
-
-/*----------------------------------
-Hover
-----------------------------------*/
-
-.connection-node:hover {
-  transform: scale(3);
-
-  z-index: 9999;
-
-  border-color: #2196f3;
-
-  box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.25),
-    0 0 14px rgba(33, 150, 243, 0.45);
-}
-
-/*----------------------------------
-Zoom Image
-----------------------------------*/
-
-.connection-image {
-  transition: transform 0.18s;
 }
 
 .connection-node:hover .connection-image {
-  transform: scale(1.25);
+
+    transform: scale(1.25);
+
 }
 
-/*----------------------------------
-Badge
-----------------------------------*/
+/*=====================================
+NO THUMBNAIL
+=====================================*/
+
+.connection-node.occupied:not(:has(.connection-image)) {
+
+    background: #2563eb;
+
+}
+
+.connection-node.occupied:not(:has(.connection-image))::after {
+
+    content: "";
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+}
+
+/*=====================================
+HARDWARE COUNT BADGE
+=====================================*/
+
+.connection-badge {
+
+    position: absolute;
+
+    top: -8px;
+    right: -8px;
+
+    width: 16px;
+    height: 16px;
+
+    box-sizing: border-box;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border: 2px solid #0f172a;
+
+    border-radius: 50%;
+
+    background: #f97316;
+
+    color: #ffffff;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    line-height: 1;
+
+    z-index: 700;
+
+    pointer-events: none;
+
+    box-shadow:
+        0 3px 8px rgba(0, 0, 0, .35);
+
+    transition:
+        transform .18s ease;
+
+}
 
 .connection-node:hover .connection-badge {
-  transform: scale(0.65);
+
+    transform: scale(.65);
+
 }
+
+/*=====================================
+CONNECTED
+=====================================*/
+
+.connection-node.connected {
+
+    border-color: #22c55e;
+
+    box-shadow:
+        0 0 9px rgba(34, 197, 94, .42);
+
+}
+
+.connection-node.connected:not(:has(.connection-image)) {
+
+    background: #22c55e;
+
+}
+
+.connection-node.connected:not(:has(.connection-image))::after {
+
+    content: "";
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+}
+
+/*=====================================
+DISABLED
+=====================================*/
+
+.connection-node.disabled {
+
+    opacity: .35;
+
+    pointer-events: none;
+
+    filter: grayscale(1);
+
+}
+
+/*=====================================
+SELECTED HARDWARE PANEL
+=====================================*/
+
+.selected-hardware {
+
+    margin-bottom: 16px;
+
+    padding: 12px;
+
+    border: 1px solid #334155;
+
+    border-radius: 8px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #172338,
+            #0f172a
+        );
+
+    color: #f8fafc;
+
+    box-shadow:
+        0 8px 22px rgba(0, 0, 0, .25),
+        inset 0 1px 0 rgba(255, 255, 255, .04);
+
+}
+
+/*=====================================
+SELECTED TITLE
+=====================================*/
+
+.selected-title {
+
+    margin-bottom: 10px;
+
+    color: #f8fafc;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+}
+
+/*=====================================
+SELECTED ITEM
+=====================================*/
+
+.selected-item {
+
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 8px 0;
+
+    border-bottom: 1px solid #334155;
+
+    color: #cbd5e1;
+
+}
+
+.selected-item:last-child {
+
+    border-bottom: none;
+
+}
+
+/*=====================================
+EMPTY MESSAGE
+=====================================*/
+
+.selected-empty {
+
+    padding: 10px 0;
+
+    color: #7f91aa;
+
+    font-style: italic;
+
+}
+
+/*=====================================
+REMOVE HARDWARE BUTTON
+=====================================*/
+
+.remove-hardware {
+
+    width: 28px;
+    height: 28px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 1px solid rgba(255, 255, 255, .12);
+
+    border-radius: 6px;
+
+    background: #dc2626;
+
+    color: #ffffff;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 4px 10px rgba(0, 0, 0, .30);
+
+    transition:
+        background .16s ease,
+        transform .16s ease,
+        box-shadow .16s ease;
+
+}
+
+.remove-hardware:hover {
+
+    background: #ef4444;
+
+    transform: scale(1.06);
+
+    box-shadow:
+        0 5px 14px rgba(239, 68, 68, .32);
+
+}
+
+.remove-hardware:active {
+
+    transform: scale(.95);
+
+}
+
+/*=====================================
+DONE BUTTON
+=====================================*/
+
+.save-connection {
+
+    width: 100%;
+
+    margin-top: 14px;
+
+    padding: 10px;
+
+    border: 1px solid #60a5fa;
+
+    border-radius: 8px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #2563eb,
+            #1d4ed8
+        );
+
+    color: #ffffff;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 7px 18px rgba(37, 99, 235, .25);
+
+    transition:
+        background .16s ease,
+        transform .16s ease,
+        box-shadow .16s ease;
+
+}
+
+.save-connection:hover {
+
+    background:
+        linear-gradient(
+            145deg,
+            #3b82f6,
+            #2563eb
+        );
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 9px 22px rgba(37, 99, 235, .32);
+
+}
+
+.save-connection:active {
+
+    transform: scale(.98);
+
+}
+
+/*=====================================
+CONNECTOR FLOAT ANIMATION
+=====================================*/
 
 @keyframes floatConnector {
-  0% {
-    transform: translateY(0) scale(3);
-  }
 
-  50% {
-    transform: translateY(-3px) scale(3.05);
-  }
+    0% {
 
-  100% {
-    transform: translateY(0) scale(3);
-  }
+        transform:
+            translateY(0)
+            scale(3);
+
+    }
+
+    50% {
+
+        transform:
+            translateY(-3px)
+            scale(3.05);
+
+    }
+
+    100% {
+
+        transform:
+            translateY(0)
+            scale(3);
+
+    }
+
 }
 
-.connection-node:hover {
-  animation: floatConnector 0.8s ease-in-out infinite;
-}
-/*----------------------------------
-Floating Preview
-----------------------------------*/
+/*=====================================
+FLOATING PREVIEW
+=====================================*/
 
 .connection-preview {
-  position: absolute;
 
-  display: flex;
+    position: absolute;
 
-  justify-content: center;
+    display: flex;
 
-  align-items: flex-start;
+    justify-content: center;
+    align-items: flex-start;
 
-  gap: 14px;
+    gap: 14px;
 
-  opacity: 0;
+    opacity: 0;
 
-  pointer-events: none;
+    pointer-events: none;
 
-  z-index: 9999;
+    z-index: 9999;
 
-  transform: translateX(-50%) translateY(-10px);
+    transform:
+        translateX(-50%)
+        translateY(-10px);
 
-  transition:
-    opacity 0.25s,
-    transform 0.25s;
+    transition:
+        opacity .25s ease,
+        transform .25s ease;
+
 }
 
 .connection-preview.show {
-  opacity: 1;
 
-  transform: translateX(-50%) translateY(0);
+    opacity: 1;
+
+    transform:
+        translateX(-50%)
+        translateY(0);
+
 }
 
-/*----------------------------------
-Preview Card
-----------------------------------*/
+/*=====================================
+PREVIEW CARD
+=====================================*/
 
 .preview-card {
-  width: 130px;
 
-  background: white;
+    width: 130px;
 
-  border-radius: 10px;
+    box-sizing: border-box;
 
-  padding: 12px;
+    display: flex;
 
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    flex-direction: column;
 
-  display: flex;
+    align-items: center;
 
-  flex-direction: column;
+    gap: 4px;
 
-  align-items: center;
+    padding: 12px;
 
-  gap: 4px;
+    border: 1px solid #3b4d68;
 
-  animation: previewPop 0.25s ease forwards;
+    border-radius: 10px;
 
-  transform: translateX(-12px);
+    background:
+        linear-gradient(
+            145deg,
+            #1e293b,
+            #111827
+        );
 
-  opacity: 0;
+    color: #f8fafc;
+
+    box-shadow:
+        0 12px 28px rgba(0, 0, 0, .42),
+        0 0 18px rgba(37, 99, 235, .12),
+        inset 0 1px 0 rgba(255, 255, 255, .04);
+
+    animation:
+        previewPop .25s ease forwards;
+
+    transform:
+        translateX(-12px);
+
+    opacity: 0;
+
 }
 
-/*----------------------------------
-Preview Image
-----------------------------------*/
+/*=====================================
+PREVIEW IMAGE
+=====================================*/
 
 .preview-card img {
-  width: 70px;
 
-  height: 70px;
+    width: 70px;
+    height: 70px;
 
-  object-fit: contain;
+    padding: 4px;
+
+    box-sizing: border-box;
+
+    object-fit: contain;
+
+    border-radius: 7px;
+
+    background: rgba(255, 255, 255, .95);
+
 }
 
-/*----------------------------------
-Preview Text
-----------------------------------*/
+/*=====================================
+PREVIEW TEXT
+=====================================*/
 
 .preview-code {
-  font-size: 11px;
 
-  font-weight: 700;
+    color: #f8fafc;
 
-  text-align: center;
+    font-size: 11px;
+
+    font-weight: 700;
+
+    text-align: center;
+
+    overflow-wrap: anywhere;
+
 }
 
 .preview-desc {
-  font-size: 9px;
 
-  color: #666;
+    color: #cbd5e1;
 
-  text-align: center;
+    font-size: 9px;
 
-  line-height: 1.2;
+    text-align: center;
+
+    line-height: 1.2;
+
+    overflow-wrap: anywhere;
+
 }
 
-/*----------------------------------
-Animation
-----------------------------------*/
+/*=====================================
+PREVIEW ANIMATION
+=====================================*/
 
 @keyframes previewPop {
-  from {
-    opacity: 0;
 
-    transform: translateX(-12px) scale(0.9);
-  }
+    from {
 
-  to {
-    opacity: 1;
+        opacity: 0;
 
-    transform: translateX(0) scale(1);
-  }
+        transform:
+            translateX(-12px)
+            scale(.9);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateX(0)
+            scale(1);
+
+    }
+
 }

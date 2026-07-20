@@ -588,3 +588,256 @@ Text
         0 1px 3px rgba(0,0,0,.8);
 
 }
+/*=====================================
+LIBRARY SIDEBAR — V2 DARK OVERRIDE
+=====================================*/
+
+.library,
+.sidebar,
+.library-sidebar,
+#libraryPanel {
+
+    background: #0f172a !important;
+
+    color: #f8fafc !important;
+
+    border-color: #334155 !important;
+
+}
+
+/*=====================================
+LIBRARY TITLE
+=====================================*/
+
+.library h1,
+.library h2,
+.library h3,
+.sidebar h1,
+.sidebar h2,
+.sidebar h3,
+.library-title {
+
+    color: #f8fafc !important;
+
+}
+
+/*=====================================
+SEARCH
+=====================================*/
+
+.library input,
+.sidebar input,
+#librarySearch {
+
+    background: #111827 !important;
+
+    color: #f8fafc !important;
+
+    border: 1px solid #334155 !important;
+
+}
+
+.library input::placeholder,
+.sidebar input::placeholder,
+#librarySearch::placeholder {
+
+    color: #7f91aa !important;
+
+}
+
+/*=====================================
+TAB BUTTONS
+=====================================*/
+
+.library-tabs button,
+.library-filter button,
+.sidebar-tabs button {
+
+    background: #1e293b !important;
+
+    color: #cbd5e1 !important;
+
+    border: 1px solid #334155 !important;
+
+}
+
+.library-tabs button:hover,
+.library-filter button:hover,
+.sidebar-tabs button:hover {
+
+    background: #23324a !important;
+
+    border-color: #60a5fa !important;
+
+    color: #ffffff !important;
+
+}
+
+.library-tabs button.active,
+.library-filter button.active,
+.sidebar-tabs button.active {
+
+    background: #2563eb !important;
+
+    color: #ffffff !important;
+
+    border-color: #60a5fa !important;
+
+}
+
+/*=====================================
+EQUIPMENT CARDS
+=====================================*/
+
+.equipment,
+.equipment-card,
+.library-item {
+
+    background:
+        linear-gradient(
+            145deg,
+            #172338,
+            #111827
+        ) !important;
+
+    color: #f8fafc !important;
+
+    border: 1px solid #334155 !important;
+
+    box-shadow:
+        0 5px 14px rgba(0, 0, 0, .22) !important;
+
+}
+
+.equipment:hover,
+.equipment-card:hover,
+.library-item:hover {
+
+    border-color: #60a5fa !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            #23324a,
+            #162033
+        ) !important;
+
+}
+
+.equipment-code,
+.equipment-card-code,
+.library-item-code {
+
+    color: #f8fafc !important;
+
+}
+
+.equipment-description,
+.equipment-desc,
+.library-item-desc {
+
+    color: #cbd5e1 !important;
+
+}
+
+/*=====================================
+PRESET BUTTONS
+=====================================*/
+
+.preset-button,
+.presets button,
+.preset-grid button {
+
+    background: #1e293b !important;
+
+    color: #f8fafc !important;
+
+    border: 1px solid #334155 !important;
+
+}
+
+.preset-button:hover,
+.presets button:hover,
+.preset-grid button:hover {
+
+    background: #23324a !important;
+
+    border-color: #60a5fa !important;
+
+    color: #ffffff !important;
+
+}
+
+/*=====================================
+SECTION LABELS
+=====================================*/
+
+.library-section-title,
+.preset-title,
+.material-title {
+
+    color: #94a3b8 !important;
+
+}
+
+/*=====================================
+ADD MATERIAL BUTTON
+=====================================*/
+
+.add-material,
+#addMaterial {
+
+    background: #2563eb !important;
+
+    color: #ffffff !important;
+
+    border: 1px solid #60a5fa !important;
+
+}
+
+.add-material:hover,
+#addMaterial:hover {
+
+    background: #3b82f6 !important;
+
+}
+
+/*=====================================
+SCROLLBAR
+=====================================*/
+
+.library,
+.sidebar,
+.library-list {
+
+    scrollbar-width: thin;
+
+    scrollbar-color: #475569 #0b1120;
+
+}
+
+.library::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
+.library-list::-webkit-scrollbar {
+
+    width: 8px;
+
+}
+
+.library::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
+.library-list::-webkit-scrollbar-track {
+
+    background: #0b1120;
+
+}
+
+.library::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
+.library-list::-webkit-scrollbar-thumb {
+
+    background: #475569;
+
+    border-radius: 999px;
+
+}
