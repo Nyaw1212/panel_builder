@@ -1,0 +1,32 @@
+/*=====================================
+Manual Routing V3
+=====================================*/
+
+.manual-route-v3__preview {
+  pointer-events: none;
+  stroke: #38bdf8;
+  stroke-width: 2;
+  stroke-dasharray: 7 5;
+  vector-effect: non-scaling-stroke;
+}
+
+.manual-route-v3__handle {
+  cursor: move;
+  fill: #ffffff;
+  stroke: #38bdf8;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.manual-route-v3__handle:hover {
+  fill: #38bdf8;
+}
+
+.manual-routing-v3-active {
+  cursor: crosshair;
+}
+
+.manual-routing-v3-active
+.manual-route-v3__handle {
+  cursor: move;
+}

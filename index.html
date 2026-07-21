@@ -15,6 +15,9 @@
     <link rel="stylesheet" href="styles/inspector.css" />
     <link rel="stylesheet" href="styles/bom.css" />
 
+    <!-- Manual Routing V3 -->
+    <link rel="stylesheet" href="V3/manualRoute.css" />
+
     <!-- Uncomment when toolbar.css exists -->
     <!-- <link rel="stylesheet" href="styles/toolbar.css"> -->
   </head>
@@ -66,6 +69,8 @@
           <button id="saveButton">💾 Save</button>
 
           <button id="bomButton">📋 BOM</button>
+
+          <button id="manualRouteButton">✏️ Manual Link</button>
         </div>
 
         <!--==================================
@@ -210,10 +215,9 @@
     <!-- ========================================= -->
 
     <script src="js/core/config.js"></script>
-
     <script src="js/core/keyboard.js"></script>
-
     <script src="js/core/performance.js"></script>
+
     <!-- ========================================= -->
     <!-- Layout -->
     <!-- ========================================= -->
@@ -229,6 +233,7 @@
     <script src="js/layout/renderer.js"></script>
     <script src="js/layout/dragManager.js"></script>
     <script src="js/layout/deleteManager.js"></script>
+
     <script src="js/materials/materialLookup.js"></script>
 
     <!-- ========================================= -->
@@ -271,10 +276,8 @@
     <script src="js/connections/connectionRenderer.js"></script>
 
     <!-- ========================================= -->
-    <!-- Link Routing -->
+    <!-- Existing Link Routing Dependencies -->
     <!-- ========================================= -->
-
-    <!-- Link Routing -->
 
     <script src="js/connections/linkObstacleGrid.js"></script>
     <script src="js/connections/linkGridHelper.js"></script>
@@ -284,7 +287,41 @@
     <script src="js/connections/linkTransition.js"></script>
     <script src="js/connections/linkGeometry.js"></script>
 
-    <!-- Optional (Legacy Router - Keep Disabled) -->
+    <!-- ========================================= -->
+    <!-- Routing V2 -->
+    <!-- ========================================= -->
+
+    <script src="RoutingV2/routingConfigV2.js"></script>
+    <script src="RoutingV2/routingGeometryV2.js"></script>
+    <script src="RoutingV2/routingObstacleV2.js"></script>
+    <script src="RoutingV2/routingValidatorV2.js"></script>
+    <script src="RoutingV2/routingLaneManagerV2.js"></script>
+    <script src="RoutingV2/routingPathfinderV2.js"></script>
+    <script src="RoutingV2/routingScorerV2.js"></script>
+    <script src="RoutingV2/routingOptimizerV2.js"></script>
+    <script src="RoutingV2/smartRouterV2.js"></script>
+
+    <!-- ========================================= -->
+    <!-- Manual Routing V3 -->
+    <!-- ========================================= -->
+
+    <script src="V3/manualRouteGrid.js"></script>
+    <script src="V3/manualRouteSnap.js"></script>
+    <script src="V3/manualRouteSegments.js"></script>
+    <script src="V3/manualRouteHitTest.js"></script>
+    <script src="V3/manualRouteSerializer.js"></script>
+    <script src="V3/manualRouteRenderer.js"></script>
+    <script src="V3/manualRouteHandles.js"></script>
+    <script src="V3/manualRouterEngine.js"></script>
+    <script src="V3/manualRouteInput.js"></script>
+    <script src="V3/manualRouteBridge.js"></script>
+    <script src="V3/manualRouteBootstrap.js"></script>
+
+    <!-- ========================================= -->
+    <!-- Optional Legacy Router -->
+    <!-- Keep Disabled -->
+    <!-- ========================================= -->
+
     <!--
 <script src="js/connections/linkObstacleRouter.js"></script>
 <script src="js/connections/linkObstacleCollision.js"></script>
@@ -316,11 +353,8 @@
     <!-- ========================================= -->
 
     <script src="js/ui/library.js"></script>
-
     <script src="js/ui/modal.js"></script>
-
     <script src="js/ui/modalFilters.js"></script>
-
     <script src="js/ui/modalSearch.js"></script>
     <script src="js/ui/modalEquipment.js"></script>
     <script src="js/ui/modalHardware.js"></script>
@@ -353,6 +387,7 @@
     <!-- ========================================= -->
 
     <script src="engine/sortEngine.js"></script>
+
     <script src="js/project/projectSerializer.js"></script>
     <script src="js/project/projectDeserializer.js"></script>
     <script src="js/project/projectState.js"></script>
@@ -375,11 +410,15 @@
     <script src="api/projectApi.js"></script>
 
     <!-- ========================================= -->
-    <!-- Project UI -->
+    <!-- History and Keyboard -->
     <!-- ========================================= -->
 
     <script src="engine/historyManagerV2.js"></script>
     <script src="engine/keyboardManagerV2.js"></script>
+
+    <!-- ========================================= -->
+    <!-- Project UI -->
+    <!-- ========================================= -->
 
     <script src="js/ui/projectDialog.js"></script>
     <script src="js/ui/projectOpenDialog.js"></script>
@@ -389,8 +428,15 @@
     <!-- Application -->
     <!-- ========================================= -->
 
+    <!-- Load your application startup file below this line. -->
+    <!-- Example: -->
+    <!-- <script src="js/app.js"></script> -->
+
     <link rel="stylesheet" href="styles/materialDebugPanelV2.css" />
     <script src="js/ui/materialDebugPanelV2.js"></script>
+
+    <!-- Manual Routing V3 application integration -->
+    <script src="INTEGRATION_EXAMPLE.js"></script>
 
     <script src="js/core/main.js"></script>
   </body>
