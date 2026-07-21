@@ -1523,3 +1523,592 @@ FITTING TYPE CHIP LAYOUT
     }
 
 }
+
+/*=====================================
+MATERIAL CARD REDESIGN
+=====================================*/
+
+#modalList {
+    grid-template-columns:
+        repeat(auto-fill, minmax(320px, 1fr));
+
+    gap: 16px;
+
+    padding: 4px 8px 10px 4px;
+}
+
+/* Main card */
+
+#modalList .equipment.material-card {
+    position: relative;
+
+    min-width: 0;
+    min-height: 250px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    gap: 14px;
+
+    padding: 16px;
+
+    border: 1px solid #41506a;
+    border-radius: 14px;
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(59, 130, 246, .08),
+            transparent 36%
+        ),
+        linear-gradient(
+            145deg,
+            #132033,
+            #0d1828
+        );
+
+    color: var(--v2-text);
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 22px rgba(0, 0, 0, .18),
+        inset 0 1px 0 rgba(255, 255, 255, .035);
+
+    transition:
+        transform .16s ease,
+        border-color .16s ease,
+        box-shadow .16s ease,
+        background .16s ease;
+}
+
+#modalList .equipment.material-card:hover {
+    transform: translateY(-2px);
+
+    border-color: var(--v2-blue-light);
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(59, 130, 246, .16),
+            transparent 40%
+        ),
+        linear-gradient(
+            145deg,
+            #172944,
+            #101d30
+        );
+
+    box-shadow:
+        0 14px 30px rgba(0, 0, 0, .26),
+        0 0 18px rgba(37, 99, 235, .12);
+}
+
+#modalList .equipment.material-card.selected {
+    border-color: var(--v2-blue-light);
+
+    box-shadow:
+        0 0 0 2px rgba(37, 99, 235, .30),
+        0 14px 30px rgba(0, 0, 0, .26);
+}
+
+/* Image and information row */
+
+.material-card-main {
+    min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        138px minmax(0, 1fr);
+
+    gap: 18px;
+
+    align-items: start;
+}
+
+.material-card-image-wrap {
+    width: 138px;
+    height: 164px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+
+    border: 1px solid #41506a;
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, .07),
+            rgba(255, 255, 255, .025)
+        );
+
+    box-sizing: border-box;
+}
+
+#modalList .material-card-image {
+    width: 100%;
+    height: 100%;
+
+    padding: 10px;
+
+    object-fit: contain;
+
+    border-radius: 0;
+
+    background: transparent;
+
+    box-sizing: border-box;
+}
+
+.material-card-image-placeholder {
+    padding: 12px;
+
+    color: var(--v2-text-muted);
+
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Text */
+
+.material-card-info {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.material-card-code {
+    margin: 0;
+
+    color: #f8fafc;
+
+    font-size: 27px;
+    font-weight: 800;
+    line-height: 1.08;
+
+    letter-spacing: .25px;
+
+    overflow-wrap: anywhere;
+}
+
+.material-card-description {
+    color: #d3d9e4;
+
+    font-size: 16px;
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+}
+
+.material-card-detail {
+    margin-top: 2px;
+
+    color: #f3f6fb;
+
+    font-size: 16px;
+    line-height: 1.3;
+
+    overflow-wrap: anywhere;
+}
+
+.material-card-secondary {
+    color: var(--v2-blue-light);
+
+    font-size: 15px;
+    font-weight: 700;
+
+    overflow-wrap: anywhere;
+}
+
+/* Footer */
+
+.material-card-footer {
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 12px;
+}
+
+.material-category-badge {
+    min-width: 0;
+
+    display: inline-flex;
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 7px 12px;
+
+    border: 1px solid #49617f;
+    border-radius: 9px;
+
+    background: rgba(30, 41, 59, .78);
+
+    color: #dce6f5;
+
+    font-size: 14px;
+    line-height: 1;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+
+.material-category-icon {
+    font-size: 17px;
+    line-height: 1;
+}
+
+/* Category colors */
+
+.material-category-breaker {
+    border-color: #3b82f6;
+
+    background: rgba(37, 99, 235, .16);
+
+    color: #93c5fd;
+}
+
+.material-category-wire {
+    border-color: #d97706;
+
+    background: rgba(217, 119, 6, .14);
+
+    color: #fcd34d;
+}
+
+.material-category-pipe {
+    border-color: #06b6d4;
+
+    background: rgba(6, 182, 212, .13);
+
+    color: #67e8f9;
+}
+
+.material-category-fitting {
+    border-color: #4d8f5b;
+
+    background: rgba(34, 107, 52, .18);
+
+    color: #bbf7c8;
+}
+
+.material-category-connector,
+.material-category-coupling {
+    border-color: #5b7fc4;
+
+    background: rgba(59, 130, 246, .12);
+
+    color: #bfdbfe;
+}
+
+/* Favorite */
+
+.material-favorite {
+    position: relative;
+
+    flex: 0 0 auto;
+
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #d5dce8;
+
+    font-size: 31px;
+    line-height: 1;
+
+    filter:
+        drop-shadow(
+            0 2px 4px rgba(0, 0, 0, .35)
+        );
+}
+
+.material-favorite.active {
+    color: var(--v2-yellow);
+}
+
+.material-favorite-count {
+    position: absolute;
+
+    right: -2px;
+    bottom: -1px;
+
+    min-width: 16px;
+    height: 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 3px;
+
+    border: 1px solid #fcd34d;
+    border-radius: 999px;
+
+    background: #7c2d12;
+
+    color: #fff7ed;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    box-sizing: border-box;
+}
+
+/* Prevent old favorite badge from affecting new cards */
+
+#modalList .material-card > .favorite-badge {
+    display: none;
+}
+
+/*=====================================
+CARD RESPONSIVE SIZES
+=====================================*/
+
+@media (max-width: 1600px) {
+
+    #modalList {
+        grid-template-columns:
+            repeat(auto-fill, minmax(290px, 1fr));
+    }
+
+    .material-card-main {
+        grid-template-columns:
+            118px minmax(0, 1fr);
+
+        gap: 14px;
+    }
+
+    .material-card-image-wrap {
+        width: 118px;
+        height: 146px;
+    }
+
+    .material-card-code {
+        font-size: 23px;
+    }
+
+    .material-card-description,
+    .material-card-detail {
+        font-size: 14px;
+    }
+
+}
+
+@media (max-width: 1100px) {
+
+    #modalList {
+        grid-template-columns:
+            repeat(auto-fill, minmax(260px, 1fr));
+    }
+
+    #modalList .equipment.material-card {
+        min-height: 220px;
+
+        padding: 13px;
+    }
+
+    .material-card-main {
+        grid-template-columns:
+            100px minmax(0, 1fr);
+
+        gap: 12px;
+    }
+
+    .material-card-image-wrap {
+        width: 100px;
+        height: 126px;
+    }
+
+    .material-card-code {
+        font-size: 20px;
+    }
+
+}
+
+.material-card-footer{
+
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    gap:12px;
+
+    margin-top:auto;
+
+}
+
+.material-category-badge{
+
+    flex:0 0 auto;
+
+}
+
+.material-favorite{
+
+    flex:0 0 auto;
+
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+
+    gap:3px;
+
+    margin-left:auto;
+
+}/*=====================================
+MATERIAL CARD FOOTER AND FAVORITES - FINAL
+=====================================*/
+
+/*
+Favorite behavior:
+Favorite = 0  -> no stars shown
+Favorite = 1  -> ★
+Favorite = 2  -> ★★
+Favorite = 3  -> ★★★
+Favorite = 4  -> ★★★★
+Favorite = 5  -> ★★★★★
+*/
+
+.material-card-footer {
+    width: 100%;
+    min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) auto;
+
+    align-items: center;
+
+    column-gap: 16px;
+
+    margin-top: auto;
+}
+
+/* Keep the badge on the left */
+
+.material-category-badge {
+    justify-self: start;
+
+    min-width: 0;
+    max-width: 100%;
+
+    flex: none;
+}
+
+/* Keep all stars grouped on the right */
+
+.material-favorite {
+    justify-self: end;
+
+    width: auto;
+    height: auto;
+
+    min-width: 0;
+
+    margin: 0;
+    padding: 2px 0;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 3px;
+
+    color: var(--v2-yellow);
+
+    font-size: 19px;
+    line-height: 1;
+
+    white-space: nowrap;
+
+    filter:
+        drop-shadow(
+            0 1px 3px rgba(0, 0, 0, .35)
+        );
+}
+
+.favorite-star {
+    display: inline-block;
+
+    flex: 0 0 auto;
+
+    width: 18px;
+
+    color: #59677a;
+
+    text-align: center;
+    line-height: 1;
+}
+
+.favorite-star.filled {
+    color: #fbbf24;
+
+    text-shadow:
+        0 0 6px rgba(251, 191, 36, .28);
+}
+
+/* Old number-based favorite badge is no longer used */
+
+.material-favorite-count {
+    display: none !important;
+}
+
+/* Extra room on narrow cards */
+
+@media (max-width: 1600px) {
+
+    .material-card-footer {
+        column-gap: 10px;
+    }
+
+    .material-favorite {
+        gap: 2px;
+
+        font-size: 17px;
+    }
+
+    .favorite-star {
+        width: 16px;
+    }
+
+}
+
+@media (max-width: 1100px) {
+
+    .material-card-footer {
+        align-items: end;
+    }
+
+    .material-category-badge {
+        padding-left: 9px;
+        padding-right: 9px;
+
+        font-size: 12px;
+    }
+
+    .material-favorite {
+        font-size: 15px;
+    }
+
+    .favorite-star {
+        width: 14px;
+    }
+
+}
