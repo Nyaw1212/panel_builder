@@ -179,13 +179,277 @@ function buildHardwarePanel() {
 
 }
 
+
+//----------------------------------
+// Hardware Library Cache
+//----------------------------------
+
+let hardwareModalLibrary = [];
+
+//----------------------------------
+// Normalize Hardware Value
+//----------------------------------
+
+function normalizeHardwareValue(value) {
+
+    return String(value || "")
+        .trim()
+        .toUpperCase();
+
+}
+
+//----------------------------------
+// Get Wire Color
+//----------------------------------
+
+function getWireColor(item) {
+
+    //----------------------------------
+    // Dedicated Color Columns
+    //----------------------------------
+
+    const directColor =
+        normalizeHardwareValue(
+
+            item.Color ||
+            item.WireColor ||
+            item.Colour
+
+        );
+
+    if (directColor) {
+
+        if (directColor.includes("BLACK")) return "BLACK";
+        if (directColor.includes("GREEN")) return "GREEN";
+        if (directColor.includes("WHITE")) return "WHITE";
+        if (directColor.includes("RED")) return "RED";
+
+    }
+
+    //----------------------------------
+    // Description Detection
+    //----------------------------------
+
+    const description =
+        normalizeHardwareValue(
+            item.Description
+        );
+
+    if (/\bBLACK\b/.test(description)) return "BLACK";
+    if (/\bGREEN\b/.test(description)) return "GREEN";
+    if (/\bWHITE\b/.test(description)) return "WHITE";
+    if (/\bRED\b/.test(description)) return "RED";
+
+    //----------------------------------
+    // Catalog Number Detection
+    //
+    // Examples:
+    // THHN14STBK500 = BLACK
+    // THHN14STGN500 = GREEN
+    // THHN14STRD500 = RED
+    // THHN14STWH500 = WHITE
+    //----------------------------------
+
+    const catalog =
+        normalizeHardwareValue(
+            item.CatalogNumber
+        );
+
+    if (/BK\d*$/.test(catalog)) return "BLACK";
+    if (/GN\d*$/.test(catalog)) return "GREEN";
+    if (/RD\d*$/.test(catalog)) return "RED";
+    if (/WH\d*$/.test(catalog)) return "WHITE";
+
+    return "";
+
+}
+
+//----------------------------------
+// Find Preset Wire
+//----------------------------------
+
+function findPresetWire(
+
+    sourceWire,
+    requiredColor
+
+) {
+
+    const sourceType =
+        normalizeHardwareValue(
+            sourceWire.Type
+        );
+
+    const sourceSize =
+        normalizeHardwareValue(
+            sourceWire.Size
+        );
+
+    return hardwareModalLibrary.find(item => {
+
+        return (
+
+            normalizeHardwareValue(
+                item.NodeType
+            ) === "WIRE" &&
+
+            normalizeHardwareValue(
+                item.Type
+            ) === sourceType &&
+
+            normalizeHardwareValue(
+                item.Size
+            ) === sourceSize &&
+
+            getWireColor(item) ===
+            requiredColor
+
+        );
+
+    });
+
+}
+
+//----------------------------------
+// Add Wire Preset
+//----------------------------------
+
+function addWirePreset(
+
+    sourceWire,
+    qty
+
+) {
+
+    const presetName =
+        typeof getSelectedWirePreset ===
+        "function"
+
+            ? getSelectedWirePreset()
+
+            : "SINGLE";
+
+    const colors =
+        typeof getSelectedWirePresetColors ===
+        "function"
+
+            ? getSelectedWirePresetColors()
+
+            : null;
+
+    //----------------------------------
+    // Single Wire
+    //----------------------------------
+
+    if (
+
+        presetName === "SINGLE" ||
+        !Array.isArray(colors)
+
+    ) {
+
+        const hardware =
+            structuredClone(sourceWire);
+
+        hardware.qty = qty;
+
+        addHardware(
+            currentConnection,
+            hardware
+        );
+
+        return true;
+
+    }
+
+    //----------------------------------
+    // Resolve Every Required Color
+    //----------------------------------
+
+    const resolved = [];
+    const missing = [];
+
+    colors.forEach(color => {
+
+        const wire = findPresetWire(
+
+            sourceWire,
+            color
+
+        );
+
+        if (wire) {
+
+            resolved.push(wire);
+
+        }
+
+        else {
+
+            missing.push(color);
+
+        }
+
+    });
+
+    //----------------------------------
+    // Stop on Missing Colors
+    //----------------------------------
+
+    if (missing.length > 0) {
+
+        alert(
+
+            `Cannot add ${presetName} preset.\n\n` +
+
+            `Missing matching wire colors: ` +
+            missing.join(", ") +
+
+            `\n\nRequired match:\n` +
+
+            `Type: ${sourceWire.Type || ""}\n` +
+            `Size: ${sourceWire.Size || ""}`
+
+        );
+
+        return false;
+
+    }
+
+    //----------------------------------
+    // Add All Preset Wires
+    //----------------------------------
+
+    resolved.forEach(wire => {
+
+        const hardware =
+            structuredClone(wire);
+
+        hardware.qty = qty;
+        hardware.wirePreset = presetName;
+
+        addHardware(
+            currentConnection,
+            hardware
+        );
+
+    });
+
+    return true;
+
+}
+
 //----------------------------------
 // Get Hardware List
 //----------------------------------
 
 function getHardwareModalList(list) {
 
-    return list
+    hardwareModalLibrary = Array.isArray(list)
+        ? list
+        : [];
+
+    return hardwareModalLibrary
 
         //----------------------------------
         // Everything Except Equipment
@@ -260,27 +524,46 @@ function handleHardwareClick(item) {
 
     let qty = 1;
 
-    const nodeType = String(
-
-        item.NodeType || ""
-
-    ).toUpperCase();
+    const nodeType =
+        normalizeHardwareValue(
+            item.NodeType
+        );
 
     //----------------------------------
-    // Pipe / Wire
+    // Pipe / Wire Quantity
     //----------------------------------
 
     if (
 
         nodeType === "PIPE" ||
-
         nodeType === "WIRE"
 
     ) {
 
+        const presetName =
+
+            nodeType === "WIRE" &&
+            typeof getSelectedWirePreset ===
+            "function"
+
+                ? getSelectedWirePreset()
+
+                : "SINGLE";
+
+        const promptLabel =
+
+            nodeType === "WIRE" &&
+            presetName !== "SINGLE"
+
+                ? `${item.Type || "WIRE"} ` +
+                  `${item.Size || ""} ` +
+                  `${presetName} preset`
+
+                : item.CatalogNumber;
+
         const value = prompt(
 
-            `Enter quantity for ${item.CatalogNumber}`,
+            `Enter quantity for ${promptLabel}`,
 
             1
 
@@ -305,12 +588,13 @@ function handleHardwareClick(item) {
         if (
 
             Number.isNaN(qty) ||
-
             qty <= 0
 
         ) {
 
-            alert("Please enter a valid quantity.");
+            alert(
+                "Please enter a valid quantity."
+            );
 
             return;
 
@@ -319,24 +603,41 @@ function handleHardwareClick(item) {
     }
 
     //----------------------------------
-    // Clone Hardware
+    // Wire Preset
     //----------------------------------
 
-    const hardware = structuredClone(item);
+    if (nodeType === "WIRE") {
 
-    hardware.qty = qty;
+        const added = addWirePreset(
+
+            item,
+            qty
+
+        );
+
+        if (!added) return;
+
+    }
 
     //----------------------------------
-    // Add Hardware
+    // Normal Hardware / Pipe / Breaker
     //----------------------------------
 
-    addHardware(
+    else {
 
-        currentConnection,
+        const hardware =
+            structuredClone(item);
 
-        hardware
+        hardware.qty = qty;
 
-    );
+        addHardware(
+
+            currentConnection,
+            hardware
+
+        );
+
+    }
 
     //----------------------------------
     // Refresh Modal
@@ -344,7 +645,9 @@ function handleHardwareClick(item) {
 
     buildModalList(
 
-        modalSearch.value
+        modalSearch
+            ? modalSearch.value
+            : ""
 
     );
 
@@ -363,3 +666,4 @@ function handleHardwareClick(item) {
 window.buildHardwarePanel = buildHardwarePanel;
 window.getHardwareModalList = getHardwareModalList;
 window.handleHardwareClick = handleHardwareClick;
+window.addWirePreset = addWirePreset;

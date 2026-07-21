@@ -2,9 +2,25 @@
 // Modal Filter State
 //----------------------------------
 
-let selectedSystem = "All";
-let selectedType = "All";
-let selectedSize = '2"';
+let selectedCategory = "FITTING";
+let selectedFittingType = "All";
+let selectedMaterialType = "All";
+let selectedSize = "All";
+let selectedWirePreset = "SINGLE";
+
+//----------------------------------
+// Wire Presets
+//----------------------------------
+
+const WIRE_PRESETS = {
+
+    SINGLE: null,
+    RB: ["RED", "BLACK"],
+    RBG: ["RED", "BLACK", "GREEN"],
+    RWB: ["RED", "WHITE", "BLACK"],
+    RGWB: ["RED", "GREEN", "WHITE", "BLACK"]
+
+};
 
 //----------------------------------
 // Reset Filters
@@ -12,9 +28,228 @@ let selectedSize = '2"';
 
 function resetModalFilters() {
 
-    selectedSystem = "All";
-    selectedType = "All";
-    selectedSize = '2"';
+    selectedCategory = "FITTING";
+    selectedFittingType = "All";
+    selectedMaterialType = "All";
+    selectedSize = "All";
+    selectedWirePreset = "SINGLE";
+
+}
+
+//----------------------------------
+// Normalize Value
+//----------------------------------
+
+function normalizeModalValue(value) {
+
+    return String(value || "")
+        .trim()
+        .toUpperCase();
+
+}
+
+//----------------------------------
+// Category Helpers
+//----------------------------------
+
+function isWireMode() {
+
+    return selectedCategory === "WIRE";
+
+}
+
+function isPipeMode() {
+
+    return selectedCategory === "PIPE";
+
+}
+
+function isBreakerMode() {
+
+    return selectedCategory === "BREAKER";
+
+}
+
+function isFittingMode() {
+
+    return selectedCategory === "FITTING";
+
+}
+
+//----------------------------------
+// Fitting Record
+//----------------------------------
+
+function isFittingRecord(item) {
+
+    const nodeType = normalizeModalValue(item.NodeType);
+
+    return (
+
+        nodeType !== "PIPE" &&
+        nodeType !== "WIRE" &&
+        nodeType !== "BREAKER"
+
+    );
+
+}
+
+//----------------------------------
+// Unique Values
+//----------------------------------
+
+function getUniqueModalValues(list, property) {
+
+    return [
+
+        ...new Set(
+
+            list
+                .map(item => normalizeModalValue(item[property]))
+                .filter(Boolean)
+
+        )
+
+    ].sort((a, b) => a.localeCompare(b));
+
+}
+
+//----------------------------------
+// Sort Sizes
+//----------------------------------
+
+function sortModalSizes(values) {
+
+    const conduitOrder = [
+
+        '3/4"',
+        '1"',
+        '1-1/4"',
+        '1-1/2"',
+        '2"'
+
+    ];
+
+    return [...values].sort((a, b) => {
+
+        const aIndex = conduitOrder.indexOf(a);
+        const bIndex = conduitOrder.indexOf(b);
+
+        if (aIndex !== -1 && bIndex !== -1) {
+
+            return aIndex - bIndex;
+
+        }
+
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+
+        return String(a).localeCompare(
+
+            String(b),
+            undefined,
+            {
+                numeric: true,
+                sensitivity: "base"
+            }
+
+        );
+
+    });
+
+}
+
+//----------------------------------
+// Create Dynamic Filter Group
+//----------------------------------
+
+function ensureDynamicFilterGroup(
+
+    referenceChips,
+    groupId,
+    labelText,
+    chipsId
+
+) {
+
+    let group = document.getElementById(groupId);
+
+    if (group) return group;
+
+    const referenceGroup = referenceChips
+        ? referenceChips.closest(".filter-group")
+        : null;
+
+    if (!referenceGroup || !referenceGroup.parentElement) {
+
+        return null;
+
+    }
+
+    group = document.createElement("div");
+    group.id = groupId;
+    group.className = "filter-group";
+
+    const label = document.createElement("div");
+    label.className = "filter-label";
+    label.textContent = labelText;
+
+    const chips = document.createElement("div");
+    chips.id = chipsId;
+    chips.className = "chip-container";
+
+    group.appendChild(label);
+    group.appendChild(chips);
+
+    referenceGroup.insertAdjacentElement("afterend", group);
+
+    return group;
+
+}
+
+//----------------------------------
+// Update Group Label
+//----------------------------------
+
+function updateGroupLabel(chips, text) {
+
+    if (!chips) return;
+
+    const group = chips.closest(".filter-group");
+
+    if (!group) return;
+
+    const label = group.querySelector(
+
+        ".filter-label, label, h3, h4"
+
+    );
+
+    if (label) {
+
+        label.textContent = text;
+
+    }
+
+}
+
+//----------------------------------
+// Show / Hide Group
+//----------------------------------
+
+function setFilterGroupVisible(chips, visible) {
+
+    if (!chips) return;
+
+    const group = chips.closest(".filter-group");
+
+    if (group) {
+
+        group.style.display = visible
+            ? ""
+            : "none";
+
+    }
 
 }
 
@@ -25,119 +260,241 @@ function resetModalFilters() {
 function buildFilterChips(list) {
 
     //----------------------------------
-    // Elements
+    // Existing Elements
     //----------------------------------
 
-    const systemChips = document.getElementById("systemChips");
-    const typeChips = document.getElementById("typeChips");
-    const sizeChips = document.getElementById("sizeChips");
+    const systemChips =
+        document.getElementById("systemChips");
 
-    if (!systemChips || !typeChips || !sizeChips) {
+    const categoryChips =
+        document.getElementById("typeChips");
 
-        console.error("Modal filter containers not found.");
+    const sizeChips =
+        document.getElementById("sizeChips");
+
+    if (
+
+        !systemChips ||
+        !categoryChips ||
+        !sizeChips
+
+    ) {
+
+        console.error(
+            "Modal filter containers not found."
+        );
 
         return;
 
     }
 
     //----------------------------------
-    // Conduit Types (Color)
+    // Dynamic Groups
     //----------------------------------
 
-    const systems = [
+    ensureDynamicFilterGroup(
+
+        categoryChips,
+        "fittingTypeFilterGroup",
+        "Fitting Type",
+        "fittingTypeChips"
+
+    );
+
+    ensureDynamicFilterGroup(
+
+        systemChips,
+        "wirePresetFilterGroup",
+        "Preset",
+        "wirePresetChips"
+
+    );
+
+    const fittingTypeChips =
+        document.getElementById("fittingTypeChips");
+
+    const wirePresetChips =
+        document.getElementById("wirePresetChips");
+
+    //----------------------------------
+    // Records by Category
+    //----------------------------------
+
+    const fittingList = list.filter(
+        isFittingRecord
+    );
+
+    const pipeList = list.filter(item =>
+
+        normalizeModalValue(item.NodeType) ===
+        "PIPE"
+
+    );
+
+    const wireList = list.filter(item =>
+
+        normalizeModalValue(item.NodeType) ===
+        "WIRE"
+
+    );
+
+    let activeList = fittingList;
+
+    if (isPipeMode()) activeList = pipeList;
+    if (isWireMode()) activeList = wireList;
+
+    //----------------------------------
+    // Filter Values
+    //----------------------------------
+
+    const categories = [
+
+        "FITTING",
+        "PIPE",
+        "WIRE",
+        "BREAKER"
+
+    ];
+
+    const fittingTypes = [
 
         "All",
-
-        ...new Set(
-
-            list
-                .map(item => String(item.Color || "").trim().toUpperCase())
-                .filter(Boolean)
-
+        ...getUniqueModalValues(
+            fittingList,
+            "NodeType"
         )
 
     ];
 
-    //----------------------------------
-    // Fitting Types
-    //----------------------------------
-
-    const types = [
+    const materialTypes = [
 
         "All",
-
-        ...new Set(
-
-            list
-                .map(item => String(item.NodeType || "").trim().toUpperCase())
-                .filter(Boolean)
-
+        ...getUniqueModalValues(
+            activeList,
+            "Type"
         )
-
-    ];
-
-    //----------------------------------
-    // Sizes
-    //----------------------------------
-
-    const allowedSizes = [
-
-        '2"',
-        '1-1/2"',
-        '1-1/4"',
-        '1"',
-        '3/4"'
 
     ];
 
     const sizes = [
 
         "All",
+        ...sortModalSizes(
 
-        ...allowedSizes.filter(size =>
+            [
 
-            list.some(item =>
+                ...new Set(
 
-                String(item.Size || "").trim() === size
+                    activeList
+                        .map(item =>
+                            String(
+                                item.Size || ""
+                            ).trim()
+                        )
+                        .filter(Boolean)
 
-            )
+                )
+
+            ]
 
         )
 
     ];
 
+    const presets = Object.keys(
+        WIRE_PRESETS
+    );
+
     //----------------------------------
-    // Sort
+    // Validate State
     //----------------------------------
 
-    systems.sort();
-    types.sort();
+    if (!categories.includes(selectedCategory)) {
 
-    systems.splice(systems.indexOf("All"), 1);
-    systems.unshift("All");
+        selectedCategory = "FITTING";
 
-    types.splice(types.indexOf("All"), 1);
-    types.unshift("All");
+    }
+
+    if (!fittingTypes.includes(selectedFittingType)) {
+
+        selectedFittingType = "All";
+
+    }
+
+    if (!materialTypes.includes(selectedMaterialType)) {
+
+        selectedMaterialType = "All";
+
+    }
+
+    if (!sizes.includes(selectedSize)) {
+
+        selectedSize = "All";
+
+    }
+
+    if (!presets.includes(selectedWirePreset)) {
+
+        selectedWirePreset = "SINGLE";
+
+    }
 
     //----------------------------------
     // Clear
     //----------------------------------
 
+    categoryChips.innerHTML = "";
     systemChips.innerHTML = "";
-    typeChips.innerHTML = "";
     sizeChips.innerHTML = "";
 
+    if (fittingTypeChips) {
+
+        fittingTypeChips.innerHTML = "";
+
+    }
+
+    if (wirePresetChips) {
+
+        wirePresetChips.innerHTML = "";
+
+    }
+
     //----------------------------------
-    // Helper
+    // Chip Helper
     //----------------------------------
 
-    function buildChip(container, value, callback, active) {
+    function buildChip(
+
+        container,
+        value,
+        callback,
+        active
+
+    ) {
+
+        if (!container) return;
 
         const chip = document.createElement("button");
 
         chip.className = "chip";
-
+        chip.type = "button";
         chip.textContent = value;
+
+        //----------------------------------
+        // Long Fitting Labels
+        // Span the complete chip row
+        //----------------------------------
+
+        if (
+
+            container.id === "fittingTypeChips" &&
+            String(value || "").trim().length >= 11
+
+        ) {
+
+            chip.classList.add("chip-wide");
+
+        }
 
         if (active) {
 
@@ -151,9 +508,16 @@ function buildFilterChips(list) {
 
             buildFilterChips(list);
 
+            const searchInput =
+                document.getElementById(
+                    "modalSearch"
+                );
+
             buildModalList(
 
-                document.getElementById("modalSearch").value
+                searchInput
+                    ? searchInput.value
+                    : ""
 
             );
 
@@ -164,76 +528,200 @@ function buildFilterChips(list) {
     }
 
     //----------------------------------
-    // Conduit
+    // Main Category Chips
     //----------------------------------
 
-    systems.forEach(system => {
+    categories.forEach(category => {
 
         buildChip(
 
-            systemChips,
-
-            system,
+            categoryChips,
+            category,
 
             value => {
 
-                selectedSystem = value;
+                if (selectedCategory === value) {
+
+                    return;
+
+                }
+
+                selectedCategory = value;
+                selectedFittingType = "All";
+                selectedMaterialType = "All";
+                selectedSize = "All";
+                selectedWirePreset = "SINGLE";
 
             },
 
-            selectedSystem === system
+            selectedCategory === category
 
         );
 
     });
 
     //----------------------------------
-    // Fitting
+    // Fitting Type Chips
     //----------------------------------
 
-    types.forEach(type => {
+    if (isFittingMode()) {
 
-        buildChip(
+        fittingTypes.forEach(type => {
 
-            typeChips,
+            buildChip(
 
-            type,
+                fittingTypeChips,
+                type,
 
-            value => {
+                value => {
 
-                selectedType = value;
+                    selectedFittingType = value;
 
-            },
+                },
 
-            selectedType === type
+                selectedFittingType === type
 
-        );
+            );
 
-    });
+        });
+
+    }
 
     //----------------------------------
-    // Size
+    // Pipe / Wire Type Chips
     //----------------------------------
 
-    sizes.forEach(size => {
+    if (isPipeMode() || isWireMode()) {
 
-        buildChip(
+        materialTypes.forEach(type => {
 
-            sizeChips,
+            buildChip(
 
-            size,
+                systemChips,
+                type,
 
-            value => {
+                value => {
 
-                selectedSize = value;
+                    selectedMaterialType = value;
+                    selectedSize = "All";
 
-            },
+                },
 
-            selectedSize === size
+                selectedMaterialType === type
 
-        );
+            );
 
-    });
+        });
+
+    }
+
+    //----------------------------------
+    // Size Chips
+    //----------------------------------
+
+    if (
+
+        isFittingMode() ||
+        isPipeMode() ||
+        isWireMode()
+
+    ) {
+
+        sizes.forEach(size => {
+
+            buildChip(
+
+                sizeChips,
+                size,
+
+                value => {
+
+                    selectedSize = value;
+
+                },
+
+                selectedSize === size
+
+            );
+
+        });
+
+    }
+
+    //----------------------------------
+    // Wire Preset Chips
+    //----------------------------------
+
+    if (isWireMode()) {
+
+        presets.forEach(preset => {
+
+            buildChip(
+
+                wirePresetChips,
+                preset,
+
+                value => {
+
+                    selectedWirePreset = value;
+
+                },
+
+                selectedWirePreset === preset
+
+            );
+
+        });
+
+    }
+
+    //----------------------------------
+    // Labels
+    //----------------------------------
+
+    updateGroupLabel(
+        categoryChips,
+        "Category"
+    );
+
+    updateGroupLabel(
+        systemChips,
+        "Type"
+    );
+
+    updateGroupLabel(
+        sizeChips,
+        "Size"
+    );
+
+    //----------------------------------
+    // Visibility
+    //----------------------------------
+
+    setFilterGroupVisible(
+        categoryChips,
+        true
+    );
+
+    setFilterGroupVisible(
+        fittingTypeChips,
+        isFittingMode()
+    );
+
+    setFilterGroupVisible(
+        systemChips,
+        isPipeMode() || isWireMode()
+    );
+
+    setFilterGroupVisible(
+        sizeChips,
+        !isBreakerMode()
+    );
+
+    setFilterGroupVisible(
+        wirePresetChips,
+        isWireMode()
+    );
 
 }
 
@@ -244,50 +732,73 @@ function buildFilterChips(list) {
 function applyModalFilters(list) {
 
     //----------------------------------
-    // Hide Wire / Pipe by Default
+    // Category
+    //----------------------------------
+
+    if (isFittingMode()) {
+
+        list = list.filter(
+            isFittingRecord
+        );
+
+    }
+
+    else {
+
+        list = list.filter(item =>
+
+            normalizeModalValue(item.NodeType) ===
+            selectedCategory
+
+        );
+
+    }
+
+    //----------------------------------
+    // Breaker
+    //----------------------------------
+
+    if (isBreakerMode()) {
+
+        return list;
+
+    }
+
+    //----------------------------------
+    // Fitting Type
     //----------------------------------
 
     if (
 
-        selectedType !== "PIPE" &&
-
-        selectedType !== "WIRE"
+        isFittingMode() &&
+        selectedFittingType !== "All"
 
     ) {
 
         list = list.filter(item =>
 
-            item.NodeType !== "PIPE" &&
-
-            item.NodeType !== "WIRE"
-
-        );
-
-    }
-
-    //----------------------------------
-    // Conduit
-    //----------------------------------
-
-    if (selectedSystem !== "All") {
-
-        list = list.filter(item =>
-
-            String(item.Color || "").trim().toUpperCase() === selectedSystem
+            normalizeModalValue(item.NodeType) ===
+            selectedFittingType
 
         );
 
     }
 
     //----------------------------------
-    // Type
+    // Pipe / Wire Type
     //----------------------------------
 
-    if (selectedType !== "All") {
+    if (
+
+        (isPipeMode() || isWireMode()) &&
+        selectedMaterialType !== "All"
+
+    ) {
 
         list = list.filter(item =>
 
-            String(item.NodeType || "").trim().toUpperCase() === selectedType
+            normalizeModalValue(item.Type) ===
+            selectedMaterialType
 
         );
 
@@ -301,7 +812,8 @@ function applyModalFilters(list) {
 
         list = list.filter(item =>
 
-            String(item.Size || "").trim() === selectedSize
+            String(item.Size || "").trim() ===
+            selectedSize
 
         );
 
@@ -312,9 +824,35 @@ function applyModalFilters(list) {
 }
 
 //----------------------------------
+// Wire Preset API
+//----------------------------------
+
+function getSelectedWirePreset() {
+
+    return selectedWirePreset;
+
+}
+
+function getSelectedWirePresetColors() {
+
+    const colors =
+        WIRE_PRESETS[selectedWirePreset];
+
+    return Array.isArray(colors)
+        ? [...colors]
+        : null;
+
+}
+
+//----------------------------------
 // Expose
 //----------------------------------
 
 window.resetModalFilters = resetModalFilters;
 window.buildFilterChips = buildFilterChips;
 window.applyModalFilters = applyModalFilters;
+window.getSelectedWirePreset =
+    getSelectedWirePreset;
+window.getSelectedWirePresetColors =
+    getSelectedWirePresetColors;
+window.WIRE_PRESETS = WIRE_PRESETS;

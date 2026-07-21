@@ -1203,3 +1203,323 @@ RESPONSIVE
     }
 
 }
+
+/*=====================================
+CENTERED VIEWPORT MODAL - FINAL OVERRIDE
+=====================================*/
+
+/*
+Supports both:
+modal.style.display = "flex"
+and older:
+modal.style.display = "block"
+*/
+
+.modal[style*="display: block"],
+#modal[style*="display: block"] {
+    display: flex !important;
+}
+
+.modal,
+#modal {
+    position: fixed;
+
+    inset: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 12px;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+
+    background: rgba(2, 6, 23, .82);
+
+    backdrop-filter: blur(5px);
+
+    z-index: 10000;
+}
+
+/*=====================================
+WRAPPER
+Assembly panel + modal window
+=====================================*/
+
+.modal-wrapper {
+    width: min(2100px, calc(100vw - 24px));
+
+    height: auto;
+    max-height: calc(100vh - 24px);
+
+    min-height: 0;
+
+    margin: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 10px;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+}
+
+/*=====================================
+DETACHED ASSEMBLY PANEL
+=====================================*/
+
+#assemblyPanel {
+    width: min(700px, 100%);
+
+    min-width: 0;
+    max-width: 100%;
+
+    max-height: min(220px, 26vh);
+
+    flex: 0 0 auto;
+
+    align-self: center;
+
+    overflow-x: auto;
+    overflow-y: auto;
+
+    box-sizing: border-box;
+}
+
+/*=====================================
+MODAL WINDOW
+=====================================*/
+
+.modal-content,
+#modal .modal-content {
+    position: relative;
+
+    width: 100%;
+    max-width: none;
+
+    height: auto;
+    max-height: none;
+
+    min-height: 0;
+
+    flex: 1 1 auto;
+
+    margin: 0;
+
+    padding: 14px;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+}
+
+/*=====================================
+FIXED TOP CONTENT
+=====================================*/
+
+.modal-header,
+#modalSearch,
+.modal-subtitle {
+    flex: 0 0 auto;
+}
+
+/*=====================================
+SCROLLABLE MAIN AREA
+=====================================*/
+
+.modal-body,
+#modal .modal-body {
+    height: auto;
+
+    min-height: 0;
+
+    flex: 1 1 auto;
+
+    overflow: hidden;
+}
+
+.filter-panel {
+    min-height: 0;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.library-panel {
+    height: auto;
+
+    min-height: 0;
+
+    overflow: hidden;
+}
+
+#modalList {
+    min-height: 0;
+
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+/*=====================================
+ASSEMBLY COMPACT HEIGHT
+=====================================*/
+
+#assemblyPanel .selected-hardware {
+    padding: 10px;
+}
+
+#assemblyPanel .selected-title {
+    margin-bottom: 8px;
+}
+
+#assemblyPanel .assembly-row {
+    margin-bottom: 8px;
+}
+
+#assemblyPanel .save-connection {
+    margin-top: 2px;
+}
+
+/*=====================================
+SHORT SCREENS
+=====================================*/
+
+@media (max-height: 850px) {
+
+    .modal,
+    #modal {
+        padding: 8px;
+    }
+
+    .modal-wrapper {
+        width: min(2100px, calc(100vw - 16px));
+        max-height: calc(100vh - 16px);
+
+        gap: 8px;
+    }
+
+    #assemblyPanel {
+        max-height: 180px;
+    }
+
+    .modal-content,
+    #modal .modal-content {
+        padding: 10px;
+    }
+
+    .modal-header {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+    }
+
+    .modal-header h2 {
+        font-size: 26px;
+    }
+
+}
+
+/*=====================================
+NARROW SCREENS
+=====================================*/
+
+@media (max-width: 900px) {
+
+    .modal-wrapper {
+        width: calc(100vw - 16px);
+    }
+
+    .modal-body {
+        grid-template-columns: 1fr;
+
+        overflow-y: auto;
+    }
+
+    .filter-panel {
+        max-height: 240px;
+
+        padding-right: 0;
+        padding-bottom: 10px;
+
+        border-right: none;
+        border-bottom: 1px solid var(--v2-border);
+    }
+
+    .library-panel {
+        min-height: 420px;
+    }
+
+}
+
+
+/*=====================================
+FITTING TYPE CHIP LAYOUT
+=====================================*/
+
+#fittingTypeChips {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 6px;
+
+    width: 100%;
+}
+
+/* Compact fitting chips */
+
+#fittingTypeChips .chip {
+    width: 100%;
+
+    min-width: 0;
+
+    padding: 8px 6px;
+
+    text-align: center;
+
+    font-size: 11px;
+
+    line-height: 1.15;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Long labels use the complete row */
+
+#fittingTypeChips .chip-wide {
+    grid-column: 1 / -1;
+
+    text-align: left;
+
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* Preserve 2-column category buttons */
+
+#typeChips {
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+/* Narrow filter panel fallback */
+
+@media (max-width: 1200px) {
+
+    #fittingTypeChips {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
