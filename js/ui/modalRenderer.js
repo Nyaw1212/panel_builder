@@ -143,14 +143,172 @@ function getModalCardSecondaryDetail(item) {
 }
 
 //----------------------------------
+// Build Local Image Path
+//----------------------------------
+
+function getModalLocalImage(item) {
+
+    const catalogNumber = String(
+        item.CatalogNumber || ""
+    ).trim();
+
+    if (!catalogNumber) {
+
+        return "";
+
+    }
+
+    return (
+        "images/materials/" +
+        encodeURIComponent(catalogNumber) +
+        ".png"
+    );
+
+}
+
+//----------------------------------
+// Build Drive Image URL
+//----------------------------------
+
+function getModalDriveImage(item) {
+
+    const driveFileId = String(
+        item.DriveFileID || ""
+    ).trim();
+
+    if (!driveFileId) {
+
+        return "";
+
+    }
+
+    return (
+        "https://drive.google.com/thumbnail?id=" +
+        encodeURIComponent(driveFileId) +
+        "&sz=w400"
+    );
+
+}
+
+//----------------------------------
+// Replace Failed Image
+//----------------------------------
+
+function showModalImagePlaceholder(image) {
+
+    const wrapper = image.closest(
+        ".material-card-image-wrap"
+    );
+
+    if (!wrapper) {
+
+        return;
+
+    }
+
+    wrapper.innerHTML = `
+
+        <div class="material-card-image-placeholder">
+            No image
+        </div>
+
+    `;
+
+}
+
+//----------------------------------
+// Material Image Fallback
+//----------------------------------
+
+function handleModalMaterialImageError(event) {
+
+    const image = event.currentTarget;
+
+    const stage = Number(
+        image.dataset.fallbackStage || 0
+    );
+
+    const driveImage =
+        image.dataset.driveImage || "";
+
+    const placeholderImage =
+        image.dataset.placeholderImage || "";
+
+    //----------------------------------
+    // Local Failed → Google Drive
+    //----------------------------------
+
+    if (
+        stage === 0 &&
+        driveImage
+    ) {
+
+        image.dataset.fallbackStage = "1";
+
+        image.src = driveImage;
+
+        return;
+
+    }
+
+    //----------------------------------
+    // Google Drive Failed → Placeholder
+    //----------------------------------
+
+    if (
+        stage <= 1 &&
+        placeholderImage
+    ) {
+
+        image.dataset.fallbackStage = "2";
+
+        image.src = placeholderImage;
+
+        return;
+
+    }
+
+    //----------------------------------
+    // Everything Failed → No Image
+    //----------------------------------
+
+    image.removeEventListener(
+        "error",
+        handleModalMaterialImageError
+    );
+
+    showModalImagePlaceholder(image);
+
+}
+
+//----------------------------------
 // Build Card
 //----------------------------------
 
 function buildModalCard(item) {
 
-    const image = item.DriveFileID
-        ? `https://drive.google.com/thumbnail?id=${encodeURIComponent(item.DriveFileID)}&sz=w400`
-        : "";
+    //----------------------------------
+    // Images
+    // Local → Google Drive → Placeholder
+    //----------------------------------
+
+    const localImage =
+        getModalLocalImage(item);
+
+    const driveImage =
+        getModalDriveImage(item);
+
+    const placeholderImage =
+        "images/placeholder.png";
+
+    const startingImage =
+        localImage ||
+        driveImage ||
+        placeholderImage;
+
+    //----------------------------------
+    // Favorite Priority
+    //----------------------------------
 
     const priority = Math.max(
 
@@ -181,7 +339,8 @@ function buildModalCard(item) {
     const card =
         document.createElement("div");
 
-    card.className = "equipment material-card";
+    card.className =
+        "equipment material-card";
 
     card.dataset.category =
         normalizeModalCardValue(category);
@@ -195,6 +354,8 @@ function buildModalCard(item) {
         modalMode === "material" &&
 
         currentConnection &&
+
+        Array.isArray(currentConnection.hardware) &&
 
         currentConnection.hardware.some(
 
@@ -220,13 +381,20 @@ function buildModalCard(item) {
 
             <div class="material-card-image-wrap">
 
-                ${image
+                ${startingImage
                     ? `
                         <img
                             class="equipment-image material-card-image"
-                            src="${image}"
-                            alt="${escapeModalHTML(item.Description || item.CatalogNumber || "Material")}"
+                            src="${escapeModalHTML(startingImage)}"
+                            alt="${escapeModalHTML(
+                                item.Description ||
+                                item.CatalogNumber ||
+                                "Material"
+                            )}"
                             loading="lazy"
+                            data-fallback-stage="${localImage ? "0" : driveImage ? "1" : "2"}"
+                            data-drive-image="${escapeModalHTML(driveImage)}"
+                            data-placeholder-image="${escapeModalHTML(placeholderImage)}"
                         >
                     `
                     : `
@@ -242,13 +410,17 @@ function buildModalCard(item) {
 
                 <div class="equipment-code material-card-code">
 
-                    ${escapeModalHTML(item.CatalogNumber || "")}
+                    ${escapeModalHTML(
+                        item.CatalogNumber || ""
+                    )}
 
                 </div>
 
                 <div class="equipment-desc material-card-description">
 
-                    ${escapeModalHTML(item.Description || "")}
+                    ${escapeModalHTML(
+                        item.Description || ""
+                    )}
 
                 </div>
 
@@ -276,7 +448,12 @@ function buildModalCard(item) {
 
         <div class="material-card-footer">
 
-            <div class="material-category-badge material-category-${normalizeModalCardValue(category).toLowerCase()}">
+            <div
+                class="
+                    material-category-badge
+                    material-category-${normalizeModalCardValue(category).toLowerCase()}
+                "
+            >
 
                 <span class="material-category-icon">
                     ${badgeIcon}
@@ -318,6 +495,23 @@ function buildModalCard(item) {
     `;
 
     //----------------------------------
+    // Image Fallback Listener
+    //----------------------------------
+
+    const imageElement = card.querySelector(
+        ".material-card-image"
+    );
+
+    if (imageElement) {
+
+        imageElement.addEventListener(
+            "error",
+            handleModalMaterialImageError
+        );
+
+    }
+
+    //----------------------------------
     // Click
     //----------------------------------
 
@@ -329,7 +523,10 @@ function buildModalCard(item) {
 
         if (modalMode === "picker") {
 
-            if (typeof modalOnSelect === "function") {
+            if (
+                typeof modalOnSelect ===
+                "function"
+            ) {
 
                 modalOnSelect(item);
 
@@ -400,5 +597,8 @@ function renderModalCards(list) {
 // Expose
 //----------------------------------
 
-window.buildModalCard = buildModalCard;
-window.renderModalCards = renderModalCards;
+window.buildModalCard =
+    buildModalCard;
+
+window.renderModalCards =
+    renderModalCards;
