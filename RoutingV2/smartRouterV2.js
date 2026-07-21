@@ -1,4 +1,6 @@
-//———————————- // Smart Router V2 //———————————-
+//----------------------------------
+// Smart Router V2
+//----------------------------------
 
 const SmartRouterV2 = (() => {
 
@@ -8,73 +10,49 @@ const SmartRouterV2 = (() => {
             return [];
         }
 
-        //----------------------------------
-        // Refresh obstacle cache
-        //----------------------------------
-
         if (RoutingObstacleV2.refresh) {
             RoutingObstacleV2.refresh();
         }
 
         //----------------------------------
-        // Generate candidates
+        // Generate obstacle-aware candidates
         //----------------------------------
 
-        const candidates =
-            RoutingPathfinderV2.buildCandidates(
-                start,
-                end
-            );
+        const candidates = RoutingPathfinderV2.buildCandidates(
+            start,
+            end,
+            options
+        );
 
         if (!candidates.length) {
             return [];
         }
 
         //----------------------------------
-        // Select best candidate
+        // Select and optimize a valid route
         //----------------------------------
 
-        let best =
-            RoutingScorerV2.selectBest(
-                candidates,
-                options
-            );
+        let best = RoutingScorerV2.selectBest(candidates, options);
 
         if (!best) {
-            best = candidates[0];
+            console.warn(
+                "SmartRouterV2: no valid route was found.",
+                { start, end, options }
+            );
+            return [];
         }
 
-        //----------------------------------
-        // Optimize
-        //----------------------------------
+        best = RoutingOptimizerV2.optimize(best);
 
-        best =
-            RoutingOptimizerV2.optimize(
-                best
-            );
-
-        //----------------------------------
-        // Final validation
-        //----------------------------------
-
-        const validation =
-            RoutingValidatorV2.validateRoute(
-                best,
-                options
-            );
+        const validation = RoutingValidatorV2.validateRoute(best, options);
 
         if (!validation.valid) {
-
             console.warn(
                 "SmartRouterV2: optimized route failed validation.",
                 validation
             );
-
+            return [];
         }
-
-        //----------------------------------
-        // Reserve lanes
-        //----------------------------------
 
         RoutingLaneManagerV2.registerRoute(
             best,
@@ -82,21 +60,14 @@ const SmartRouterV2 = (() => {
         );
 
         return best;
-
     }
-
-    //----------------------------------
-    // Batch Routing
-    //----------------------------------
 
     function createRoutes(routes = []) {
 
         RoutingLaneManagerV2.reset();
 
         return routes.map(route => ({
-
             id: route.id,
-
             points: createRoute(
                 route.start,
                 route.end,
@@ -105,14 +76,8 @@ const SmartRouterV2 = (() => {
                     routeId: route.id
                 }
             )
-
         }));
-
     }
-
-    //----------------------------------
-    // Reset
-    //----------------------------------
 
     function reset() {
 
@@ -121,17 +86,12 @@ const SmartRouterV2 = (() => {
         if (RoutingObstacleV2.refresh) {
             RoutingObstacleV2.refresh();
         }
-
     }
 
     return {
-
         createRoute,
-
         createRoutes,
-
         reset
-
     };
 
 })();
