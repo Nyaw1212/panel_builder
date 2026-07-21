@@ -199,202 +199,214 @@ window.KeyboardManagerV2 = (() => {
     //----------------------------------
 
     async function handleKeydown(event) {
-        if (event.repeat) return;
+      if (event.repeat) return;
 
-        const key = normalizeKey(event);
+      const key = normalizeKey(event);
 
-        const activeEntry =
-            getTopmostEntry();
+      const activeEntry = getTopmostEntry();
 
-        const activeElement =
-            activeEntry?.[0] || null;
+      const activeElement = activeEntry?.[0] || null;
 
-        const activeConfig =
-            activeEntry?.[1] || null;
+      const activeConfig = activeEntry?.[1] || null;
 
-        //----------------------------------
-        // Escape
-        //----------------------------------
+      //----------------------------------
+      // Escape
+      //----------------------------------
 
-        if (event.key === "Escape") {
-            if (
-                activeElement &&
-                activeConfig?.closeOnEscape
-            ) {
-                event.preventDefault();
-                event.stopPropagation();
+      if (event.key === "Escape") {
+        if (activeElement && activeConfig?.closeOnEscape) {
+          event.preventDefault();
+          event.stopPropagation();
 
-                closeElement(activeElement);
+          closeElement(activeElement);
 
-                return;
-            }
-
-            const automaticClosed =
-                closeAutomaticElement();
-
-            if (automaticClosed) {
-                event.preventDefault();
-                event.stopPropagation();
-
-                return;
-            }
-
-            clearSelection();
-
-            return;
+          return;
         }
 
-        //----------------------------------
-        // Registered Element Shortcuts
-        //----------------------------------
+        const automaticClosed = closeAutomaticElement();
+
+        if (automaticClosed) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          return;
+        }
+
+        clearSelection();
+
+        return;
+      }
+
+      //----------------------------------
+      // Registered Element Shortcuts
+      //----------------------------------
+
+      if (activeElement && activeConfig) {
+        const handled = await handleRegisteredShortcut(
+          event,
+          key,
+          activeElement,
+          activeConfig,
+        );
+
+        if (handled) return;
+
+        if (activeConfig.blockGlobalShortcuts) {
+          return;
+        }
+      }
+
+      //----------------------------------
+      // Browser Editing Controls
+      //----------------------------------
+
+      if (isTypingElement(document.activeElement)) {
+        return;
+      }
+
+      //----------------------------------
+      // Global Save
+      //----------------------------------
+
+      if (key === "Ctrl+S") {
+        event.preventDefault();
+        await saveProject();
+        return;
+      }
+
+      //----------------------------------
+      // Copy
+      //----------------------------------
+
+      if (key === "Ctrl+C") {
+        event.preventDefault();
+        copy();
+        return;
+      }
+
+      //----------------------------------
+      // Undo
+      //----------------------------------
+
+      if (key === "Ctrl+Z") {
+        event.preventDefault();
+        event.stopPropagation();
 
         if (
-            activeElement &&
-            activeConfig
+          window.HistoryManagerV2 &&
+          typeof window.HistoryManagerV2.undo === "function"
         ) {
-            const handled =
-                await handleRegisteredShortcut(
-                    event,
-                    key,
-                    activeElement,
-                    activeConfig
-                );
-
-            if (handled) return;
-
-            if (
-                activeConfig.blockGlobalShortcuts
-            ) {
-                return;
-            }
+          await window.HistoryManagerV2.undo();
+        } else if (typeof window.undo === "function") {
+          await window.undo();
         }
 
-        //----------------------------------
-        // Browser Editing Controls
-        //----------------------------------
+        return;
+      }
+
+      //----------------------------------
+      // Redo
+      //----------------------------------
+
+      if (key === "Ctrl+Y" || key === "Ctrl+Shift+Z") {
+        event.preventDefault();
+        event.stopPropagation();
 
         if (
-            isTypingElement(
-                document.activeElement
-            )
+          window.HistoryManagerV2 &&
+          typeof window.HistoryManagerV2.redo === "function"
         ) {
-            return;
+          await window.HistoryManagerV2.redo();
+        } else if (typeof window.redo === "function") {
+          await window.redo();
         }
 
-        //----------------------------------
-        // Global Save
-        //----------------------------------
+        return;
+      }
 
-        if (key === "Ctrl+S") {
-            event.preventDefault();
-            await saveProject();
-            return;
-        }
+      //----------------------------------
+      // Paste
+      //----------------------------------
 
-        //----------------------------------
-        // Copy
-        //----------------------------------
+      if (key === "Ctrl+V") {
+        event.preventDefault();
+        paste();
+        return;
+      }
 
-        if (key === "Ctrl+C") {
-            event.preventDefault();
-            copy();
-            return;
-        }
+      //----------------------------------
+      // Select All
+      //----------------------------------
 
-        //----------------------------------
-        // Paste
-        //----------------------------------
+      if (key === "Ctrl+A") {
+        event.preventDefault();
+        selectAll();
+        return;
+      }
 
-        if (key === "Ctrl+V") {
-            event.preventDefault();
-            paste();
-            return;
-        }
+      //----------------------------------
+      // Duplicate
+      //----------------------------------
 
-        //----------------------------------
-        // Select All
-        //----------------------------------
+      if (key === "Ctrl+D") {
+        event.preventDefault();
+        duplicate();
+        return;
+      }
 
-        if (key === "Ctrl+A") {
-            event.preventDefault();
-            selectAll();
-            return;
-        }
+      //----------------------------------
+      // New Project
+      //----------------------------------
 
-        //----------------------------------
-        // Duplicate
-        //----------------------------------
+      if (key === "Ctrl+N") {
+        event.preventDefault();
 
-        if (key === "Ctrl+D") {
-            event.preventDefault();
-            duplicate();
-            return;
-        }
+        runFirstAvailable(["newProject", "createNewProject", "resetProject"]);
 
-        //----------------------------------
-        // New Project
-        //----------------------------------
+        return;
+      }
 
-        if (key === "Ctrl+N") {
-            event.preventDefault();
+      //----------------------------------
+      // Open Project
+      //----------------------------------
 
-            runFirstAvailable([
-                "newProject",
-                "createNewProject",
-                "resetProject"
-            ]);
+      if (key === "Ctrl+O") {
+        event.preventDefault();
 
-            return;
-        }
+        runFirstAvailable([
+          "showOpenProjectDialog",
+          "openProjectDialog",
+          "showProjectLoader",
+        ]);
 
-        //----------------------------------
-        // Open Project
-        //----------------------------------
+        return;
+      }
 
-        if (key === "Ctrl+O") {
-            event.preventDefault();
+      //----------------------------------
+      // BOM
+      //----------------------------------
 
-            runFirstAvailable([
-                "showOpenProjectDialog",
-                "openProjectDialog",
-                "showProjectLoader"
-            ]);
+      if (key === "Ctrl+B") {
+        event.preventDefault();
 
-            return;
-        }
+        runFirstAvailable(["showBOMDialog", "openBOMDialog", "showBOM"]);
 
-        //----------------------------------
-        // BOM
-        //----------------------------------
+        return;
+      }
 
-        if (key === "Ctrl+B") {
-            event.preventDefault();
+      //----------------------------------
+      // Delete
+      //----------------------------------
 
-            runFirstAvailable([
-                "showBOMDialog",
-                "openBOMDialog",
-                "showBOM"
-            ]);
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
 
-            return;
-        }
-
-        //----------------------------------
-        // Delete
-        //----------------------------------
-
-        if (
-            event.key === "Delete" ||
-            event.key === "Backspace"
-        ) {
-            event.preventDefault();
-
-            runFirstAvailable([
-                "deleteSelection",
-                "deleteSelectedPanels",
-                "removeSelection"
-            ]);
-        }
+        runFirstAvailable([
+          "deleteSelection",
+          "deleteSelectedPanels",
+          "removeSelection",
+        ]);
+      }
     }
 
     //----------------------------------

@@ -5,14 +5,47 @@
 const links = [];
 
 //----------------------------------
+// Capture Link History
+//----------------------------------
+
+function captureLinkHistory(
+    label
+) {
+
+    if (
+        !window.HistoryManagerV2 ||
+        typeof window
+            .HistoryManagerV2
+            .capture !==
+            "function"
+    ) {
+
+        return false;
+
+    }
+
+    return window
+        .HistoryManagerV2
+        .capture(
+            label
+        );
+
+}
+
+//----------------------------------
 // Create Link
 //----------------------------------
 
-function createLink(start, end) {
+function createLink(
+    start,
+    end,
+    options = {}
+) {
 
     const link = {
 
-        id: crypto.randomUUID(),
+        id:
+            crypto.randomUUID(),
 
         //----------------------------------
         // Connections
@@ -20,17 +53,21 @@ function createLink(start, end) {
 
         start: {
 
-            panelId: start.item.id,
+            panelId:
+                start.item.id,
 
-            connectionId: start.connection.id
+            connectionId:
+                start.connection.id
 
         },
 
         end: {
 
-            panelId: end.item.id,
+            panelId:
+                end.item.id,
 
-            connectionId: end.connection.id
+            connectionId:
+                end.connection.id
 
         },
 
@@ -40,9 +77,11 @@ function createLink(start, end) {
 
         panels: {
 
-            start: start.item,
+            start:
+                start.item,
 
-            end: end.item
+            end:
+                end.item
 
         },
 
@@ -52,9 +91,11 @@ function createLink(start, end) {
 
         nodes: {
 
-            start: start.connection,
+            start:
+                start.connection,
 
-            end: end.connection
+            end:
+                end.connection
 
         },
 
@@ -64,9 +105,11 @@ function createLink(start, end) {
 
         geometry: {
 
-            type: "line",
+            type:
+                "line",
 
-            points: []
+            points:
+                []
 
         },
 
@@ -74,13 +117,16 @@ function createLink(start, end) {
         // Conduit
         //----------------------------------
 
-        length: 0,
+        length:
+            0,
 
         conduit: {
 
-            type: "EMT",
+            type:
+                "EMT",
 
-            size: '2"'
+            size:
+                '2"'
 
         },
 
@@ -88,9 +134,11 @@ function createLink(start, end) {
         // Materials
         //----------------------------------
 
-        assembly: [],
+        assembly:
+            [],
 
-        materials: []
+        materials:
+            []
 
     };
 
@@ -98,29 +146,62 @@ function createLink(start, end) {
     // Register Link
     //----------------------------------
 
-    start.connection.links.push(link);
+    start.connection.links.push(
+        link
+    );
 
-    end.connection.links.push(link);
+    end.connection.links.push(
+        link
+    );
 
     //----------------------------------
     // Build
     //----------------------------------
 
-    updateLinkGeometry(link);
+    updateLinkGeometry(
+        link
+    );
 
-    updateLinkLength(link);
+    updateLinkLength(
+        link
+    );
 
-    updateLinkAssembly(link);
+    updateLinkAssembly(
+        link
+    );
 
-    updateLinkMaterials(link);
+    updateLinkMaterials(
+        link
+    );
 
     //----------------------------------
     // Store
     //----------------------------------
 
-    links.push(link);
+    links.push(
+        link
+    );
 
-    console.log("Link Created", link);
+    //----------------------------------
+    // Capture History
+    //----------------------------------
+
+    if (
+        options.captureHistory !==
+        false
+    ) {
+
+        captureLinkHistory(
+            options.historyLabel ||
+            "Connection created"
+        );
+
+    }
+
+    console.log(
+        "Link Created",
+        link
+    );
 
     return link;
 
@@ -140,12 +221,13 @@ function getLinks() {
 // Get Link
 //----------------------------------
 
-function getLink(id) {
+function getLink(
+    id
+) {
 
     return links.find(
-
-        link => link.id === id
-
+        link =>
+            link.id === id
     );
 
 }
@@ -154,54 +236,73 @@ function getLink(id) {
 // Remove Link
 //----------------------------------
 
-function removeLink(id) {
+function removeLink(
+    id,
+    options = {}
+) {
 
-    console.log("removeLink()", id);
-
-    console.log("Before:", links.length);
-
-    const index = links.findIndex(
-
-        link => link.id === id
-
+    console.log(
+        "removeLink()",
+        id
     );
 
-    console.log("Index:", index);
+    console.log(
+        "Before:",
+        links.length
+    );
 
-    if (index < 0) {
+    const index =
+        links.findIndex(
+            link =>
+                link.id === id
+        );
 
-        console.log("Link not found.");
+    console.log(
+        "Index:",
+        index
+    );
 
-        return;
+    if (
+        index < 0
+    ) {
+
+        console.log(
+            "Link not found."
+        );
+
+        return null;
 
     }
 
-    const link = links[index];
+    const link =
+        links[index];
 
     //----------------------------------
     // Unregister
     //----------------------------------
 
-    if (link.nodes?.start) {
+    if (
+        link.nodes?.start
+    ) {
 
         link.nodes.start.links =
-
             link.nodes.start.links.filter(
-
-                l => l.id !== link.id
-
+                existingLink =>
+                    existingLink.id !==
+                    link.id
             );
 
     }
 
-    if (link.nodes?.end) {
+    if (
+        link.nodes?.end
+    ) {
 
         link.nodes.end.links =
-
             link.nodes.end.links.filter(
-
-                l => l.id !== link.id
-
+                existingLink =>
+                    existingLink.id !==
+                    link.id
             );
 
     }
@@ -210,17 +311,36 @@ function removeLink(id) {
     // Remove
     //----------------------------------
 
-    links.splice(index, 1);
+    links.splice(
+        index,
+        1
+    );
 
-    console.log("After:", links.length);
+    console.log(
+        "After:",
+        links.length
+    );
 
     //----------------------------------
     // Clear Selection
     //----------------------------------
 
-    if (isLinkSelected(link)) {
+    if (
+        typeof isLinkSelected ===
+            "function" &&
+        isLinkSelected(
+            link
+        )
+    ) {
 
-        clearSelectedLink();
+        if (
+            typeof clearSelectedLink ===
+            "function"
+        ) {
+
+            clearSelectedLink();
+
+        }
 
     }
 
@@ -228,7 +348,11 @@ function removeLink(id) {
     // Hide Inspector
     //----------------------------------
 
-    if (typeof hideLinkInspector === "function") {
+    if (
+        options.cleanupUi !== false &&
+        typeof hideLinkInspector ===
+            "function"
+    ) {
 
         hideLinkInspector();
 
@@ -238,7 +362,11 @@ function removeLink(id) {
     // Remove Old Delete Button
     //----------------------------------
 
-    if (typeof removeLinkDeleteButton === "function") {
+    if (
+        options.cleanupUi !== false &&
+        typeof removeLinkDeleteButton ===
+            "function"
+    ) {
 
         removeLinkDeleteButton();
 
@@ -248,13 +376,38 @@ function removeLink(id) {
     // Refresh Canvas
     //----------------------------------
 
-    console.log("drawCanvas =", typeof drawCanvas);
+    console.log(
+        "drawCanvas =",
+        typeof drawCanvas
+    );
 
-    if (typeof drawCanvas === "function") {
+    if (
+        options.refresh !== false &&
+        typeof drawCanvas ===
+            "function"
+    ) {
 
         drawCanvas();
 
     }
+
+    //----------------------------------
+    // Capture History
+    //----------------------------------
+
+    if (
+        options.captureHistory !==
+        false
+    ) {
+
+        captureLinkHistory(
+            options.historyLabel ||
+            "Connection deleted"
+        );
+
+    }
+
+    return link;
 
 }
 
@@ -262,49 +415,178 @@ function removeLink(id) {
 // Clear Links
 //----------------------------------
 
-function clearLinks() {
+function clearLinks(
+    options = {}
+) {
 
-    links.forEach(link => {
+    const removedCount =
+        links.length;
 
-        if (link.nodes?.start) {
+    links.forEach(
+        link => {
 
-            link.nodes.start.links = [];
+            if (
+                link.nodes?.start
+            ) {
+
+                link.nodes.start.links =
+                    [];
+
+            }
+
+            if (
+                link.nodes?.end
+            ) {
+
+                link.nodes.end.links =
+                    [];
+
+            }
 
         }
+    );
 
-        if (link.nodes?.end) {
+    links.length =
+        0;
 
-            link.nodes.end.links = [];
+    //----------------------------------
+    // Clear Selection
+    //----------------------------------
 
-        }
+    if (
+        typeof clearSelectedLink ===
+        "function"
+    ) {
 
-    });
+        clearSelectedLink();
 
-    links.length = 0;
+    }
+
+    //----------------------------------
+    // Refresh
+    //----------------------------------
+
+    if (
+        options.refresh === true &&
+        typeof drawCanvas ===
+            "function"
+    ) {
+
+        drawCanvas();
+
+    }
+
+    //----------------------------------
+    // Optional History
+    //----------------------------------
+
+    if (
+        removedCount > 0 &&
+        options.captureHistory ===
+            true
+    ) {
+
+        captureLinkHistory(
+            options.historyLabel ||
+            (
+                removedCount === 1
+                    ? "Connection deleted"
+                    : `${removedCount} connections deleted`
+            )
+        );
+
+    }
+
+    return removedCount;
 
 }
+
 //----------------------------------
 // Replace Links
 //----------------------------------
 
-function replaceLinks(newLinks) {
+function replaceLinks(
+    newLinks,
+    options = {}
+) {
 
-    clearLinks();
+    clearLinks({
+        captureHistory:
+            false,
 
-    newLinks.forEach(link => {
-
-        links.push(link);
-
+        refresh:
+            false
     });
 
+    (
+        Array.isArray(newLinks)
+            ? newLinks
+            : []
+    ).forEach(
+        link => {
+
+            links.push(
+                link
+            );
+
+        }
+    );
+
+    //----------------------------------
+    // Refresh
+    //----------------------------------
+
+    if (
+        options.refresh === true &&
+        typeof drawCanvas ===
+            "function"
+    ) {
+
+        drawCanvas();
+
+    }
+
+    //----------------------------------
+    // Optional History
+    //----------------------------------
+
+    if (
+        options.captureHistory ===
+        true
+    ) {
+
+        captureLinkHistory(
+            options.historyLabel ||
+            "Connections replaced"
+        );
+
+    }
+
+    return links;
+
 }
+
 //----------------------------------
 // Expose
 //----------------------------------
 
-window.createLink = createLink;
-window.getLinks = getLinks;
-window.getLink = getLink;
-window.removeLink = removeLink;
-window.clearLinks = clearLinks;
-window.replaceLinks = replaceLinks;
+window.captureLinkHistory =
+    captureLinkHistory;
+
+window.createLink =
+    createLink;
+
+window.getLinks =
+    getLinks;
+
+window.getLink =
+    getLink;
+
+window.removeLink =
+    removeLink;
+
+window.clearLinks =
+    clearLinks;
+
+window.replaceLinks =
+    replaceLinks;

@@ -3,10 +3,14 @@
 //----------------------------------
 
 const linkInspector =
-    document.getElementById("linkInspector");
+    document.getElementById(
+        "linkInspector"
+    );
 
 const inspectorBody =
-    document.getElementById("inspectorBody");
+    document.getElementById(
+        "inspectorBody"
+    );
 
 //----------------------------------
 // Show
@@ -14,7 +18,19 @@ const inspectorBody =
 
 function showLinkInspector() {
 
-    linkInspector.classList.remove("collapsed");
+    if (!linkInspector) {
+
+        return false;
+
+    }
+
+    linkInspector
+        .classList
+        .remove(
+            "collapsed"
+        );
+
+    return true;
 
 }
 
@@ -22,19 +38,40 @@ function showLinkInspector() {
 // Hide
 //----------------------------------
 
-function hideLinkInspector() {
+function hideLinkInspector(
+    options = {}
+) {
 
-    linkInspector.classList.add("collapsed");
+    if (
+        linkInspector
+    ) {
 
-    inspectorBody.innerHTML = `
+        linkInspector
+            .classList
+            .add(
+                "collapsed"
+            );
 
-        <div class="inspector-placeholder">
+    }
 
-            No Link Selected
+    if (
+        inspectorBody &&
+        options.clearBody !== false
+    ) {
 
-        </div>
+        inspectorBody.innerHTML = `
 
-    `;
+            <div class="inspector-placeholder">
+
+                No Link Selected
+
+            </div>
+
+        `;
+
+    }
+
+    return true;
 
 }
 
@@ -42,23 +79,73 @@ function hideLinkInspector() {
 // Refresh
 //----------------------------------
 
-function refreshLinkInspector() {
+function refreshLinkInspector(
+    options = {}
+) {
 
-    const link = getEditingLink();
+    const link =
+        typeof getEditingLink ===
+            "function"
+            ? getEditingLink()
+            : null;
 
     if (!link) {
 
-        hideLinkInspector();
+        hideLinkInspector(
+            options
+        );
 
-        return;
+        return false;
 
     }
 
     showLinkInspector();
 
-    renderLinkInspector(link);
+    //----------------------------------
+    // Render
+    //----------------------------------
 
-    bindLinkInspectorEvents(link);
+    if (
+        typeof renderLinkInspector ===
+        "function"
+    ) {
+
+        renderLinkInspector(
+            link
+        );
+
+    }
+
+    //----------------------------------
+    // Bind Events
+    //----------------------------------
+
+    if (
+        options.bindEvents !== false &&
+        typeof bindLinkInspectorEvents ===
+            "function"
+    ) {
+
+        bindLinkInspectorEvents(
+            link
+        );
+
+    }
+
+    return true;
+
+}
+
+//----------------------------------
+// Refresh Without Rebinding
+//----------------------------------
+
+function refreshLinkInspectorView() {
+
+    return refreshLinkInspector({
+        bindEvents:
+            false
+    });
 
 }
 
@@ -66,6 +153,14 @@ function refreshLinkInspector() {
 // Expose
 //----------------------------------
 
-window.showLinkInspector = showLinkInspector;
-window.hideLinkInspector = hideLinkInspector;
-window.refreshLinkInspector = refreshLinkInspector;
+window.showLinkInspector =
+    showLinkInspector;
+
+window.hideLinkInspector =
+    hideLinkInspector;
+
+window.refreshLinkInspector =
+    refreshLinkInspector;
+
+window.refreshLinkInspectorView =
+    refreshLinkInspectorView;

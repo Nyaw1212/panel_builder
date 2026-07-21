@@ -1,4 +1,30 @@
 //----------------------------------
+// History Helper
+//----------------------------------
+
+function capturePlacementHistory(
+    label
+) {
+
+    if (
+        !window.HistoryManagerV2 ||
+        typeof window
+            .HistoryManagerV2
+            .capture !==
+            "function"
+    ) {
+        return false;
+    }
+
+    return window
+        .HistoryManagerV2
+        .capture(
+            label
+        );
+
+}
+
+//----------------------------------
 // Create Placed Item
 //----------------------------------
 
@@ -9,8 +35,14 @@ function createPlacedItem(
 ) {
 
     console.log("Creating Item");
-    console.log("Catalog:", item.CatalogNumber);
-    console.log("Preset:", preset);
+    console.log(
+        "Catalog:",
+        item.CatalogNumber
+    );
+    console.log(
+        "Preset:",
+        preset
+    );
 
     const placedItem = {
 
@@ -18,19 +50,24 @@ function createPlacedItem(
         // Identity
         //----------------------------------
 
-        id: crypto.randomUUID(),
+        id:
+            crypto.randomUUID(),
 
         //----------------------------------
         // Equipment
         //----------------------------------
 
-        data: item,
+        data:
+            item,
 
-        preset: "",
+        preset:
+            "",
 
-        materials: [],
+        materials:
+            [],
 
-        rotation: 0,
+        rotation:
+            0,
 
         //----------------------------------
         // Layout
@@ -38,17 +75,21 @@ function createPlacedItem(
 
         startCell,
 
-        width: item.GridWidth,
+        width:
+            item.GridWidth,
 
-        height: item.GridHeight,
+        height:
+            item.GridHeight,
 
-        occupied: [],
+        occupied:
+            [],
 
         //----------------------------------
         // Connections
         //----------------------------------
 
-        connections: createDefaultConnections()
+        connections:
+            createDefaultConnections()
 
     };
 
@@ -65,27 +106,31 @@ function createPlacedItem(
     // Occupied Cells
     //----------------------------------
 
-    updateOccupiedCells(placedItem);
+    updateOccupiedCells(
+        placedItem
+    );
 
     //----------------------------------
     // Default Ports
     //----------------------------------
 
-    CONNECTION_SIDES.forEach(side => {
+    CONNECTION_SIDES.forEach(
+        side => {
 
-    const count = Number(placedItem.data[side]) || 0;
+            const count =
+                Number(
+                    placedItem
+                        .data[side]
+                ) || 0;
 
-    setConnectionCount(
+            setConnectionCount(
+                placedItem,
+                side,
+                count
+            );
 
-        placedItem,
-
-        side,
-
-        count
-
+        }
     );
-
-});
 
     return placedItem;
 
@@ -95,19 +140,30 @@ function createPlacedItem(
 // Update Occupied Cells
 //----------------------------------
 
-function updateOccupiedCells(item) {
+function updateOccupiedCells(
+    item
+) {
 
     item.occupied = [];
 
-    for (let r = 0; r < item.height; r++) {
+    for (
+        let r = 0;
+        r < item.height;
+        r++
+    ) {
 
-        for (let c = 0; c < item.width; c++) {
+        for (
+            let c = 0;
+            c < item.width;
+            c++
+        ) {
 
             item.occupied.push(
 
                 item.startCell +
 
-                r * SETTINGS.columns +
+                r *
+                SETTINGS.columns +
 
                 c
 
@@ -129,21 +185,38 @@ function canPlace(
     ignoreItem = null
 ) {
 
-    const layout = getLayout();
+    const layout =
+        getLayout();
 
-    for (let r = 0; r < item.GridHeight; r++) {
+    for (
+        let r = 0;
+        r < item.GridHeight;
+        r++
+    ) {
 
-        for (let c = 0; c < item.GridWidth; c++) {
+        for (
+            let c = 0;
+            c < item.GridWidth;
+            c++
+        ) {
 
             const row =
-                Math.floor(startCell / SETTINGS.columns) + r;
+                Math.floor(
+                    startCell /
+                    SETTINGS.columns
+                ) + r;
 
             const col =
-                (startCell % SETTINGS.columns) + c;
+                (
+                    startCell %
+                    SETTINGS.columns
+                ) + c;
 
             if (
-                row >= SETTINGS.rows ||
-                col >= SETTINGS.columns
+                row >=
+                    SETTINGS.rows ||
+                col >=
+                    SETTINGS.columns
             ) {
 
                 return false;
@@ -151,15 +224,17 @@ function canPlace(
             }
 
             const index =
-                row * SETTINGS.columns + col;
+                row *
+                    SETTINGS.columns +
+                col;
 
-            const existing = layout[index];
+            const existing =
+                layout[index];
 
             if (
-
                 existing &&
-                existing !== ignoreItem
-
+                existing !==
+                    ignoreItem
             ) {
 
                 return false;
@@ -181,34 +256,62 @@ function canPlace(
 function placeItem(
     item,
     startCell,
-    preset = ""
+    preset = "",
+    options = {}
 ) {
 
-    if (!canPlace(item, startCell)) {
+    if (
+        !canPlace(
+            item,
+            startCell
+        )
+    ) {
 
-        alert("Cannot place equipment here.");
+        alert(
+            "Cannot place equipment here."
+        );
 
         return null;
 
     }
 
-    const placedItem = createPlacedItem(
+    const placedItem =
+        createPlacedItem(
+            item,
+            startCell,
+            preset
+        );
 
-        item,
+    const layout =
+        getLayout();
 
-        startCell,
+    placedItem
+        .occupied
+        .forEach(
+            index => {
 
-        preset
+                layout[index] =
+                    placedItem;
 
-    );
+            }
+        );
 
-    const layout = getLayout();
+    //----------------------------------
+    // Capture Placement
+    //----------------------------------
 
-    placedItem.occupied.forEach(index => {
+    if (
+        options.captureHistory !==
+        false
+    ) {
 
-        layout[index] = placedItem;
+        capturePlacementHistory(
+            preset
+                ? "Preset placed"
+                : "Equipment placed"
+        );
 
-    });
+    }
 
     return placedItem;
 
@@ -220,44 +323,62 @@ function placeItem(
 
 function moveItem(
     item,
-    newStartCell
+    newStartCell,
+    options = {}
 ) {
 
-    const layout = getLayout();
+    const layout =
+        getLayout();
+
+    const oldStartCell =
+        item.startCell;
+
+    //----------------------------------
+    // No Position Change
+    //----------------------------------
+
+    if (
+        oldStartCell ===
+        newStartCell
+    ) {
+
+        return true;
+
+    }
 
     //----------------------------------
     // Clear Current Cells
     //----------------------------------
 
-    item.occupied.forEach(index => {
+    item.occupied.forEach(
+        index => {
 
-        layout[index] = null;
+            layout[index] =
+                null;
 
-    });
+        }
+    );
 
     //----------------------------------
     // Check New Position
     //----------------------------------
 
     if (
-
         !canPlace(
-
             item.data,
-
             newStartCell,
-
             item
-
         )
-
     ) {
 
-        item.occupied.forEach(index => {
+        item.occupied.forEach(
+            index => {
 
-            layout[index] = item;
+                layout[index] =
+                    item;
 
-        });
+            }
+        );
 
         return false;
 
@@ -267,19 +388,57 @@ function moveItem(
     // Update
     //----------------------------------
 
-    item.startCell = newStartCell;
+    item.startCell =
+        newStartCell;
 
-    updateOccupiedCells(item);
+    updateOccupiedCells(
+        item
+    );
 
     //----------------------------------
     // Fill Layout
     //----------------------------------
 
-    item.occupied.forEach(index => {
+    item.occupied.forEach(
+        index => {
 
-        layout[index] = item;
+            layout[index] =
+                item;
 
-    });
+        }
+    );
+
+    //----------------------------------
+    // Optional Direct Capture
+    //----------------------------------
+
+    /*
+     * Drag operations should normally use:
+     *
+     * HistoryManagerV2.beginTransaction()
+     * HistoryManagerV2.endTransaction()
+     *
+     * Therefore move history is OFF by default
+     * to avoid creating one snapshot per mousemove.
+     *
+     * For a one-step move, call:
+     *
+     * moveItem(item, newCell, {
+     *     captureHistory: true
+     * });
+     */
+
+    if (
+        options.captureHistory ===
+        true
+    ) {
+
+        capturePlacementHistory(
+            options.historyLabel ||
+            "Equipment moved"
+        );
+
+    }
 
     return true;
 
@@ -289,15 +448,20 @@ function moveItem(
 // Remove Item
 //----------------------------------
 
-function removeItem(index) {
+function removeItem(
+    index,
+    options = {}
+) {
 
-    const layout = getLayout();
+    const layout =
+        getLayout();
 
-    const item = layout[index];
+    const item =
+        layout[index];
 
     if (!item) {
 
-        return;
+        return null;
 
     }
 
@@ -305,33 +469,68 @@ function removeItem(index) {
     // Remove Links
     //----------------------------------
 
-    CONNECTION_SIDES.forEach(side => {
+    CONNECTION_SIDES.forEach(
+        side => {
 
-        item.connections[side].forEach(connection => {
+            const sideConnections =
+                item.connections?.[side] ||
+                [];
 
-            connection.links
+            sideConnections.forEach(
+                connection => {
 
-                .slice()
+                    const links =
+                        connection.links ||
+                        [];
 
-                .forEach(link => {
+                    links
+                        .slice()
+                        .forEach(
+                            link => {
 
-                    removeLink(link.id);
+                                removeLink(
+                                    link.id
+                                );
 
-                });
+                            }
+                        );
 
-        });
+                }
+            );
 
-    });
+        }
+    );
 
     //----------------------------------
     // Clear Cells
     //----------------------------------
 
-    item.occupied.forEach(cell => {
+    item.occupied.forEach(
+        cell => {
 
-        layout[cell] = null;
+            layout[cell] =
+                null;
 
-    });
+        }
+    );
+
+    //----------------------------------
+    // Capture Removal
+    //----------------------------------
+
+    if (
+        options.captureHistory !==
+        false
+    ) {
+
+        capturePlacementHistory(
+            options.historyLabel ||
+            "Equipment removed"
+        );
+
+    }
+
+    return item;
 
 }
 
@@ -339,9 +538,23 @@ function removeItem(index) {
 // Expose
 //----------------------------------
 
-window.createPlacedItem = createPlacedItem;
-window.updateOccupiedCells = updateOccupiedCells;
-window.canPlace = canPlace;
-window.placeItem = placeItem;
-window.moveItem = moveItem;
-window.removeItem = removeItem;
+window.capturePlacementHistory =
+    capturePlacementHistory;
+
+window.createPlacedItem =
+    createPlacedItem;
+
+window.updateOccupiedCells =
+    updateOccupiedCells;
+
+window.canPlace =
+    canPlace;
+
+window.placeItem =
+    placeItem;
+
+window.moveItem =
+    moveItem;
+
+window.removeItem =
+    removeItem;

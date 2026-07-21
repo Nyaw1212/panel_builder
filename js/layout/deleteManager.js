@@ -2,11 +2,17 @@
 // Delete Selection
 //----------------------------------
 
-function deleteSelection() {
+function deleteSelection(
+    options = {}
+) {
 
-    const selected = SelectionManager.getSelectedItems();
+    const selected =
+        SelectionManager
+            .getSelectedItems();
 
-    if (!selected.length) {
+    if (
+        !selected.length
+    ) {
 
         return false;
 
@@ -16,11 +22,23 @@ function deleteSelection() {
     // Remove Panels
     //----------------------------------
 
-    selected.forEach(item => {
+    selected.forEach(
+        item => {
 
-        removeItem(item.startCell);
+            removeItem(
+                item.startCell,
+                {
+                    /*
+                     * Capture only once after the
+                     * entire delete operation.
+                     */
+                    captureHistory:
+                        false
+                }
+            );
 
-    });
+        }
+    );
 
     //----------------------------------
     // Clear Selection
@@ -34,10 +52,32 @@ function deleteSelection() {
 
     drawCanvas();
 
+    //----------------------------------
+    // History
+    //----------------------------------
+
+    if (
+        options.captureHistory !==
+            false &&
+        window.HistoryManagerV2 &&
+        typeof window
+            .HistoryManagerV2
+            .capture ===
+            "function"
+    ) {
+
+        window
+            .HistoryManagerV2
+            .capture(
+                selected.length === 1
+                    ? "Equipment deleted"
+                    : `${selected.length} equipment deleted`
+            );
+
+    }
+
     console.log(
-
         `Deleted ${selected.length} panel(s).`
-
     );
 
     return true;
@@ -48,4 +88,5 @@ function deleteSelection() {
 // Expose
 //----------------------------------
 
-window.deleteSelection = deleteSelection;
+window.deleteSelection =
+    deleteSelection;

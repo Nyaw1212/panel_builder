@@ -8,16 +8,20 @@ const drag = getDragState();
 // Enable Drag
 //----------------------------------
 
-function enableDrag(card, item) {
+function enableDrag(
+    card,
+    item
+) {
 
-    card.style.cursor = "grab";
+    card.style.cursor =
+        "grab";
 
     card.addEventListener(
-
         "mousedown",
-
-        e => startDrag(e, item)
-
+        e => startDrag(
+            e,
+            item
+        )
     );
 
 }
@@ -26,33 +30,43 @@ function enableDrag(card, item) {
 // Start Drag
 //----------------------------------
 
-function startDrag(e, item) {
+function startDrag(
+    e,
+    item
+) {
 
     //----------------------------------
     // Ignore Interactive Elements
     //----------------------------------
 
     if (
-
-        e.target.closest(".panel-remove") ||
-
-        e.target.closest(".connection-node") ||
-
-        e.target.closest(".equipment-node")
-
+        e.target.closest(
+            ".panel-remove"
+        ) ||
+        e.target.closest(
+            ".connection-node"
+        ) ||
+        e.target.closest(
+            ".equipment-node"
+        )
     ) {
 
         return;
 
     }
 
-    console.log("Start Drag", e.target);
+    console.log(
+        "Start Drag",
+        e.target
+    );
 
     //----------------------------------
     // Left Click Only
     //----------------------------------
 
-    if (e.button !== 0) {
+    if (
+        e.button !== 0
+    ) {
 
         return;
 
@@ -66,14 +80,21 @@ function startDrag(e, item) {
     // Selection
     //----------------------------------
 
-    if (e.ctrlKey || e.metaKey) {
+    if (
+        e.ctrlKey ||
+        e.metaKey
+    ) {
 
-        SelectionManager.toggle(item);
+        SelectionManager.toggle(
+            item
+        );
 
     }
     else {
 
-        SelectionManager.select(item);
+        SelectionManager.select(
+            item
+        );
 
     }
 
@@ -83,38 +104,44 @@ function startDrag(e, item) {
     // Drag State
     //----------------------------------
 
-    drag.active = true;
+    drag.active =
+        true;
 
-    drag.moved = false;
+    drag.moved =
+        false;
 
-    drag.item = item;
+    drag.item =
+        item;
 
-    drag.startCell = item.startCell;
+    drag.startCell =
+        item.startCell;
 
-    drag.hoverCell = item.startCell;
+    drag.hoverCell =
+        item.startCell;
 
-    drag.startMouseX = e.clientX;
-    drag.startMouseY = e.clientY;
+    drag.startMouseX =
+        e.clientX;
 
-    drag.mouseX = e.clientX;
-    drag.mouseY = e.clientY;
+    drag.startMouseY =
+        e.clientY;
 
-    document.body.style.userSelect = "none";
+    drag.mouseX =
+        e.clientX;
+
+    drag.mouseY =
+        e.clientY;
+
+    document.body.style.userSelect =
+        "none";
 
     document.addEventListener(
-
         "mousemove",
-
         onDrag
-
     );
 
     document.addEventListener(
-
         "mouseup",
-
         stopDrag
-
     );
 
 }
@@ -125,7 +152,9 @@ function startDrag(e, item) {
 
 function onDrag(e) {
 
-    if (!drag.active) {
+    if (
+        !drag.active
+    ) {
 
         return;
 
@@ -135,60 +164,74 @@ function onDrag(e) {
     // Detect Movement
     //----------------------------------
 
-    const dx = e.clientX - drag.startMouseX;
+    const dx =
+        e.clientX -
+        drag.startMouseX;
 
-    const dy = e.clientY - drag.startMouseY;
+    const dy =
+        e.clientY -
+        drag.startMouseY;
 
     if (
-
         Math.abs(dx) > 4 ||
-
         Math.abs(dy) > 4
-
     ) {
 
-        drag.moved = true;
+        drag.moved =
+            true;
 
     }
 
-    drag.mouseX = e.clientX;
+    drag.mouseX =
+        e.clientX;
 
-    drag.mouseY = e.clientY;
+    drag.mouseY =
+        e.clientY;
 
     //----------------------------------
     // Mouse Position Relative To Grid
     //----------------------------------
 
-    const rect = grid.getBoundingClientRect();
+    const rect =
+        grid.getBoundingClientRect();
 
-    const x = e.clientX - rect.left;
+    const x =
+        e.clientX -
+        rect.left;
 
-    const y = e.clientY - rect.top;
+    const y =
+        e.clientY -
+        rect.top;
 
     //----------------------------------
     // Cell
     //----------------------------------
 
-    const cellWidth = SETTINGS.cellSize + SETTINGS.gap;
+    const cellWidth =
+        SETTINGS.cellSize +
+        SETTINGS.gap;
 
-    const col = Math.floor(x / cellWidth);
+    const col =
+        Math.floor(
+            x /
+            cellWidth
+        );
 
-    const row = Math.floor(y / cellWidth);
+    const row =
+        Math.floor(
+            y /
+            cellWidth
+        );
 
     //----------------------------------
     // Outside Grid
     //----------------------------------
 
     if (
-
         row < 0 ||
-
         col < 0 ||
-
         row >= SETTINGS.rows ||
-
         col >= SETTINGS.columns
-
     ) {
 
         return;
@@ -196,20 +239,29 @@ function onDrag(e) {
     }
 
     drag.hoverCell =
-
-        row * SETTINGS.columns +
-
+        row *
+        SETTINGS.columns +
         col;
 
     console.clear();
 
-    console.log("Dragging");
+    console.log(
+        "Dragging"
+    );
 
-    console.log("Current Cell:", drag.hoverCell);
+    console.log(
+        "Current Cell:",
+        drag.hoverCell
+    );
 
-    console.log("Moved:", drag.moved);
+    console.log(
+        "Moved:",
+        drag.moved
+    );
 
-    console.log(drag);
+    console.log(
+        drag
+    );
 
 }
 
@@ -219,28 +271,25 @@ function onDrag(e) {
 
 function stopDrag() {
 
-    if (!drag.active) {
+    if (
+        !drag.active
+    ) {
 
         return;
 
     }
 
-    document.body.style.userSelect = "";
+    document.body.style.userSelect =
+        "";
 
     document.removeEventListener(
-
         "mousemove",
-
         onDrag
-
     );
 
     document.removeEventListener(
-
         "mouseup",
-
         stopDrag
-
     );
 
     //----------------------------------
@@ -248,38 +297,37 @@ function stopDrag() {
     //----------------------------------
 
     if (
-
         drag.moved &&
-
         drag.item &&
-
         drag.hoverCell != null &&
-
-        drag.hoverCell !== drag.startCell
-
+        drag.hoverCell !==
+            drag.startCell
     ) {
 
         console.log(
-
             "Moving",
-
             drag.startCell,
-
             "->",
-
             drag.hoverCell
-
         );
 
-        const moved = moveItem(
+        const moved =
+            moveItem(
+                drag.item,
+                drag.hoverCell,
+                {
+                    captureHistory:
+                        true,
 
-            drag.item,
+                    historyLabel:
+                        "Equipment moved"
+                }
+            );
 
-            drag.hoverCell
-
+        console.log(
+            "Moved:",
+            moved
         );
-
-        console.log("Moved:", moved);
 
         if (moved) {
 
@@ -289,7 +337,9 @@ function stopDrag() {
 
     }
 
-    console.log("Drag End");
+    console.log(
+        "Drag End"
+    );
 
     //----------------------------------
     // Clear State
@@ -300,7 +350,53 @@ function stopDrag() {
 }
 
 //----------------------------------
+// Cancel Drag
+//----------------------------------
+
+function cancelDrag() {
+
+    if (
+        !drag.active
+    ) {
+
+        return false;
+
+    }
+
+    document.body.style.userSelect =
+        "";
+
+    document.removeEventListener(
+        "mousemove",
+        onDrag
+    );
+
+    document.removeEventListener(
+        "mouseup",
+        stopDrag
+    );
+
+    clearDragState();
+
+    return true;
+
+}
+
+//----------------------------------
 // Expose
 //----------------------------------
 
-window.enableDrag = enableDrag;
+window.enableDrag =
+    enableDrag;
+
+window.startDrag =
+    startDrag;
+
+window.onDrag =
+    onDrag;
+
+window.stopDrag =
+    stopDrag;
+
+window.cancelDrag =
+    cancelDrag;

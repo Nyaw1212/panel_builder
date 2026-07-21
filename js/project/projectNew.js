@@ -18,17 +18,49 @@ function newProject() {
 
         console.log("Cancelled");
 
-        return;
+        return false;
 
     }
 
     console.log("Step 3");
 
-    console.log("typeof clearDraft =", typeof clearDraft);
+    console.log(
+
+        "typeof clearDraft =",
+
+        typeof clearDraft
+
+    );
+
+    //----------------------------------
+    // Clear Draft
+    //----------------------------------
 
     clearDraft();
 
+    //----------------------------------
+    // Reset History
+    //----------------------------------
+
+    if (
+
+        window.HistoryManagerV2 &&
+
+        typeof window.HistoryManagerV2.reset === "function"
+
+    ) {
+
+        window.HistoryManagerV2.reset(
+
+            "New project"
+
+        );
+
+    }
+
     console.log("Step 4");
+
+    return true;
 
 }
 

@@ -489,7 +489,8 @@ function ensureMainEquipmentMaterial(
 
 function placePreset(
   preset,
-  startCell
+  startCell,
+  options = {}
 ) {
   console.group(
     "Place Preset"
@@ -555,7 +556,15 @@ function placePreset(
     placeItem(
       equipment,
       startCell,
-      preset
+      preset,
+      {
+        /*
+         * Disable the early placement
+         * snapshot. The preset is captured
+         * after its full BOM is restored.
+         */
+        captureHistory: false
+      }
     );
 
   if (!placedItem) {
@@ -604,6 +613,21 @@ function placePreset(
     "Placed Item Materials:",
     placedItem.materials
   );
+
+  //----------------------------------
+  // Capture History
+  //----------------------------------
+
+  if (
+    options.captureHistory !== false &&
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture ===
+      "function"
+  ) {
+    window.HistoryManagerV2.capture(
+      "Preset placed"
+    );
+  }
 
   //----------------------------------
   // Draw
