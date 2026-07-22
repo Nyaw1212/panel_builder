@@ -178,15 +178,24 @@ CARD IMAGE
 
 .equipment-image{
 
-    width:90px;
+    width:88px;
 
-    height:90px;
+    height:110px;
 
-    aspect-ratio:1 / 1;
+    box-sizing:border-box;
+
+    padding:8px;
 
     object-fit:contain;
+    object-position:center;
 
-    flex-shrink:0;
+    flex:0 0 88px;
+
+    border:1px solid #33445f;
+
+    border-radius:9px;
+
+    background:#0a1424;
 
 }
 
