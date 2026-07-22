@@ -8,9 +8,16 @@ function getEquipmentCardLibrary() {
       ? getMaterials()
       : [];
 
-  return (materials || []).filter(material =>
-    Boolean(getBreakerFamily(material))
-  );
+  return (materials || []).filter(material => {
+    const nodeType = String(material?.NodeType || "")
+      .trim()
+      .toUpperCase();
+
+    return (
+      nodeType === "BREAKER" &&
+      Boolean(getBreakerFamily(material))
+    );
+  });
 }
 
 window.getEquipmentCardLibrary = getEquipmentCardLibrary;
