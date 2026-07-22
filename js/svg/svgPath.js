@@ -8,9 +8,28 @@ function drawSVGPath(link) {
     // Geometry
     //----------------------------------
 
-    const points = getLinkPoints(link);
+    const geometryPoints =
+        getLinkPoints(link);
 
-    if (!points || points.length < 2) return;
+    if (
+        !geometryPoints ||
+        geometryPoints.length < 2
+    ) return;
+
+    //----------------------------------
+    // Visual Endpoint Clearance
+    //
+    // Geometry remains attached to the
+    // exact connector centers. Only the
+    // rendered stroke is shortened so it
+    // does not cover connector artwork.
+    //----------------------------------
+
+    const points =
+        applyLinkEndpointClearance(
+            geometryPoints,
+            11
+        );
 
     //----------------------------------
     // Build Path
@@ -138,3 +157,112 @@ function drawSVGPath(link) {
     svgLayer.appendChild(path);
 
 }
+
+//----------------------------------
+// Visual Endpoint Clearance
+//----------------------------------
+
+function applyLinkEndpointClearance(
+    points,
+    clearance = 11
+) {
+
+    const output = points.map(
+        point => ({
+            x: Number(point.x),
+            y: Number(point.y)
+        })
+    );
+
+    if (
+        output.length < 2 ||
+        clearance <= 0
+    ) {
+        return output;
+    }
+
+    output[0] =
+        movePointToward(
+            output[0],
+            output[1],
+            clearance
+        );
+
+    const lastIndex =
+        output.length - 1;
+
+    output[lastIndex] =
+        movePointToward(
+            output[lastIndex],
+            output[lastIndex - 1],
+            clearance
+        );
+
+    return output;
+
+}
+
+//----------------------------------
+// Move Point Toward Target
+//----------------------------------
+
+function movePointToward(
+    point,
+    target,
+    distance
+) {
+
+    const dx =
+        target.x -
+        point.x;
+
+    const dy =
+        target.y -
+        point.y;
+
+    const length =
+        Math.hypot(
+            dx,
+            dy
+        );
+
+    if (length <= 0) {
+        return {
+            ...point
+        };
+    }
+
+    const safeDistance =
+        Math.min(
+            Number(distance) || 0,
+            length * 0.45
+        );
+
+    return {
+
+        x:
+            point.x +
+            (
+                dx /
+                length
+            ) *
+            safeDistance,
+
+        y:
+            point.y +
+            (
+                dy /
+                length
+            ) *
+            safeDistance
+
+    };
+
+}
+
+//----------------------------------
+// Expose Endpoint Clearance
+//----------------------------------
+
+window.applyLinkEndpointClearance =
+    applyLinkEndpointClearance;
