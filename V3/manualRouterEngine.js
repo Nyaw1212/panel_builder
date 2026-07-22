@@ -318,9 +318,57 @@
       link.geometry = {};
     }
 
+    const points =
+      (link.manualRoute.points || []).map(
+        ManualRouteSegmentsV3.clonePoint,
+      );
+
+    //----------------------------------
+    // Keep both manual endpoints attached
+    // to their live connector centers.
+    //----------------------------------
+
+    if (
+      points.length >= 2 &&
+      typeof window.getConnectionCenter ===
+        "function"
+    ) {
+      const startCenter = getConnectionCenter(
+        link.start?.panelId,
+        link.start?.connectionId,
+      );
+
+      const endCenter = getConnectionCenter(
+        link.end?.panelId,
+        link.end?.connectionId,
+      );
+
+      if (
+        ManualRouteSegmentsV3.isPoint(
+          startCenter,
+        )
+      ) {
+        points[0] =
+          ManualRouteSegmentsV3.clonePoint(
+            startCenter,
+          );
+      }
+
+      if (
+        ManualRouteSegmentsV3.isPoint(
+          endCenter,
+        )
+      ) {
+        points[points.length - 1] =
+          ManualRouteSegmentsV3.clonePoint(
+            endCenter,
+          );
+      }
+    }
+
     link.manualRoute.points =
       ManualRouteSegmentsV3.enforceOrthogonal(
-        link.manualRoute.points || [],
+        points,
       );
 
     link.geometry.type =
