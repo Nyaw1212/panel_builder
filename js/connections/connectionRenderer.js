@@ -50,19 +50,8 @@ function drawKnockouts(item, side) {
     // Shared Preview
     //----------------------------------
 
-    let preview =
-        panel.querySelector(".connection-preview");
-
-    if (!preview) {
-
-        preview = document.createElement("div");
-
-        preview.className =
-            "connection-preview";
-
-        panel.appendChild(preview);
-
-    }
+    const preview =
+        getConnectionPreviewOverlay();
 
     //----------------------------------
     // Ports
@@ -225,7 +214,9 @@ node.onmouseenter = () => {
 
         connection,
 
-        panel
+        panel,
+
+        node
 
     );
 
