@@ -33,17 +33,31 @@ let currentConnection = null;
 // Close
 //----------------------------------
 
-closeModal.onclick = () => {
+function closeActiveModal() {
+
+    if (
+        typeof getCurrentEquipment === "function" &&
+        getCurrentEquipment() &&
+        typeof closeEquipmentCardModal === "function"
+    ) {
+
+        closeEquipmentCardModal();
+
+        return;
+
+    }
 
     modal.style.display = "none";
 
-};
+}
+
+closeModal.onclick = closeActiveModal;
 
 modal.onclick = e => {
 
     if (e.target === modal) {
 
-        modal.style.display = "none";
+        closeActiveModal();
 
     }
 
@@ -387,6 +401,9 @@ window.openMaterialModal =
 
 window.openPickerModal =
     openPickerModal;
+
+window.closeActiveModal =
+    closeActiveModal;
 
 window.buildModalList =
     buildModalList;
