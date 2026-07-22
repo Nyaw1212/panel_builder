@@ -183,7 +183,7 @@
         exactEnd,
       )
     ) {
-      finalPoints.push(snappedEnd);
+      finalPoints.push(exactEnd);
     }
 
     const link = drawing.link;
