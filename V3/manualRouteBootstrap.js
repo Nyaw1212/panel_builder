@@ -6,8 +6,19 @@
   "use strict";
 
   function redrawLinks() {
+    if (typeof window.clearSVG === "function") {
+      window.clearSVG();
+    }
+
     if (typeof window.drawLinks === "function") {
       window.drawLinks();
+    }
+
+    const selected =
+      ManualRouterEngineV3.getSelectedLink();
+
+    if (selected) {
+      ManualRouterEngineV3.select(selected);
     }
   }
 
