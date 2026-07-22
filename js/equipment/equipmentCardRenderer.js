@@ -27,94 +27,102 @@ function renderBreakerLibrary(container, components) {
     document.getElementById("modalSearch")?.value || ""
   ).trim().toLowerCase();
 
+  const selectedFamily =
+    typeof getSelectedBreakerFamily === "function"
+      ? getSelectedBreakerFamily()
+      : "BR";
+
+  const controls = document.createElement("div");
+  controls.className = "panel-circuit-controls";
+  controls.innerHTML = `
+    <div class="panel-circuit-filter-label">BREAKER TYPE</div>
+    <div class="breaker-family-filters">
+      ${["BR", "CHP", "CSR"].map(family => `
+        <button
+          type="button"
+          class="breaker-family-filter ${
+            family === selectedFamily ? "active" : ""
+          }"
+          data-family="${family}"
+        >${family}</button>
+      `).join("")}
+    </div>
+    <div class="panel-circuit-help">
+      Select an empty panel slot, then click a breaker card to install it.
+    </div>
+  `;
+
+  controls.querySelectorAll("[data-family]").forEach(chip => {
+    chip.onclick = () =>
+      setSelectedBreakerFamily(chip.dataset.family);
+  });
+
+  container.appendChild(controls);
+
   const filtered = components.filter(material => {
+    if (getBreakerFamily(material) !== selectedFamily) {
+      return false;
+    }
+
     const haystack = [
       material.CatalogNumber,
       material.Description,
       material.Type,
-      getBreakerFamily(material),
       getBreakerAmperage(material)
     ].join(" ").toLowerCase();
 
     return !search || haystack.includes(search);
   });
 
-  const instructions = document.createElement("div");
-  instructions.className = "panel-circuit-controls";
-  instructions.innerHTML = `
-    <div class="panel-circuit-help panel-circuit-help--primary">
-      Select an empty panel slot, then click a breaker chip to install it.
-    </div>
-  `;
+  const grid = document.createElement("div");
+  grid.className = "panel-breaker-card-grid";
 
-  container.appendChild(instructions);
+  filtered.forEach(material => {
+    const amp = getBreakerAmperage(material);
+    const poles = getBreakerPoleCount(material);
+    const image = getPanelBreakerImage(material);
+    const card = document.createElement("button");
 
-  ["BR", "CHP", "CSR"].forEach(family => {
-    const familyItems = filtered.filter(
-      material => getBreakerFamily(material) === family
-    );
+    card.type = "button";
+    card.className = "panel-breaker-card";
+    card.title = `Install ${material.CatalogNumber}`;
+    card.innerHTML = `
+      ${image ? `
+        <img
+          class="panel-breaker-card__image"
+          src="${escapePanelText(image)}"
+          alt=""
+        >
+      ` : `
+        <span class="panel-breaker-card__image panel-breaker-card__image--empty">
+          ${escapePanelText(selectedFamily)}
+        </span>
+      `}
+      <span class="panel-breaker-card__info">
+        <strong>${escapePanelText(material.CatalogNumber)}</strong>
+        <span>${escapePanelText(material.Description || material.Type || "")}</span>
+        <small>${amp ? `${amp}A` : ""} • ${poles}P</small>
+      </span>
+    `;
 
-    if (!familyItems.length) return;
+    const img = card.querySelector("img");
+    if (img) {
+      img.onerror = () => {
+        img.style.display = "none";
+      };
+    }
 
-    const section = document.createElement("section");
-    section.className = `breaker-family breaker-family--${family.toLowerCase()}`;
-
-    const heading = document.createElement("h3");
-    heading.textContent =
-      family === "CSR"
-        ? "CSR MAIN BREAKERS"
-        : `${family} BREAKER CHIPS`;
-
-    section.appendChild(heading);
-
-    const grid = document.createElement("div");
-    grid.className =
-      family === "CSR"
-        ? "csr-breaker-grid"
-        : "breaker-chip-grid";
-
-    familyItems.forEach(material => {
-      const familyName = getBreakerFamily(material);
-      const amp = getBreakerAmperage(material);
-      const poles = getBreakerPoleCount(material);
-      const button = document.createElement("button");
-
-      button.type = "button";
-      button.className =
-        familyName === "CSR"
-          ? "csr-breaker-card"
-          : `breaker-catalog-chip breaker-catalog-chip--${familyName.toLowerCase()}`;
-
-      if (familyName === "CSR") {
-        const image = getPanelBreakerImage(material);
-
-        button.innerHTML = `
-          ${image ? `<img src="${escapePanelText(image)}" alt="">` : ""}
-          <span>
-            <strong>${escapePanelText(material.CatalogNumber)}</strong>
-            <small>${amp ? `${amp}A MAIN` : "MAIN BREAKER"} • ${poles}P</small>
-          </span>
-        `;
-      } else {
-        button.innerHTML = `
-          <strong>${escapePanelText(material.CatalogNumber)}</strong>
-          <small>${amp ? `${amp}A` : ""} • ${poles}P</small>
-        `;
-      }
-
-      button.title = `Install ${material.CatalogNumber}`;
-      button.onclick = () => addEquipmentComponent(material);
-      grid.appendChild(button);
-    });
-
-    section.appendChild(grid);
-    container.appendChild(section);
+    card.onclick = () => addEquipmentComponent(material);
+    grid.appendChild(card);
   });
+
+  container.appendChild(grid);
 
   if (!filtered.length) {
     const empty = document.createElement("div");
     empty.className = "panel-circuit-empty";
-    empty.textContent = "No BR, CHP/CHF, or CSR breakers found in the MML.";
+    empty.textContent =
+      `No ${selectedFamily} breakers found in the MML.`;
     container.appendChild(empty);
   }
 }
