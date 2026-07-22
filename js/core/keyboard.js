@@ -47,6 +47,12 @@ async function handleKeyboardShortcuts(e) {
         const closed =
             closeTopmostElement();
 
+        if (closed) {
+
+            e.stopImmediatePropagation();
+
+        }
+
         //----------------------------------
         // Nothing Open: Clear Selection
         //----------------------------------
