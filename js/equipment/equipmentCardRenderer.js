@@ -27,54 +27,27 @@ function renderBreakerLibrary(container, components) {
     document.getElementById("modalSearch")?.value || ""
   ).trim().toLowerCase();
 
-  const selectedSize =
-    typeof getSelectedBreakerSize === "function"
-      ? getSelectedBreakerSize()
-      : "";
-
   const filtered = components.filter(material => {
-    const amp = getBreakerAmperage(material);
-    const matchesSize =
-      !selectedSize || String(amp) === String(selectedSize);
-
     const haystack = [
       material.CatalogNumber,
       material.Description,
       material.Type,
       getBreakerFamily(material),
-      amp
+      getBreakerAmperage(material)
     ].join(" ").toLowerCase();
 
-    return matchesSize && (!search || haystack.includes(search));
+    return !search || haystack.includes(search);
   });
 
-  const sizes = getAvailableBreakerSizes(components);
-
-  const controls = document.createElement("div");
-  controls.className = "panel-circuit-controls";
-  controls.innerHTML = `
-    <div class="panel-circuit-filter-label">SIZE</div>
-    <div class="panel-size-chips">
-      ${sizes.map(size => `
-        <button
-          type="button"
-          class="panel-size-chip ${
-            String(size) === String(selectedSize) ? "active" : ""
-          }"
-          data-size="${size}"
-        >${size}A</button>
-      `).join("")}
-    </div>
-    <div class="panel-circuit-help">
-      Select a panel slot, then click a breaker to install.
+  const instructions = document.createElement("div");
+  instructions.className = "panel-circuit-controls";
+  instructions.innerHTML = `
+    <div class="panel-circuit-help panel-circuit-help--primary">
+      Select an empty panel slot, then click a breaker chip to install it.
     </div>
   `;
 
-  controls.querySelectorAll("[data-size]").forEach(chip => {
-    chip.onclick = () => setSelectedBreakerSize(chip.dataset.size);
-  });
-
-  container.appendChild(controls);
+  container.appendChild(instructions);
 
   ["BR", "CHP", "CSR"].forEach(family => {
     const familyItems = filtered.filter(
@@ -90,7 +63,7 @@ function renderBreakerLibrary(container, components) {
     heading.textContent =
       family === "CSR"
         ? "CSR MAIN BREAKERS"
-        : `${family} BREAKERS`;
+        : `${family} BREAKER CHIPS`;
 
     section.appendChild(heading);
 
@@ -141,7 +114,7 @@ function renderBreakerLibrary(container, components) {
   if (!filtered.length) {
     const empty = document.createElement("div");
     empty.className = "panel-circuit-empty";
-    empty.textContent = "No matching breakers found.";
+    empty.textContent = "No BR, CHP/CHF, or CSR breakers found in the MML.";
     container.appendChild(empty);
   }
 }
