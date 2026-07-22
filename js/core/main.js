@@ -194,6 +194,14 @@ async function init() {
             if (typeof drawCanvas === "function") {
               drawCanvas();
             }
+
+            if (
+              typeof getCurrentEquipment === "function" &&
+              getCurrentEquipment() &&
+              typeof refreshEquipmentCardModal === "function"
+            ) {
+              refreshEquipmentCardModal();
+            }
           } finally {
             if (typeof autoSaveEnabled !== "undefined") {
               autoSaveEnabled = previousAutoSaveState;
