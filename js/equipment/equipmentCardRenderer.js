@@ -480,6 +480,54 @@ function renderEquipmentComponents() {
     return;
   }
 
+  const editorType =
+    typeof getEquipmentEditorType === "function"
+      ? getEquipmentEditorType(equipment)
+      : "PANEL";
+
+  if (
+    editorType === "DISCONNECT" &&
+    typeof renderDisconnectPresetEditor === "function"
+  ) {
+    renderDisconnectPresetEditor(
+      modal,
+      equipment
+    );
+
+    return;
+  }
+
+  modal.classList.remove("disconnect-preset-mode");
+
+  body.querySelectorAll(".disconnect-editor")
+    .forEach(node => node.remove());
+
+  if (editorType !== "PANEL") {
+    modal.classList.remove("equipment-circuit-mode");
+
+    const title =
+      modal.querySelector(".modal-header h2");
+
+    title.textContent = "Equipment Components";
+
+    if (filterPanel) {
+      filterPanel.style.display = "none";
+    }
+
+    body.querySelectorAll(".panelboard")
+      .forEach(node => node.remove());
+
+    list.innerHTML = "";
+    list.className = "panel-breaker-library";
+
+    renderBreakerLibrary(
+      list,
+      getEquipmentCardLibrary()
+    );
+
+    return;
+  }
+
   modal.classList.add("equipment-circuit-mode");
 
   const title = modal.querySelector(".modal-header h2");
