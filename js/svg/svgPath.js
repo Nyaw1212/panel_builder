@@ -41,6 +41,9 @@ function drawSVGPath(link) {
     hit.style.pointerEvents = "stroke";
     hit.style.cursor = "pointer";
 
+    hit.dataset.linkId =
+        String(link.id);
+
     //----------------------------------
     // Visible Path
     //----------------------------------
@@ -55,6 +58,9 @@ function drawSVGPath(link) {
     applySVGPathStyle(path);
 
     path.style.pointerEvents = "none";
+
+    path.dataset.linkId =
+        String(link.id);
 
     //----------------------------------
     // Hover Enter
