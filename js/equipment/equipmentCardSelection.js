@@ -182,6 +182,96 @@ function addEquipmentComponent(material) {
   return true;
 }
 
+function placeEquipmentComponentAt(
+  material,
+  side,
+  index
+) {
+  selectedPanelSlot = {
+    side,
+    index: Number(index)
+  };
+
+  return addEquipmentComponent(material);
+}
+
+function moveEquipmentComponent(
+  componentId,
+  side,
+  index
+) {
+  const equipment = getCurrentEquipment();
+  if (!equipment || !Array.isArray(equipment.materials)) {
+    return false;
+  }
+
+  const component = equipment.materials.find(
+    entry => entry.id === componentId
+  );
+
+  if (
+    !component ||
+    component.panelSlot?.section !== "branch"
+  ) {
+    return false;
+  }
+
+  const previousSlot =
+    structuredClone(component.panelSlot);
+
+  component.panelSlot.side = side;
+  component.panelSlot.index = Number(index);
+
+  const span = Math.max(
+    1,
+    Number(component.panelSlot.span || 1)
+  );
+
+  const collides = equipment.materials.some(entry => {
+    if (
+      entry === component ||
+      entry.panelSlot?.section !== "branch" ||
+      entry.panelSlot?.side !== side
+    ) {
+      return false;
+    }
+
+    const otherStart =
+      Number(entry.panelSlot.index || 0);
+
+    const otherSpan = Math.max(
+      1,
+      Number(entry.panelSlot.span || 1)
+    );
+
+    return (
+      Number(index) < otherStart + otherSpan &&
+      Number(index) + span > otherStart
+    );
+  });
+
+  const capacity =
+    getPanelSideCapacity(equipment, side);
+
+  if (
+    collides ||
+    Number(index) < 0 ||
+    Number(index) + span > capacity
+  ) {
+    component.panelSlot = previousSlot;
+    return false;
+  }
+
+  selectedPanelSlot = {
+    side,
+    index: Number(index)
+  };
+
+  capturePanelCircuitHistory("Panel breaker moved");
+  refreshEquipmentCardModal();
+  return true;
+}
+
 function removeEquipmentComponent(componentId) {
   const equipment = getCurrentEquipment();
   if (!equipment || !Array.isArray(equipment.materials)) {
@@ -216,5 +306,7 @@ window.getSelectedPanelSlot = getSelectedPanelSlot;
 window.selectFirstAvailablePanelSlot = selectFirstAvailablePanelSlot;
 window.canPlacePanelBreaker = canPlacePanelBreaker;
 window.addEquipmentComponent = addEquipmentComponent;
+window.placeEquipmentComponentAt = placeEquipmentComponentAt;
+window.moveEquipmentComponent = moveEquipmentComponent;
 window.removeEquipmentComponent = removeEquipmentComponent;
 window.resetPanelCircuitSelection = resetPanelCircuitSelection;
