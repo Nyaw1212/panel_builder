@@ -3010,7 +3010,7 @@ DISCONNECT PRESET EDITOR
     justify-content: center;
     gap: 9px;
     padding: 28px 12px 12px;
-    border: 1px dashed var(--v2-border);
+    border: 1px dashed rgba(96, 165, 250, .42);
     border-radius: 9px;
     background: #111c2f;
     color: var(--v2-text-muted);
@@ -3025,6 +3025,7 @@ DISCONNECT PRESET EDITOR
 
 .disconnect-fuse-slot.occupied {
     border-style: solid;
+    border-color: rgba(96, 165, 250, .58);
     color: var(--v2-text);
 }
 
@@ -3041,11 +3042,11 @@ DISCONNECT PRESET EDITOR
     width: 120px;
     height: 120px;
     aspect-ratio: 1 / 1;
-    padding: 4px;
+    padding: 1px;
     object-fit: contain;
     box-sizing: border-box;
-    border-radius: 6px;
-    background: #fff;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .9);
 }
 
 .disconnect-fuse-remove {
