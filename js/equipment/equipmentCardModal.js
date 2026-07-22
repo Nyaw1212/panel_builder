@@ -126,9 +126,14 @@ function closeEquipmentCardModal() {
 
     modal.style.display = "none";
 
-    modal.classList.remove("equipment-circuit-mode");
+    modal.classList.remove(
+        "equipment-circuit-mode",
+        "disconnect-preset-mode"
+    );
 
-    modal.querySelectorAll(".panelboard").forEach(node => node.remove());
+    modal.querySelectorAll(
+        ".panelboard, .disconnect-editor"
+    ).forEach(node => node.remove());
 
     const filterPanel = modal.querySelector(".filter-panel");
 
