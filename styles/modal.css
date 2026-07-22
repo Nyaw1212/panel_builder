@@ -3073,3 +3073,47 @@ DISCONNECT PRESET EDITOR
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+
+/*=====================================
+COMPACT FUSE LIBRARY TILES
+=====================================*/
+
+.disconnect-fuse-library-grid {
+    gap: 7px;
+}
+
+.disconnect-fuse-library-card {
+    min-height: 66px;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 7px;
+}
+
+.disconnect-fuse-library-card > img {
+    width: 42px;
+    height: 50px;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.disconnect-fuse-library-card > span:not(.panel-breaker-favorite) {
+    gap: 2px;
+}
+
+.disconnect-fuse-library-card strong {
+    font-size: 11px;
+    line-height: 1.15;
+}
+
+.disconnect-fuse-library-card small {
+    font-size: 9px;
+    line-height: 1.2;
+    -webkit-line-clamp: 2;
+}
+
+.disconnect-fuse-library-card .panel-breaker-favorite {
+    top: 5px;
+    right: 6px;
+    font-size: 9px;
+}
