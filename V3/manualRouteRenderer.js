@@ -67,8 +67,16 @@
     );
   }
 
+  function bringLayerToFront() {
+    if (svg && layer?.parentNode === svg) {
+      svg.appendChild(layer);
+    }
+  }
+
   function renderPreview(points) {
     if (!previewPath) return;
+
+    bringLayerToFront();
 
     previewPath.setAttribute(
       "d",
@@ -94,6 +102,7 @@
   ) {
     if (!handlesGroup) return;
 
+    bringLayerToFront();
     handlesGroup.replaceChildren();
 
     points.forEach((point, index) => {
