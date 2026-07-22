@@ -1656,9 +1656,10 @@ MATERIAL CARD REDESIGN
     width: 100%;
     height: 100%;
 
-    padding: 8px;
+    padding: 4px;
 
     object-fit: contain;
+    object-position: center;
 
     border-radius: 0;
 
