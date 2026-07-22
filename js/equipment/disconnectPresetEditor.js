@@ -5,11 +5,11 @@
 let selectedDisconnectFuseSlot = 0;
 
 function getEquipmentEditorType(equipment) {
-  const type = String(
-    equipment?.data?.Type ??
-    equipment?.data?.NodeType ??
-    ""
-  ).trim().toUpperCase();
+  const type = [
+    equipment?.data?.Type,
+    equipment?.data?.NodeType,
+    equipment?.data?.Category
+  ].filter(Boolean).join(" ").trim().toUpperCase();
 
   if (type.includes("DISCONNECT")) return "DISCONNECT";
   if (type.includes("PANEL")) return "PANEL";
