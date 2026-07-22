@@ -339,18 +339,6 @@ function drawPlacedItems() {
     }
 
     //----------------------------------
-    // Equipment Node
-    //----------------------------------
-
-    if (typeof drawEquipmentNode === "function") {
-      drawEquipmentNode(
-        card,
-
-        item,
-      );
-    }
-
-    //----------------------------------
     // Add to Cell
     //----------------------------------
 
