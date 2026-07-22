@@ -15,18 +15,116 @@ function getLinkNodePosition(link) {
 
     if (!points || points.length < 2) return null;
 
-    const start = points[0];
-    const end = points[1];
+    //----------------------------------
+    // Total Polyline Length
+    //----------------------------------
+
+    const segments = [];
+
+    let totalLength = 0;
+
+    for (
+        let index = 0;
+        index < points.length - 1;
+        index++
+    ) {
+
+        const start =
+            points[index];
+
+        const end =
+            points[index + 1];
+
+        const length =
+            Math.hypot(
+                end.x - start.x,
+                end.y - start.y
+            );
+
+        if (length <= 0) {
+            continue;
+        }
+
+        segments.push({
+            start,
+            end,
+            length
+        });
+
+        totalLength += length;
+
+    }
+
+    if (
+        !segments.length ||
+        totalLength <= 0
+    ) {
+        return null;
+    }
 
     //----------------------------------
-    // Center of First Segment
+    // Halfway Along Entire Route
     //----------------------------------
+
+    const midpoint =
+        totalLength / 2;
+
+    let travelled = 0;
+
+    for (
+        const segment of
+        segments
+    ) {
+
+        if (
+            travelled +
+            segment.length >=
+            midpoint
+        ) {
+
+            const remaining =
+                midpoint -
+                travelled;
+
+            const ratio =
+                remaining /
+                segment.length;
+
+            return {
+
+                x:
+                    segment.start.x +
+                    (
+                        segment.end.x -
+                        segment.start.x
+                    ) *
+                    ratio,
+
+                y:
+                    segment.start.y +
+                    (
+                        segment.end.y -
+                        segment.start.y
+                    ) *
+                    ratio
+
+            };
+
+        }
+
+        travelled +=
+            segment.length;
+
+    }
+
+    const last =
+        points[
+            points.length - 1
+        ];
 
     return {
-
-        x: (start.x + end.x) / 2,
-        y: (start.y + end.y) / 2
-
+        x: last.x,
+        y: last.y
     };
 
 }
