@@ -31,10 +31,11 @@
       );
     }
 
+    // Connector endpoints must remain exact. Only user-created
+    // corners are snapped to the manual routing grid.
     const start =
-      ManualRouteGridV3.snapPoint(
+      ManualRouteSegmentsV3.clonePoint(
         startPoint,
-        options.gridSize,
       );
 
     link.routingMode = "manual";
@@ -145,10 +146,10 @@
   function finish(endPoint) {
     if (!drawing) return null;
 
-    const snappedEnd =
-      ManualRouteGridV3.snapPoint(
+    // Preserve the exact destination connector center.
+    const exactEnd =
+      ManualRouteSegmentsV3.clonePoint(
         endPoint,
-        options.gridSize,
       );
 
     const anchor =
@@ -159,7 +160,7 @@
     const axisPoint =
       ManualRouteSnapV3.orthogonalPoint(
         anchor,
-        snappedEnd,
+        exactEnd,
         drawing.preferredAxis,
       );
 
@@ -179,7 +180,7 @@
     if (
       !ManualRouteSegmentsV3.samePoint(
         axisPoint,
-        snappedEnd,
+        exactEnd,
       )
     ) {
       finalPoints.push(snappedEnd);
