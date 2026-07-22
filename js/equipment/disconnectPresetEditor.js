@@ -328,6 +328,24 @@ function renderDisconnectPresetEditor(
 
   if (!body || !list) return;
 
+  const hasMappedFuse =
+    (equipment.materials || []).some(
+      entry =>
+        entry?.disconnectFuseSlot !==
+        undefined
+    );
+
+  if (
+    !hasMappedFuse &&
+    equipment.preset
+  ) {
+    equipment.materials =
+      buildDisconnectPresetMaterials(
+        equipment.preset,
+        equipment.data
+      );
+  }
+
   modal.classList.remove("equipment-circuit-mode");
   modal.classList.add("disconnect-preset-mode");
 
