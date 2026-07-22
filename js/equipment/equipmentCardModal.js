@@ -16,6 +16,12 @@ function openEquipmentCardModal(item) {
 
     currentEquipment = item;
 
+    if (typeof resetPanelCircuitSelection === "function") {
+
+        resetPanelCircuitSelection();
+
+    }
+
     //----------------------------------
     // Modal
     //----------------------------------
@@ -119,6 +125,32 @@ function closeEquipmentCardModal() {
     //----------------------------------
 
     modal.style.display = "none";
+
+    modal.classList.remove("equipment-circuit-mode");
+
+    modal.querySelectorAll(".panelboard").forEach(node => node.remove());
+
+    const filterPanel = modal.querySelector(".filter-panel");
+
+    if (filterPanel) {
+
+        filterPanel.style.display = "";
+
+    }
+
+    const modalList = document.getElementById("modalList");
+
+    if (modalList) {
+
+        modalList.className = "";
+
+    }
+
+    if (typeof resetPanelCircuitSelection === "function") {
+
+        resetPanelCircuitSelection();
+
+    }
 
     currentEquipment = null;
 
