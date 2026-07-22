@@ -153,48 +153,22 @@ const RoutingBridgeV2 = (() => {
                 endCenter
             );
 
-        //----------------------------------
-        // SmartRouterV2 already optimized the
-        // exit-to-exit path. Do not optimize
-        // again after adding protected connector
-        // segments; that can delete or move the
-        // exact exits.
-        //----------------------------------
-
         finalPoints =
-            normalizeEndpointSegments(
-                removeDuplicatePoints(
-                    finalPoints
-                ),
-                startCenter,
-                startExit,
-                endExit,
-                endCenter
+            RoutingOptimizerV2.optimize(
+                finalPoints
             );
 
         //----------------------------------
-        // Validate completed geometry
+        // Restore exact endpoints after
+        // optimization
         //----------------------------------
 
-        const finalValidation =
-            RoutingValidatorV2.validateRoute(
-                finalPoints,
-                {
-                    ...routeOptions,
-                    requireOrthogonal: true
-                }
-            );
+        finalPoints[0] =
+            clonePoint(startCenter);
 
-        if (!finalValidation.valid) {
-            console.warn(
-                "RoutingBridgeV2: completed geometry failed validation.",
-                finalValidation
-            );
-
-            clearGeometry(link);
-
-            return null;
-        }
+        finalPoints[
+            finalPoints.length - 1
+        ] = clonePoint(endCenter);
 
         geometry.type = "polyline";
         geometry.points = finalPoints;
@@ -254,29 +228,6 @@ const RoutingBridgeV2 = (() => {
 
         const routed = [];
 
-        //----------------------------------
-        // Do not score against stale auto
-        // geometry from the previous pass.
-        // Manual routes remain protected.
-        //----------------------------------
-
-        const activeRoutes = links
-            .filter(link =>
-                link?.routingMode ===
-                "manual"
-            )
-            .map(link => ({
-                id: getLinkId(link),
-                points:
-                    link?.geometry?.points ??
-                    link?.manualRoute?.points ??
-                    []
-            }))
-            .filter(route =>
-                Array.isArray(route.points) &&
-                route.points.length >= 2
-            );
-
         for (
             let index = 0;
             index < links.length;
@@ -284,18 +235,6 @@ const RoutingBridgeV2 = (() => {
         ) {
 
             const link = links[index];
-
-            if (
-                link?.routingMode ===
-                "manual"
-            ) {
-                routed.push({
-                    link,
-                    geometry: link.geometry
-                });
-
-                continue;
-            }
 
             const geometry =
                 updateLinkGeometry(
@@ -310,7 +249,10 @@ const RoutingBridgeV2 = (() => {
                             ),
 
                         existingRoutes:
-                            activeRoutes.slice()
+                            getExistingRoutes(
+                                links,
+                                link
+                            )
                     }
                 );
 
@@ -318,24 +260,6 @@ const RoutingBridgeV2 = (() => {
                 link,
                 geometry
             });
-
-            if (
-                geometry &&
-                Array.isArray(
-                    geometry.points
-                ) &&
-                geometry.points.length >= 2
-            ) {
-                activeRoutes.push({
-                    id:
-                        getLinkId(
-                            link,
-                            index
-                        ),
-                    points:
-                        geometry.points
-                });
-            }
         }
 
         return routed;
