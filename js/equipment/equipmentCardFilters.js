@@ -3,6 +3,7 @@
 //----------------------------------
 
 let selectedBreakerSize = "";
+let selectedBreakerFamily = "BR";
 
 function getBreakerFamily(material) {
   const catalog = String(material?.CatalogNumber || "").trim().toUpperCase();
@@ -94,6 +95,21 @@ function getSelectedBreakerSize() {
   return selectedBreakerSize;
 }
 
+function setSelectedBreakerFamily(family) {
+  const normalized = String(family || "").toUpperCase();
+
+  if (!["BR", "CHP", "CSR"].includes(normalized)) {
+    return;
+  }
+
+  selectedBreakerFamily = normalized;
+  refreshEquipmentCardModal();
+}
+
+function getSelectedBreakerFamily() {
+  return selectedBreakerFamily;
+}
+
 // Backward-compatible hooks.
 function buildEquipmentComponentChips() {}
 function getSelectedEquipmentComponent() {
@@ -106,5 +122,7 @@ window.getBreakerAmperage = getBreakerAmperage;
 window.getAvailableBreakerSizes = getAvailableBreakerSizes;
 window.setSelectedBreakerSize = setSelectedBreakerSize;
 window.getSelectedBreakerSize = getSelectedBreakerSize;
+window.setSelectedBreakerFamily = setSelectedBreakerFamily;
+window.getSelectedBreakerFamily = getSelectedBreakerFamily;
 window.buildEquipmentComponentChips = buildEquipmentComponentChips;
 window.getSelectedEquipmentComponent = getSelectedEquipmentComponent;
