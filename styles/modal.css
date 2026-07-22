@@ -2689,3 +2689,23 @@ PANEL BREAKER CARD LIBRARY
         grid-template-columns: 1fr;
     }
 }
+
+
+.panel-breaker-card {
+    position: relative;
+}
+
+.panel-breaker-favorite {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    max-width: calc(100% - 16px);
+    overflow: hidden;
+    color: #fbbf24;
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    text-shadow: 0 0 7px rgba(251, 191, 36, .28);
+    pointer-events: none;
+}
