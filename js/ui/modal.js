@@ -379,6 +379,18 @@ modalSearch.addEventListener(
 
     () => {
 
+        if (
+            typeof getCurrentEquipment === "function" &&
+            getCurrentEquipment() &&
+            typeof renderEquipmentComponents === "function"
+        ) {
+
+            renderEquipmentComponents();
+
+            return;
+
+        }
+
         buildModalList(
 
             modalSearch.value
