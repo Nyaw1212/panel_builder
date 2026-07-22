@@ -1616,6 +1616,8 @@ MATERIAL CARD REDESIGN
 /* Image and information row */
 
 .material-card-main {
+    position: relative;
+
     min-width: 0;
 
     display: grid;
@@ -1667,6 +1669,53 @@ MATERIAL CARD REDESIGN
 
     box-sizing: border-box;
 }
+
+/* Update material photo */
+
+.material-card-photo-button {
+    position: absolute;
+    left: 7px;
+    bottom: 7px;
+    z-index: 3;
+
+    min-width: 72px;
+    min-height: 26px;
+
+    padding: 4px 8px;
+
+    border: 1px solid rgba(96, 165, 250, .65);
+    border-radius: 6px;
+
+    background: rgba(7, 21, 47, .88);
+    color: #dbeafe;
+
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+
+    cursor: pointer;
+
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .32);
+
+    transition:
+        border-color .15s ease,
+        background .15s ease,
+        transform .15s ease,
+        opacity .15s ease;
+}
+
+.material-card-photo-button:hover:not(:disabled) {
+    border-color: #93c5fd;
+    background: #1d4ed8;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.material-card-photo-button:disabled {
+    opacity: .65;
+    cursor: wait;
+}
+
 
 .material-card-image-placeholder {
     padding: 12px;
