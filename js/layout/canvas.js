@@ -215,6 +215,7 @@ function drawPlacedItems() {
     const card = document.createElement("div");
 
     card.className = "panel-card";
+    card.dataset.panelId = item.id;
 
     card.style.position = "absolute";
     card.style.left = "0";
