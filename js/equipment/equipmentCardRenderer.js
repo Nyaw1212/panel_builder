@@ -414,6 +414,37 @@ function renderPanelboard(container, equipment) {
     entry => entry.panelSlot.section === "main"
   );
 
+  mainContainer.ondragover = event => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    mainContainer.classList.add("drag-over");
+  };
+
+  mainContainer.ondragleave = () => {
+    mainContainer.classList.remove("drag-over");
+  };
+
+  mainContainer.ondrop = event => {
+    event.preventDefault();
+    mainContainer.classList.remove("drag-over");
+
+    const payload = getPanelBreakerDragData(event);
+
+    if (payload?.kind !== "library") {
+      return;
+    }
+
+    const material =
+      findPanelMaterial(payload.catalogNumber);
+
+    if (
+      material &&
+      getBreakerFamily(material) === "CSR"
+    ) {
+      addEquipmentComponent(material);
+    }
+  };
+
   if (main) {
     const material = findPanelMaterial(main.catalogNumber);
     const image = getPanelBreakerImage(material);
