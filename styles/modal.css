@@ -1621,7 +1621,7 @@ MATERIAL CARD REDESIGN
     display: grid;
 
     grid-template-columns:
-        138px minmax(0, 1fr);
+        48px minmax(0, 1fr);
 
     gap: 18px;
 
@@ -1629,8 +1629,8 @@ MATERIAL CARD REDESIGN
 }
 
 .material-card-image-wrap {
-    width: 138px;
-    height: 164px;
+    width: 48px;
+    height: 48px;
 
     display: flex;
     align-items: center;
@@ -1655,7 +1655,7 @@ MATERIAL CARD REDESIGN
     width: 100%;
     height: 100%;
 
-    padding: 10px;
+    padding: 4px;
 
     object-fit: contain;
 
@@ -2632,8 +2632,8 @@ PANEL BREAKER CARD LIBRARY
 }
 
 .panel-breaker-card__image {
-    width: 66px;
-    height: 82px;
+    width: 48px;
+    height: 48px;
     flex: 0 0 auto;
     padding: 4px;
     object-fit: contain;
