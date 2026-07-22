@@ -41,8 +41,27 @@ const RoutingObstacleV2 = (() => {
 
         }
 
+        const seen = new Set();
+
         return layout
             .filter(Boolean)
+            .filter(item => {
+
+                const id =
+                    item.id ??
+                    item.panelId ??
+                    item.uid ??
+                    item;
+
+                if (seen.has(id)) {
+                    return false;
+                }
+
+                seen.add(id);
+
+                return true;
+
+            })
             .map(createObstacleFromItem)
             .filter(Boolean);
 
@@ -201,6 +220,34 @@ const RoutingObstacleV2 = (() => {
 
     function findItemElement(item) {
 
+        //----------------------------------
+        // Prefer the placed panel card.
+        // Connection nodes also carry
+        // data-panel-id and must not become
+        // equipment obstacles.
+        //----------------------------------
+
+        if (
+            Number.isFinite(
+                Number(item.startCell)
+            )
+        ) {
+
+            const cell = document.querySelector(
+                `.cell[data-index="${item.startCell}"]`
+            );
+
+            const panel =
+                cell?.querySelector(
+                    ".panel-card"
+                );
+
+            if (panel) {
+                return panel;
+            }
+
+        }
+
         const ids = [
 
             item.id,
@@ -217,7 +264,7 @@ const RoutingObstacleV2 = (() => {
 
             const selectors = [
 
-                `[data-panel-id="${escapeSelector(id)}"]`,
+                `.panel-card[data-panel-id="${escapeSelector(id)}"]`,
 
                 `[data-equipment-id="${escapeSelector(id)}"]`,
 
