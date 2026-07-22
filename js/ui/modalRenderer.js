@@ -406,6 +406,15 @@ function buildModalCard(item) {
 
             </div>
 
+            <button
+                type="button"
+                class="material-card-photo-button"
+                title="Upload or replace the photo for ${escapeModalHTML(item.CatalogNumber || "this material")}"
+                aria-label="Update photo for ${escapeModalHTML(item.CatalogNumber || "this material")}"
+            >
+                ↑ Photo
+            </button>
+
             <div class="equipment-info material-card-info">
 
                 <div class="equipment-code material-card-code">
@@ -507,6 +516,41 @@ function buildModalCard(item) {
         imageElement.addEventListener(
             "error",
             handleModalMaterialImageError
+        );
+
+    }
+
+    //----------------------------------
+    // Update Photo
+    //----------------------------------
+
+    const photoButton = card.querySelector(
+        ".material-card-photo-button"
+    );
+
+    if (photoButton) {
+
+        photoButton.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (
+                    typeof openMaterialImageUpload ===
+                    "function"
+                ) {
+
+                    openMaterialImageUpload(
+                        item,
+                        card,
+                        photoButton
+                    );
+
+                }
+
+            }
         );
 
     }
