@@ -170,8 +170,23 @@ function drawLinkNode(link) {
   square.setAttribute("rx", 2);
   square.setAttribute("ry", 2);
 
-  square.setAttribute("fill", "#ffffff");
-  square.setAttribute("stroke", "#2563eb");
+  const hasMaterials =
+    hasLinkNodeMaterials(link);
+
+  square.setAttribute(
+    "fill",
+    hasMaterials
+      ? "#dcfce7"
+      : "#ffffff",
+  );
+
+  square.setAttribute(
+    "stroke",
+    hasMaterials
+      ? "#22c55e"
+      : "#2563eb",
+  );
+
   square.setAttribute("stroke-width", "2");
 
   square.style.pointerEvents = "none";
@@ -336,8 +351,47 @@ function drawLinkNode(link) {
 }
 
 //----------------------------------
+// Has Real Link Materials
+//----------------------------------
+
+function hasLinkNodeMaterials(link) {
+
+  const candidates = [
+    ...(link?.nodes?.start?.hardware || []),
+    ...(link?.nodes?.end?.hardware || []),
+    ...(link?.nodes?.start?.materials || []),
+    ...(link?.nodes?.end?.materials || []),
+    ...(link?.materials || []),
+    ...(link?.assembly || []),
+  ];
+
+  return candidates.some(entry => {
+
+    if (!entry) return false;
+
+    const material =
+      entry.material ||
+      entry;
+
+    return Boolean(
+      material.CatalogNumber ||
+      material.catalogNumber ||
+      material.catalog ||
+      material.Description ||
+      material.description ||
+      material.DriveFileID
+    );
+
+  });
+
+}
+
+//----------------------------------
 // Expose
 //----------------------------------
+
+window.hasLinkNodeMaterials =
+  hasLinkNodeMaterials;
 
 window.getLinkNodePosition = getLinkNodePosition;
 window.drawLinkNode = drawLinkNode;
