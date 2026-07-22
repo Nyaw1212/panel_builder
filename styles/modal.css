@@ -3038,8 +3038,9 @@ DISCONNECT PRESET EDITOR
 }
 
 .disconnect-fuse-slot img {
-    width: 92px;
+    width: 120px;
     height: 120px;
+    aspect-ratio: 1 / 1;
     padding: 4px;
     object-fit: contain;
     box-sizing: border-box;
