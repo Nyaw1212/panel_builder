@@ -153,22 +153,48 @@ const RoutingBridgeV2 = (() => {
                 endCenter
             );
 
+        //----------------------------------
+        // SmartRouterV2 already optimized the
+        // exit-to-exit path. Do not optimize
+        // again after adding protected connector
+        // segments; that can delete or move the
+        // exact exits.
+        //----------------------------------
+
         finalPoints =
-            RoutingOptimizerV2.optimize(
-                finalPoints
+            normalizeEndpointSegments(
+                removeDuplicatePoints(
+                    finalPoints
+                ),
+                startCenter,
+                startExit,
+                endExit,
+                endCenter
             );
 
         //----------------------------------
-        // Restore exact endpoints after
-        // optimization
+        // Validate completed geometry
         //----------------------------------
 
-        finalPoints[0] =
-            clonePoint(startCenter);
+        const finalValidation =
+            RoutingValidatorV2.validateRoute(
+                finalPoints,
+                {
+                    ...routeOptions,
+                    requireOrthogonal: true
+                }
+            );
 
-        finalPoints[
-            finalPoints.length - 1
-        ] = clonePoint(endCenter);
+        if (!finalValidation.valid) {
+            console.warn(
+                "RoutingBridgeV2: completed geometry failed validation.",
+                finalValidation
+            );
+
+            clearGeometry(link);
+
+            return null;
+        }
 
         geometry.type = "polyline";
         geometry.points = finalPoints;
