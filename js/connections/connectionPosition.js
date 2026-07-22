@@ -126,23 +126,92 @@ function getConnectionCenter(
 
     if (!connection) return null;
 
-    const gridRect =
-        grid.getBoundingClientRect();
-
     const rect =
         connection.getBoundingClientRect();
+
+    const clientCenter = {
+
+        x:
+            rect.left +
+            (rect.width / 2),
+
+        y:
+            rect.top +
+            (rect.height / 2)
+
+    };
+
+    //----------------------------------
+    // Convert the connector's browser
+    // coordinates into the exact SVG
+    // coordinate system used by links.
+    //----------------------------------
+
+    const svg =
+        document.getElementById(
+            "svgLayer"
+        );
+
+    const matrix =
+        svg?.getScreenCTM?.();
+
+    if (
+        svg &&
+        matrix
+    ) {
+
+        const point =
+            svg.createSVGPoint();
+
+        point.x =
+            clientCenter.x;
+
+        point.y =
+            clientCenter.y;
+
+        const transformed =
+            point.matrixTransform(
+                matrix.inverse()
+            );
+
+        return {
+
+            x:
+                transformed.x,
+
+            y:
+                transformed.y
+
+        };
+
+    }
+
+    //----------------------------------
+    // Fallback when SVG CTM is not
+    // available.
+    //----------------------------------
+
+    const canvas =
+        document.getElementById(
+            "canvasContainer"
+        );
+
+    const canvasRect =
+        canvas?.getBoundingClientRect() ??
+        {
+            left: 0,
+            top: 0
+        };
 
     return {
 
         x:
-            rect.left -
-            gridRect.left +
-            (rect.width / 2),
+            clientCenter.x -
+            canvasRect.left,
 
         y:
-            rect.top -
-            gridRect.top +
-            (rect.height / 2) + 20
+            clientCenter.y -
+            canvasRect.top
 
     };
 
