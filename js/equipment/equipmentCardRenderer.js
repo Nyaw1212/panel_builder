@@ -59,20 +59,34 @@ function renderBreakerLibrary(container, components) {
 
   container.appendChild(controls);
 
-  const filtered = components.filter(material => {
-    if (getBreakerFamily(material) !== selectedFamily) {
-      return false;
-    }
+  const filtered = components
+    .filter(material => {
+      if (getBreakerFamily(material) !== selectedFamily) {
+        return false;
+      }
 
-    const haystack = [
-      material.CatalogNumber,
-      material.Description,
-      material.Type,
-      getBreakerAmperage(material)
-    ].join(" ").toLowerCase();
+      const haystack = [
+        material.CatalogNumber,
+        material.Description,
+        material.Type,
+        getBreakerAmperage(material)
+      ].join(" ").toLowerCase();
 
-    return !search || haystack.includes(search);
-  });
+      return !search || haystack.includes(search);
+    })
+    .sort((first, second) => {
+      const favoriteDifference =
+        Number(second.Favorite || 0) -
+        Number(first.Favorite || 0);
+
+      if (favoriteDifference !== 0) {
+        return favoriteDifference;
+      }
+
+      return String(first.CatalogNumber || "").localeCompare(
+        String(second.CatalogNumber || "")
+      );
+    });
 
   const grid = document.createElement("div");
   grid.className = "panel-breaker-card-grid";
@@ -81,6 +95,10 @@ function renderBreakerLibrary(container, components) {
     const amp = getBreakerAmperage(material);
     const poles = getBreakerPoleCount(material);
     const image = getPanelBreakerImage(material);
+    const favorite = Math.max(
+      0,
+      Math.min(Number(material.Favorite || 0), 5)
+    );
     const card = document.createElement("button");
 
     card.type = "button";
@@ -103,6 +121,13 @@ function renderBreakerLibrary(container, components) {
         <span>${escapePanelText(material.Description || material.Type || "")}</span>
         <small>${amp ? `${amp}A` : ""} • ${poles}P</small>
       </span>
+      ${favorite > 0 ? `
+        <span
+          class="panel-breaker-favorite"
+          title="Favorite value: ${favorite}"
+          aria-label="Favorite value: ${favorite} out of 5"
+        >${"★".repeat(favorite)}</span>
+      ` : ""}
     `;
 
     const img = card.querySelector("img");
