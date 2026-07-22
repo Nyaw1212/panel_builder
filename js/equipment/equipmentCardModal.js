@@ -162,6 +162,27 @@ function closeEquipmentCardModal() {
 
 function getCurrentEquipment() {
 
+    if (
+        currentEquipment?.id &&
+        typeof getLayout === "function"
+    ) {
+
+        const liveEquipment =
+            getLayout().find(
+                item =>
+                    item?.id ===
+                    currentEquipment.id
+            );
+
+        if (liveEquipment) {
+
+            currentEquipment =
+                liveEquipment;
+
+        }
+
+    }
+
     return currentEquipment;
 
 }
