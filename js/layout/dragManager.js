@@ -342,6 +342,23 @@ function stopDrag() {
     );
 
     //----------------------------------
+    // Open Equipment On Click
+    //----------------------------------
+
+    if (
+        !drag.moved &&
+        drag.item &&
+        typeof openEquipmentCardModal ===
+            "function"
+    ) {
+
+        openEquipmentCardModal(
+            drag.item
+        );
+
+    }
+
+    //----------------------------------
     // Clear State
     //----------------------------------
 
