@@ -254,7 +254,28 @@ function serializeLink(link) {
     geometry:
       cloneSerializable(
         link.geometry || null
-      )
+      ),
+
+    //----------------------------------
+    // Routing Mode
+    //----------------------------------
+
+    routingMode:
+      link.routingMode || "auto",
+
+    manualRoute:
+      link.manualRoute
+        ? cloneSerializable(
+            link.manualRoute
+          )
+        : null,
+
+    manualRoutingV3:
+      typeof ManualRouteSerializerV3 !==
+        "undefined"
+        ? ManualRouteSerializerV3
+            .serialize(link)
+        : null
 
   };
 
