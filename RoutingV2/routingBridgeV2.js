@@ -228,6 +228,29 @@ const RoutingBridgeV2 = (() => {
 
         const routed = [];
 
+        //----------------------------------
+        // Do not score against stale auto
+        // geometry from the previous pass.
+        // Manual routes remain protected.
+        //----------------------------------
+
+        const activeRoutes = links
+            .filter(link =>
+                link?.routingMode ===
+                "manual"
+            )
+            .map(link => ({
+                id: getLinkId(link),
+                points:
+                    link?.geometry?.points ??
+                    link?.manualRoute?.points ??
+                    []
+            }))
+            .filter(route =>
+                Array.isArray(route.points) &&
+                route.points.length >= 2
+            );
+
         for (
             let index = 0;
             index < links.length;
@@ -235,6 +258,18 @@ const RoutingBridgeV2 = (() => {
         ) {
 
             const link = links[index];
+
+            if (
+                link?.routingMode ===
+                "manual"
+            ) {
+                routed.push({
+                    link,
+                    geometry: link.geometry
+                });
+
+                continue;
+            }
 
             const geometry =
                 updateLinkGeometry(
@@ -249,10 +284,7 @@ const RoutingBridgeV2 = (() => {
                             ),
 
                         existingRoutes:
-                            getExistingRoutes(
-                                links,
-                                link
-                            )
+                            activeRoutes.slice()
                     }
                 );
 
@@ -260,6 +292,24 @@ const RoutingBridgeV2 = (() => {
                 link,
                 geometry
             });
+
+            if (
+                geometry &&
+                Array.isArray(
+                    geometry.points
+                ) &&
+                geometry.points.length >= 2
+            ) {
+                activeRoutes.push({
+                    id:
+                        getLinkId(
+                            link,
+                            index
+                        ),
+                    points:
+                        geometry.points
+                });
+            }
         }
 
         return routed;
