@@ -1,54 +1,23 @@
 //----------------------------------
-// Equipment Card Library
+// Panel Breaker Library
 //----------------------------------
 
 function getEquipmentCardLibrary() {
+  const materials =
+    typeof getMaterials === "function"
+      ? getMaterials()
+      : [];
 
-    //----------------------------------
-    // Current Component
-    //----------------------------------
+  return (materials || []).filter(material => {
+    const nodeType = String(material?.NodeType || "")
+      .trim()
+      .toUpperCase();
 
-    const component =
-        getSelectedEquipmentComponent();
-
-    //----------------------------------
-    // Materials
-    //----------------------------------
-
-    const materials =
-        getMaterials();
-
-    //----------------------------------
-    // Filter
-    //----------------------------------
-
-    return materials.filter(material => {
-
-        const nodeType =
-            String(material.NodeType || "")
-                .trim()
-                .toUpperCase();
-
-        switch (component) {
-
-            case "BREAKER":
-                return nodeType === "BREAKER";
-
-            case "GROUND":
-                return nodeType === "GT";
-
-            default:
-                return false;
-
-        }
-
-    });
-
+    return (
+      nodeType === "BREAKER" &&
+      Boolean(getBreakerFamily(material))
+    );
+  });
 }
 
-//----------------------------------
-// Expose
-//----------------------------------
-
-window.getEquipmentCardLibrary =
-    getEquipmentCardLibrary;
+window.getEquipmentCardLibrary = getEquipmentCardLibrary;
