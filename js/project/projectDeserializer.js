@@ -194,6 +194,20 @@ function deserializeProject(project) {
 
             },
 
+            routingMode:
+                saved.routingMode ??
+                saved.manualRoutingV3
+                    ?.routingMode ??
+                "auto",
+
+            manualRoute:
+                structuredClone(
+                    saved.manualRoute ??
+                    saved.manualRoutingV3
+                        ?.manualRoute ??
+                    null
+                ),
+
             conduit: saved.conduit || null,
 
             length: 0,
