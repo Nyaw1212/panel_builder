@@ -144,7 +144,7 @@ EQUIPMENT CARD
 
     gap:12px;
 
-    min-height:160px;   /* Increase this */
+    min-height:160px;
 
     padding:12px;
 
@@ -181,6 +181,8 @@ CARD IMAGE
     width:90px;
 
     height:90px;
+
+    aspect-ratio:1 / 1;
 
     object-fit:contain;
 

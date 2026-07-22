@@ -1630,7 +1630,8 @@ MATERIAL CARD REDESIGN
 
 .material-card-image-wrap {
     width: 138px;
-    height: 164px;
+    height: 138px;
+    aspect-ratio: 1 / 1;
 
     display: flex;
     align-items: center;
@@ -1655,7 +1656,7 @@ MATERIAL CARD REDESIGN
     width: 100%;
     height: 100%;
 
-    padding: 10px;
+    padding: 8px;
 
     object-fit: contain;
 
@@ -2633,7 +2634,8 @@ PANEL BREAKER CARD LIBRARY
 
 .panel-breaker-card__image {
     width: 66px;
-    height: 82px;
+    height: 66px;
+    aspect-ratio: 1 / 1;
     flex: 0 0 auto;
     padding: 4px;
     object-fit: contain;
