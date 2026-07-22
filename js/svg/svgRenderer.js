@@ -61,7 +61,18 @@ function clearSVG() {
 
     if (!svgRoot) return;
 
+    const manualLayer =
+        svgRoot.querySelector(
+            '[data-manual-route-v3="layer"]'
+        );
+
     svgRoot.replaceChildren();
+
+    if (manualLayer) {
+        svgRoot.appendChild(
+            manualLayer
+        );
+    }
 
 }
 
