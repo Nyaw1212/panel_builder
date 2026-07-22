@@ -626,3 +626,18 @@ PREVIEW ANIMATION
     }
 
 }
+
+/*=====================================
+Connection Preview — Top Overlay
+=====================================*/
+
+.connection-preview--overlay {
+    position: absolute;
+    z-index: 2000;
+    pointer-events: none;
+    isolation: isolate;
+}
+
+.connection-preview--overlay.show {
+    z-index: 2000;
+}
