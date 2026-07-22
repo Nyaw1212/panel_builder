@@ -2558,3 +2558,12 @@ PANEL CIRCUIT CONFIGURATION
         grid-auto-rows: 64px;
     }
 }
+
+.panel-circuit-help--primary {
+    margin-top: 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(59, 130, 246, .28);
+    border-radius: 8px;
+    background: rgba(37, 99, 235, .08);
+    color: var(--v2-text-soft);
+}
