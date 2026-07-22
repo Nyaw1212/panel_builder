@@ -182,35 +182,59 @@ function renderPanelSlotCell(equipment, side, index) {
   }
 
   const slot = occupant.panelSlot;
-  const start = Number(slot.index || 0);
+  const span = Math.max(1, Number(slot.span || 1));
   const material = findPanelMaterial(occupant.catalogNumber);
-  const isStart = index === start;
   const family = slot.family || getBreakerFamily(material);
+  const image = getPanelBreakerImage(material);
+  const endSlotNumber =
+    (index + span - 1) * 2 +
+    (side === "left" ? 1 : 2);
 
-  button.classList.add("occupied", `family-${String(family).toLowerCase()}`);
-  if (!isStart) button.classList.add("continuation");
+  button.classList.add(
+    "occupied",
+    `family-${String(family).toLowerCase()}`
+  );
+
+  if (span > 1) {
+    button.classList.add("multipole");
+    button.style.gridRow = `span ${span}`;
+  }
 
   button.innerHTML = `
-    <span class="panel-slot-number">${slotNumber}</span>
+    <span class="panel-slot-number">
+      ${span > 1 ? `${slotNumber}–${endSlotNumber}` : slotNumber}
+    </span>
+    ${image ? `
+      <img
+        class="panel-slot-breaker-image"
+        src="${escapePanelText(image)}"
+        alt=""
+      >
+    ` : ""}
     <span class="panel-slot-breaker">
       <strong>${escapePanelText(occupant.catalogNumber)}</strong>
-      <small>${getBreakerAmperage(material) || ""}A • ${slot.span || 1}P</small>
+      <small>${getBreakerAmperage(material) || ""}A • ${span}P</small>
     </span>
-    ${isStart ? `
-      <span
-        class="panel-slot-remove"
-        title="Remove breaker"
-        aria-label="Remove breaker"
-      >×</span>
-    ` : ""}
+    <span
+      class="panel-slot-remove"
+      title="Remove breaker"
+      aria-label="Remove breaker"
+    >×</span>
   `;
 
-  if (isStart) {
-    button.onclick = event => {
-      event.stopPropagation();
-      removeEquipmentComponent(occupant.id);
+  const imageElement =
+    button.querySelector(".panel-slot-breaker-image");
+
+  if (imageElement) {
+    imageElement.onerror = () => {
+      imageElement.style.display = "none";
     };
   }
+
+  button.onclick = event => {
+    event.stopPropagation();
+    removeEquipmentComponent(occupant.id);
+  };
 
   return button;
 }
@@ -252,19 +276,40 @@ function renderPanelboard(container, equipment) {
   const leftColumn = board.querySelector(".panelboard-column--left");
   const rightColumn = board.querySelector(".panelboard-column--right");
 
-  for (let index = 0; index < rows; index += 1) {
-    if (index < leftCapacity) {
-      leftColumn.appendChild(
-        renderPanelSlotCell(equipment, "left", index)
-      );
-    }
+  function renderSide(column, side, capacity) {
+    let index = 0;
 
-    if (index < rightCapacity) {
-      rightColumn.appendChild(
-        renderPanelSlotCell(equipment, "right", index)
-      );
+    while (index < capacity) {
+      const occupant =
+        getPanelSlotOccupant(equipment, side, index);
+
+      if (
+        occupant &&
+        Number(occupant.panelSlot?.index || 0) < index
+      ) {
+        index += 1;
+        continue;
+      }
+
+      const cell =
+        renderPanelSlotCell(equipment, side, index);
+
+      column.appendChild(cell);
+
+      const span =
+        occupant
+          ? Math.max(
+              1,
+              Number(occupant.panelSlot?.span || 1)
+            )
+          : 1;
+
+      index += span;
     }
   }
+
+  renderSide(leftColumn, "left", leftCapacity);
+  renderSide(rightColumn, "right", rightCapacity);
 
   const mainContainer = board.querySelector(".panel-main-content");
   const main = placed.find(
