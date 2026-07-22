@@ -173,6 +173,23 @@ function drawLinkNode(link) {
 
     square.setAttribute("width", hover);
     square.setAttribute("height", hover);
+
+    //----------------------------------
+    // Reuse Connection Preview Cards
+    //----------------------------------
+
+    const preview =
+      typeof getConnectionPreviewOverlay ===
+        "function"
+        ? getConnectionPreviewOverlay()
+        : null;
+
+    showConnectionPreview(
+      preview,
+      link.nodes?.start,
+      null,
+      square,
+    );
   });
 
   hit.addEventListener("mouseleave", () => {
@@ -181,6 +198,13 @@ function drawLinkNode(link) {
 
     square.setAttribute("width", LINK_NODE_SIZE);
     square.setAttribute("height", LINK_NODE_SIZE);
+
+    hideConnectionPreview(
+      typeof getConnectionPreviewOverlay ===
+        "function"
+        ? getConnectionPreviewOverlay()
+        : null,
+    );
   });
 
   //----------------------------------
