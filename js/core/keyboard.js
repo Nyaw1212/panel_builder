@@ -532,6 +532,12 @@ function closeTopmostElement() {
     const knownDialogs = [
 
         {
+            id: "equipmentModal",
+            closeFunction:
+                "closeActiveModal"
+        },
+
+        {
             id: "projectDialog",
             closeFunction:
                 "hideProjectDialog"
