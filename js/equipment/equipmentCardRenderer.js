@@ -22,6 +22,60 @@ function getPanelBreakerImage(material) {
     : "";
 }
 
+function setPanelBreakerDragData(event, payload) {
+  if (!event?.dataTransfer) return;
+
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData(
+    "text/plain",
+    JSON.stringify(payload)
+  );
+}
+
+function getPanelBreakerDragData(event) {
+  try {
+    return JSON.parse(
+      event?.dataTransfer?.getData("text/plain") || "null"
+    );
+  }
+  catch (error) {
+    return null;
+  }
+}
+
+function handlePanelBreakerDrop(event, side, index) {
+  event.preventDefault();
+  event.currentTarget?.classList.remove("drag-over");
+
+  const payload = getPanelBreakerDragData(event);
+  if (!payload) return false;
+
+  if (payload.kind === "library") {
+    const material =
+      findPanelMaterial(payload.catalogNumber);
+
+    return material
+      ? placeEquipmentComponentAt(material, side, index)
+      : false;
+  }
+
+  if (payload.kind === "installed") {
+    const moved = moveEquipmentComponent(
+      payload.componentId,
+      side,
+      index
+    );
+
+    if (!moved) {
+      alert("That breaker does not fit in this slot.");
+    }
+
+    return moved;
+  }
+
+  return false;
+}
+
 function renderBreakerLibrary(container, components) {
   const search = String(
     document.getElementById("modalSearch")?.value || ""
@@ -137,6 +191,17 @@ function renderBreakerLibrary(container, components) {
       };
     }
 
+    card.draggable = true;
+    card.ondragstart = event => {
+      card.classList.add("dragging");
+      setPanelBreakerDragData(event, {
+        kind: "library",
+        catalogNumber: material.CatalogNumber
+      });
+    };
+    card.ondragend = () => {
+      card.classList.remove("dragging");
+    };
     card.onclick = () => addEquipmentComponent(material);
     grid.appendChild(card);
   });
@@ -178,6 +243,17 @@ function renderPanelSlotCell(equipment, side, index) {
       <span class="panel-slot-empty">empty</span>
     `;
     button.onclick = () => selectPanelSlot(side, index);
+    button.ondragover = event => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      button.classList.add("drag-over");
+    };
+    button.ondragleave = () => {
+      button.classList.remove("drag-over");
+    };
+    button.ondrop = event => {
+      handlePanelBreakerDrop(event, side, index);
+    };
     return button;
   }
 
@@ -231,9 +307,31 @@ function renderPanelSlotCell(equipment, side, index) {
     };
   }
 
-  button.onclick = event => {
-    event.stopPropagation();
-    removeEquipmentComponent(occupant.id);
+  button.draggable = true;
+  button.ondragstart = event => {
+    button.classList.add("dragging");
+    setPanelBreakerDragData(event, {
+      kind: "installed",
+      componentId: occupant.id
+    });
+  };
+  button.ondragend = () => {
+    button.classList.remove("dragging");
+  };
+
+  const removeButton =
+    button.querySelector(".panel-slot-remove");
+
+  if (removeButton) {
+    removeButton.onclick = event => {
+      event.preventDefault();
+      event.stopPropagation();
+      removeEquipmentComponent(occupant.id);
+    };
+  }
+
+  button.onclick = () => {
+    selectPanelSlot(side, index);
   };
 
   return button;
