@@ -83,6 +83,92 @@ async function loadLocalJSON(path) {
 }
 
 //----------------------------------
+// MML Version
+//----------------------------------
+
+async function getMMLVersion() {
+
+    const result = await apiRequest({
+
+        action: "getMMLVersion"
+
+    });
+
+    if (!result.success) {
+
+        return null;
+
+    }
+
+    return String(
+
+        result.version ||
+
+        result.mmlVersion ||
+
+        ""
+
+    );
+
+}
+
+//----------------------------------
+// Fetch MML
+//----------------------------------
+
+async function fetchMMLFromApi(version = "") {
+
+    console.log("Catalog Source: Apps Script");
+
+    const result = await apiRequest({
+
+        action: "getMML"
+
+    });
+
+    if (!result.success) {
+
+        console.error(result.message);
+
+        return null;
+
+    }
+
+    const mml = result.mml || [];
+
+    const resolvedVersion = String(
+
+        result.version ||
+
+        result.mmlVersion ||
+
+        version ||
+
+        "unversioned"
+
+    );
+
+    saveMMLCache(
+
+        mml,
+
+        resolvedVersion
+
+    );
+
+    console.log(
+
+        "MML Cached:",
+
+        resolvedVersion
+
+    );
+
+    return mml;
+
+}
+
+//----------------------------------
 // Get MML
 //----------------------------------
 
@@ -99,46 +185,82 @@ async function getMML() {
     }
 
     //----------------------------------
-    // Cache
+    // Cache + Version Check
     //----------------------------------
 
     const cache = loadMMLCache();
 
     if (cache) {
 
-        console.log("Catalog Source: Cache");
+        const remoteVersion =
 
-        return cache.data;
+            await getMMLVersion();
+
+        if (!remoteVersion) {
+
+            console.warn(
+
+                "MML version check unavailable; using cache."
+
+            );
+
+            return cache.data;
+
+        }
+
+        if (
+
+            String(cache.version) ===
+
+            remoteVersion
+
+        ) {
+
+            console.log(
+
+                "Catalog Source: Cache",
+
+                remoteVersion
+
+            );
+
+            return cache.data;
+
+        }
+
+        console.log(
+
+            "MML update detected:",
+
+            cache.version,
+
+            "→",
+
+            remoteVersion
+
+        );
+
+        const updatedMML =
+
+            await fetchMMLFromApi(
+
+                remoteVersion
+
+            );
+
+        return updatedMML || cache.data;
 
     }
 
     //----------------------------------
-    // Apps Script
+    // First Load
     //----------------------------------
 
-    console.log("Catalog Source: Apps Script");
+    return (
 
-    const result = await apiRequest({
+        await fetchMMLFromApi()
 
-        action: "getMML"
-
-    });
-
-    if (!result.success) {
-
-        console.error(result.message);
-
-        return [];
-
-    }
-
-    const mml = result.mml || [];
-
-    saveMMLCache(mml);
-
-    console.log("MML Cached");
-
-    return mml;
+    ) || [];
 
 }
 
@@ -314,6 +436,8 @@ window.API = {
 
     getMML,
 
+    getMMLVersion,
+
     getPresets,
 
     saveProject,
@@ -330,6 +454,7 @@ window.API = {
 // Legacy Compatibility
 //----------------------------------
 
+window.getMMLVersion = getMMLVersion;
 window.saveProject = saveProject;
 window.loadProject = loadProject;
 window.getProjects = getProjects;
