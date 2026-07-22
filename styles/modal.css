@@ -2709,3 +2709,52 @@ PANEL BREAKER CARD LIBRARY
     text-shadow: 0 0 7px rgba(251, 191, 36, .28);
     pointer-events: none;
 }
+
+
+/*=====================================
+INSTALLED BREAKER IMAGES AND POLE SPANS
+=====================================*/
+
+.panel-slot.occupied {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px 26px 6px 28px;
+}
+
+.panel-slot.multipole {
+    min-height: 0;
+    border-width: 2px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(30, 64, 175, .18),
+            rgba(17, 28, 47, .98)
+        );
+}
+
+.panel-slot-breaker-image {
+    width: 36px;
+    height: 42px;
+    flex: 0 0 auto;
+    padding: 2px;
+    object-fit: contain;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .95);
+}
+
+.panel-slot.multipole .panel-slot-breaker-image {
+    width: 52px;
+    height: 78px;
+}
+
+.panel-slot.multipole .panel-slot-number {
+    top: 8px;
+}
+
+.panel-slot.multipole .panel-slot-breaker strong {
+    font-size: 13px;
+}
+
+.panel-slot.multipole .panel-slot-breaker small {
+    font-size: 11px;
+}
