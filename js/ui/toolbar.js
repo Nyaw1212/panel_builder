@@ -48,6 +48,13 @@ function installThemeStyles() {
         }
 
         body.theme-smoke {
+            --canvas-bg: #080a0c;
+            --canvas-surface: rgba(17, 20, 22, .58);
+            --canvas-cell: rgba(43, 48, 51, .42);
+            --canvas-cell-dark: rgba(12, 15, 17, .55);
+            --canvas-border: rgba(226, 232, 240, .24);
+            --canvas-border-soft: rgba(148, 163, 184, .18);
+
             color: #f8fafc;
             background:
                 radial-gradient(circle at 22% 12%, rgba(54, 69, 82, .34), transparent 34%),
@@ -94,16 +101,88 @@ function installThemeStyles() {
             -webkit-backdrop-filter: blur(18px) saturate(118%);
         }
 
-        body.theme-smoke #canvasContainer,
-        body.theme-smoke #grid {
-            background-color: rgba(8, 11, 13, .68) !important;
+        body.theme-smoke #canvasContainer {
+            background:
+                radial-gradient(circle at 20% 8%, rgba(255,255,255,.055), transparent 34%),
+                radial-gradient(circle at 82% 24%, rgba(109, 85, 59, .08), transparent 34%),
+                linear-gradient(145deg, rgba(28, 32, 35, .72), rgba(7, 9, 11, .82)) !important;
+            border-color: rgba(226, 232, 240, .18) !important;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, .08),
+                inset 0 0 90px rgba(0, 0, 0, .42),
+                0 18px 40px rgba(0, 0, 0, .32) !important;
+            backdrop-filter: blur(20px) saturate(112%);
+            -webkit-backdrop-filter: blur(20px) saturate(112%);
         }
 
-        body.theme-smoke #canvasContainer {
-            border-color: rgba(226, 232, 240, .15) !important;
+        body.theme-smoke #grid {
+            background: transparent !important;
+        }
+
+        body.theme-smoke #grid .cell {
+            background:
+                linear-gradient(145deg, rgba(57, 62, 65, .32), rgba(11, 14, 16, .42)) !important;
+            border-color: rgba(203, 213, 225, .23) !important;
             box-shadow:
-                inset 0 0 70px rgba(0, 0, 0, .36),
-                0 16px 34px rgba(0, 0, 0, .24);
+                inset 0 1px 0 rgba(255, 255, 255, .035),
+                inset 0 -1px 0 rgba(0, 0, 0, .32) !important;
+            backdrop-filter: blur(8px) saturate(108%);
+            -webkit-backdrop-filter: blur(8px) saturate(108%);
+        }
+
+        body.theme-smoke #grid .cell:hover {
+            background:
+                linear-gradient(145deg, rgba(50, 86, 121, .34), rgba(15, 29, 43, .42)) !important;
+            border-color: rgba(96, 165, 250, .72) !important;
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,.06),
+                0 0 18px rgba(37, 99, 235, .18) !important;
+        }
+
+        body.theme-smoke #grid .cell:has(.panel-card),
+        body.theme-smoke #grid .cell.occupied,
+        body.theme-smoke #grid .cell:has(.panel-card):hover,
+        body.theme-smoke #grid .cell.occupied:hover {
+            background: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        body.theme-smoke #grid .cell .panel-card,
+        body.theme-smoke #canvasContainer .panel-card {
+            background:
+                linear-gradient(145deg, rgba(61, 66, 69, .52), rgba(13, 16, 18, .62)) !important;
+            border: 1px solid rgba(226, 232, 240, .2) !important;
+            border-radius: 10px !important;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, .1),
+                inset 0 -1px 0 rgba(0, 0, 0, .38),
+                0 12px 24px rgba(0, 0, 0, .3) !important;
+            backdrop-filter: blur(16px) saturate(116%) !important;
+            -webkit-backdrop-filter: blur(16px) saturate(116%) !important;
+        }
+
+        body.theme-smoke #grid .cell .panel-card:hover,
+        body.theme-smoke #canvasContainer .panel-card:hover,
+        body.theme-smoke #grid .cell .panel-card.selected,
+        body.theme-smoke #canvasContainer .panel-card.selected {
+            border-color: rgba(96, 165, 250, .8) !important;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, .12),
+                0 0 0 2px rgba(59, 130, 246, .16),
+                0 0 22px rgba(37, 99, 235, .2),
+                0 12px 24px rgba(0, 0, 0, .3) !important;
+        }
+
+        body.theme-smoke .canvas-image {
+            background:
+                radial-gradient(circle at 45% 28%, rgba(255,255,255,.96), rgba(203, 213, 225, .78)) !important;
+            border: 1px solid rgba(255, 255, 255, .36);
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,.8),
+                0 5px 14px rgba(0,0,0,.38);
         }
 
         body.theme-smoke .workspace-toolbar button,
