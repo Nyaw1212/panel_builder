@@ -6,6 +6,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualButton =
     document.getElementById("manualRouteButton");
 
+  //----------------------------------
+  // Theme Bootstrap
+  //----------------------------------
+
+  if (typeof installThemeStyles === "function") {
+    installThemeStyles();
+  }
+
+  if (typeof createThemePicker === "function") {
+    createThemePicker(
+      document.querySelector(".workspace-toolbar")
+    );
+  }
+
   function findPanel(panelId) {
     const seen = new Set();
 
