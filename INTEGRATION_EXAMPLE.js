@@ -184,11 +184,5 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   });
 
-  manualButton?.addEventListener("click", event => {
-    event.preventDefault();
-    event.stopPropagation();
-    ManualRouting.toggle();
-  });
-
   refreshButton(false);
 });
