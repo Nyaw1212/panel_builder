@@ -145,6 +145,10 @@ function serializeMaterialSummary() {
     if (!item || seen.has(item.id)) return;
     seen.add(item.id);
 
+    const equipmentCatalogNumber = String(
+      item.data?.CatalogNumber ?? item.data?.catalogNumber ?? ""
+    ).trim();
+
     addMaterial(item.data, 1, "BOS");
 
     (item.materials || []).forEach(component => {
@@ -153,6 +157,10 @@ function serializeMaterialSummary() {
       ).trim();
 
       if (!catalogNumber) return;
+
+      // The parent equipment is already counted above.
+      // Some equipment cards also contain the parent catalog as a component.
+      if (catalogNumber === equipmentCatalogNumber) return;
 
       const material =
         typeof getMaterial === "function"
