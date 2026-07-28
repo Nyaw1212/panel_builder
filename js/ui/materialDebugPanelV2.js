@@ -142,6 +142,30 @@ const MaterialDebugPanelV2 = (() => {
     );
 
     //----------------------------------
+    // Reveal on Hover
+    //----------------------------------
+
+    panel.addEventListener(
+      "mouseenter",
+      () => {
+        setMinimized(false);
+      }
+    );
+
+    panel.addEventListener(
+      "mouseleave",
+      () => {
+        setMinimized(true);
+      }
+    );
+
+    //----------------------------------
+    // Start Minimized
+    //----------------------------------
+
+    setMinimized(true);
+
+    //----------------------------------
     // Initial Render
     //----------------------------------
 
@@ -864,10 +888,27 @@ const MaterialDebugPanelV2 = (() => {
       return;
     }
 
-    const minimized =
-      panel.classList.toggle(
+    const shouldMinimize =
+      !panel.classList.contains(
         "material-debug-panel-v2--minimized"
       );
+
+    setMinimized(shouldMinimize);
+  }
+
+  //----------------------------------
+  // Set Minimized State
+  //----------------------------------
+
+  function setMinimized(minimized) {
+    if (!panel || !minimizeButton) {
+      return;
+    }
+
+    panel.classList.toggle(
+      "material-debug-panel-v2--minimized",
+      minimized
+    );
 
     minimizeButton.textContent =
       minimized
