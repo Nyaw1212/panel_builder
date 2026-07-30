@@ -26,14 +26,44 @@ function pasteSelection(
         getClipboard();
 
     //----------------------------------
-    // Paste Offset
+    // Mouse Target
     //----------------------------------
 
-    const rowOffset =
-        data.offset.row;
+    const hoveredCell =
+        document.querySelector(
+            "#grid .cell:hover"
+        );
 
-    const colOffset =
-        data.offset.column;
+    const hoveredIndex =
+        hoveredCell
+            ? Number(
+                hoveredCell.dataset.index
+              )
+            : NaN;
+
+    const hasMouseTarget =
+        Number.isInteger(hoveredIndex) &&
+        hoveredIndex >= 0;
+
+    //----------------------------------
+    // Paste Origin
+    //----------------------------------
+
+    const targetRow =
+        hasMouseTarget
+            ? Math.floor(
+                hoveredIndex /
+                SETTINGS.columns
+              )
+            : data.origin.row +
+              data.offset.row;
+
+    const targetColumn =
+        hasMouseTarget
+            ? hoveredIndex %
+              SETTINGS.columns
+            : data.origin.column +
+              data.offset.column;
 
     //----------------------------------
     // Paste Panels
@@ -49,14 +79,12 @@ function pasteSelection(
             //----------------------------------
 
             const row =
-                data.origin.row +
-                panel.row +
-                rowOffset;
+                targetRow +
+                panel.row;
 
             const col =
-                data.origin.column +
-                panel.column +
-                colOffset;
+                targetColumn +
+                panel.column;
 
             const startCell =
                 row *
@@ -161,10 +189,14 @@ function pasteSelection(
     }
 
     //----------------------------------
-    // Next Paste Offset
+    // Next Keyboard Paste Offset
     //----------------------------------
 
-    incrementPasteOffset();
+    if (!hasMouseTarget) {
+
+        incrementPasteOffset();
+
+    }
 
     //----------------------------------
     // Select Newly Pasted
@@ -222,8 +254,10 @@ function pasteSelection(
     );
 
     console.log(
-        "Next Offset:",
-        data.offset
+        "Target:",
+        hasMouseTarget
+            ? `Mouse cell ${hoveredIndex}`
+            : data.offset
     );
 
     console.groupEnd();
