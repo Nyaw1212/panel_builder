@@ -1,4 +1,35 @@
 //----------------------------------
+// Get BOM Material List
+//----------------------------------
+
+function getBOMMaterialList() {
+
+    //----------------------------------
+    // Complete Project Material Summary
+    //----------------------------------
+
+    if (
+        typeof window.serializeMaterialSummary ===
+        "function"
+    ) {
+
+        return window.serializeMaterialSummary();
+
+    }
+
+    //----------------------------------
+    // Legacy Fallback
+    //----------------------------------
+
+    const bom = generateBOM();
+
+    return Object.values(bom || {})
+        .filter(Array.isArray)
+        .flat();
+
+}
+
+//----------------------------------
 // Render BOM
 //----------------------------------
 
@@ -8,9 +39,7 @@ function renderBOM() {
 
     if (!body) return;
 
-    const bom = generateBOM();
-
-    const list = bom.fittings;
+    const list = getBOMMaterialList();
 
     if (!list.length) {
 
@@ -46,19 +75,31 @@ function renderBOM() {
 
                 <div class="bom-qty">
 
-                    ${item.Qty}
+                    ${Number(
+                        item.Qty ??
+                        item.qty ??
+                        0
+                    ) || 0}
 
                 </div>
 
                 <div class="bom-catalog">
 
-                    ${item.CatalogNumber}
+                    ${
+                        item.CatalogNumber ??
+                        item.catalogNumber ??
+                        ""
+                    }
 
                 </div>
 
                 <div class="bom-description">
 
-                    ${item.Description}
+                    ${
+                        item.Description ??
+                        item.description ??
+                        ""
+                    }
 
                 </div>
 
@@ -69,5 +110,12 @@ function renderBOM() {
     `;
 
 }
+
+//----------------------------------
+// Expose
+//----------------------------------
+
+window.getBOMMaterialList =
+    getBOMMaterialList;
 
 window.renderBOM = renderBOM;
