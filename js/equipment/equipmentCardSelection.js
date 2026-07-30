@@ -11,7 +11,30 @@ function addEquipmentComponent(material) {
     const equipment =
         getCurrentEquipment();
 
-    if (!equipment) {
+    if (!equipment || !material) {
+
+        return;
+
+    }
+
+    //----------------------------------
+    // Catalog Number
+    //----------------------------------
+
+    const catalogNumber = String(
+
+        material.CatalogNumber ??
+        material.catalogNumber ??
+        ""
+
+    ).trim();
+
+    if (!catalogNumber) {
+
+        console.warn(
+            "Unable to add equipment component without a catalog number.",
+            material
+        );
 
         return;
 
@@ -28,23 +51,76 @@ function addEquipmentComponent(material) {
     }
 
     //----------------------------------
-    // Add
+    // Add Complete Material Record
     //----------------------------------
 
     equipment.materials.push({
 
-        catalogNumber:
-            material.CatalogNumber,
+        CatalogNumber: catalogNumber,
 
-        qty: 1
+        Description:
+            material.Description ??
+            material.description ??
+            "",
+
+        Type:
+            material.Type ??
+            material.type ??
+            "",
+
+        InventoryCategory:
+            material.InventoryCategory ??
+            material.inventoryCategory ??
+            material.category ??
+            "BOS",
+
+        Supplier:
+            material.Supplier ??
+            material.supplier ??
+            "",
+
+        VendorCode:
+            material.VendorCode ??
+            material.vendorCode ??
+            "",
+
+        Price:
+            Number(
+                material.Price ??
+                material.price ??
+                0
+            ) || 0,
+
+        Qty: 1,
+
+        source: "EQUIPMENT_COMPONENT"
 
     });
 
     //----------------------------------
-    // Refresh
+    // Refresh Equipment Modal
     //----------------------------------
 
     refreshEquipmentCardModal();
+
+    //----------------------------------
+    // Refresh Material Views
+    //----------------------------------
+
+    if (
+        window.MaterialDebugPanelV2 &&
+        typeof window.MaterialDebugPanelV2.refresh === "function"
+    ) {
+
+        window.MaterialDebugPanelV2.refresh();
+
+    }
+
+    if (typeof window.renderBOM === "function") {
+
+        window.renderBOM();
+
+    }
 
     //----------------------------------
     // Debug
@@ -59,7 +135,7 @@ function addEquipmentComponent(material) {
 
     console.log(
         "Added:",
-        material.CatalogNumber
+        catalogNumber
     );
 
     console.table(
