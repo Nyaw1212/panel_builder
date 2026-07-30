@@ -66,123 +66,202 @@ function pasteSelection(
               data.offset.column;
 
     //----------------------------------
-    // Paste Panels
+    // Build Paste Plan
     //----------------------------------
 
-    const pasted = [];
-
-    data.panels.forEach(
-        panel => {
-
-            //----------------------------------
-            // Calculate Cell
-            //----------------------------------
+    const plan =
+        data.panels.map(panel => {
 
             const row =
                 targetRow +
                 panel.row;
 
-            const col =
+            const column =
                 targetColumn +
                 panel.column;
 
-            const startCell =
-                row *
+            return {
+                panel,
+                row,
+                column,
+                startCell:
+                    row *
                     SETTINGS.columns +
-                col;
+                    column
+            };
 
-            //----------------------------------
-            // Place
-            //----------------------------------
+        });
 
-            const item =
-                placeItem(
-                    panel.equipment,
-                    startCell,
-                    panel.preset,
-                    {
-                        /*
-                         * Disable per-item history.
-                         * Paste is captured once
-                         * after all panels finish.
-                         */
-                        captureHistory:
-                            false
+    //----------------------------------
+    // Validate Entire Paste First
+    //----------------------------------
+
+    const plannedCells =
+        new Set();
+
+    const valid =
+        plan.every(entry => {
+
+            const equipment =
+                entry.panel.equipment;
+
+            const width =
+                Number(
+                    equipment.GridWidth ??
+                    entry.panel.width ??
+                    1
+                ) || 1;
+
+            const height =
+                Number(
+                    equipment.GridHeight ??
+                    entry.panel.height ??
+                    1
+                ) || 1;
+
+            for (
+                let r = 0;
+                r < height;
+                r++
+            ) {
+
+                for (
+                    let c = 0;
+                    c < width;
+                    c++
+                ) {
+
+                    const row =
+                        entry.row + r;
+
+                    const column =
+                        entry.column + c;
+
+                    if (
+                        row < 0 ||
+                        column < 0 ||
+                        row >= SETTINGS.rows ||
+                        column >= SETTINGS.columns
+                    ) {
+
+                        return false;
+
                     }
-                );
 
-            //----------------------------------
-            // Placement Failed
-            //----------------------------------
+                    const index =
+                        row *
+                        SETTINGS.columns +
+                        column;
 
-            if (!item) {
+                    if (
+                        getLayout()[index] ||
+                        plannedCells.has(index)
+                    ) {
 
-                console.warn(
-                    "Paste failed:",
-                    panel
-                        .equipment
-                        .CatalogNumber
-                );
+                        return false;
 
-                return;
+                    }
 
-            }
+                    plannedCells.add(index);
 
-            //----------------------------------
-            // Restore Properties
-            //----------------------------------
-
-            item.rotation =
-                panel.rotation || 0;
-
-            if (
-                typeof cloneSerializable ===
-                "function"
-            ) {
-
-                item.materials =
-                    cloneSerializable(
-                        panel.materials || []
-                    );
-
-            }
-            else if (
-                typeof structuredClone ===
-                "function"
-            ) {
-
-                item.materials =
-                    structuredClone(
-                        panel.materials || []
-                    );
-
-            }
-            else {
-
-                item.materials =
-                    JSON.parse(
-                        JSON.stringify(
-                            panel.materials ||
-                            []
-                        )
-                    );
+                }
 
             }
 
-            pasted.push(
-                item
+            return true;
+
+        });
+
+    if (!valid) {
+
+        console.warn(
+            "Paste target is occupied or outside the grid."
+        );
+
+        return false;
+
+    }
+
+    //----------------------------------
+    // Paste Panels
+    //----------------------------------
+
+    const pasted = [];
+
+    plan.forEach(entry => {
+
+        const panel =
+            entry.panel;
+
+        const item =
+            placeItem(
+                panel.equipment,
+                entry.startCell,
+                panel.preset,
+                {
+                    captureHistory:
+                        false
+                }
             );
 
-        }
-    );
+        if (!item) {
 
-    //----------------------------------
-    // Nothing Pasted
-    //----------------------------------
+            return;
+
+        }
+
+        //----------------------------------
+        // Restore Properties
+        //----------------------------------
+
+        item.rotation =
+            panel.rotation || 0;
+
+        if (
+            typeof cloneSerializable ===
+            "function"
+        ) {
+
+            item.materials =
+                cloneSerializable(
+                    panel.materials || []
+                );
+
+        }
+        else if (
+            typeof structuredClone ===
+            "function"
+        ) {
+
+            item.materials =
+                structuredClone(
+                    panel.materials || []
+                );
+
+        }
+        else {
+
+            item.materials =
+                JSON.parse(
+                    JSON.stringify(
+                        panel.materials || []
+                    )
+                );
+
+        }
+
+        pasted.push(item);
+
+    });
 
     if (
-        !pasted.length
+        pasted.length !==
+        plan.length
     ) {
+
+        console.error(
+            "Paste aborted unexpectedly."
+        );
 
         return false;
 
