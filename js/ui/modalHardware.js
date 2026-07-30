@@ -33,6 +33,14 @@ function buildHardwarePanel() {
     `;
 
     //----------------------------------
+    // Addition Mode
+    //----------------------------------
+
+    hardwarePanel.appendChild(
+        buildHardwareAdditionControls()
+    );
+
+    //----------------------------------
     // Empty
     //----------------------------------
 
@@ -185,6 +193,169 @@ function buildHardwarePanel() {
 //----------------------------------
 
 let hardwareModalLibrary = [];
+
+//----------------------------------
+// Hardware Addition Settings
+//----------------------------------
+
+let hardwareAdditionMode = "ONE";
+let hardwareAdditionQty = 1;
+
+//----------------------------------
+// Build Addition Controls
+//----------------------------------
+
+function buildHardwareAdditionControls() {
+
+    const controls = document.createElement("div");
+
+    controls.className = "hardware-addition-controls";
+
+    controls.style.display = "flex";
+    controls.style.alignItems = "center";
+    controls.style.flexWrap = "wrap";
+    controls.style.gap = "8px";
+    controls.style.margin = "8px 0 12px";
+    controls.style.padding = "8px 10px";
+    controls.style.border = "1px solid #334155";
+    controls.style.borderRadius = "6px";
+    controls.style.background = "rgba(15, 23, 42, 0.55)";
+
+    const title = document.createElement("span");
+
+    title.textContent = "Addition:";
+    title.style.fontWeight = "700";
+
+    controls.appendChild(title);
+
+    const oneLabel = document.createElement("label");
+    const oneInput = document.createElement("input");
+
+    oneLabel.style.display = "inline-flex";
+    oneLabel.style.alignItems = "center";
+    oneLabel.style.gap = "4px";
+    oneLabel.style.cursor = "pointer";
+
+    oneInput.type = "radio";
+    oneInput.name = "hardwareAdditionMode";
+    oneInput.value = "ONE";
+    oneInput.checked = hardwareAdditionMode === "ONE";
+
+    oneLabel.appendChild(oneInput);
+    oneLabel.appendChild(
+        document.createTextNode("1:1")
+    );
+
+    const qtyLabel = document.createElement("label");
+    const qtyRadio = document.createElement("input");
+
+    qtyLabel.style.display = "inline-flex";
+    qtyLabel.style.alignItems = "center";
+    qtyLabel.style.gap = "4px";
+    qtyLabel.style.cursor = "pointer";
+
+    qtyRadio.type = "radio";
+    qtyRadio.name = "hardwareAdditionMode";
+    qtyRadio.value = "QTY";
+    qtyRadio.checked = hardwareAdditionMode === "QTY";
+
+    qtyLabel.appendChild(qtyRadio);
+    qtyLabel.appendChild(
+        document.createTextNode("By Qty")
+    );
+
+    const qtyInput = document.createElement("input");
+
+    qtyInput.type = "number";
+    qtyInput.min = "1";
+    qtyInput.step = "1";
+    qtyInput.value = String(hardwareAdditionQty);
+    qtyInput.title = "Quantity added per material click";
+    qtyInput.style.width = "72px";
+    qtyInput.style.padding = "5px 7px";
+    qtyInput.style.border = "1px solid #475569";
+    qtyInput.style.borderRadius = "4px";
+    qtyInput.style.background = "#0f172a";
+    qtyInput.style.color = "#fff";
+
+    function syncControls() {
+
+        qtyInput.disabled =
+            hardwareAdditionMode !== "QTY";
+
+        qtyInput.style.opacity =
+            qtyInput.disabled ? "0.5" : "1";
+
+    }
+
+    oneInput.onchange = () => {
+
+        if (!oneInput.checked) return;
+
+        hardwareAdditionMode = "ONE";
+
+        syncControls();
+
+    };
+
+    qtyRadio.onchange = () => {
+
+        if (!qtyRadio.checked) return;
+
+        hardwareAdditionMode = "QTY";
+
+        syncControls();
+
+        qtyInput.focus();
+        qtyInput.select();
+
+    };
+
+    qtyInput.oninput = () => {
+
+        const qty = Number(qtyInput.value);
+
+        if (Number.isInteger(qty) && qty > 0) {
+
+            hardwareAdditionQty = qty;
+
+        }
+
+    };
+
+    controls.appendChild(oneLabel);
+    controls.appendChild(qtyLabel);
+    controls.appendChild(qtyInput);
+
+    syncControls();
+
+    return controls;
+
+}
+
+//----------------------------------
+// Get Addition Quantity
+//----------------------------------
+
+function getHardwareAdditionQty() {
+
+    if (hardwareAdditionMode === "ONE") {
+
+        return 1;
+
+    }
+
+    const qty = Number(hardwareAdditionQty);
+
+    if (!Number.isInteger(qty) || qty <= 0) {
+
+        return null;
+
+    }
+
+    return qty;
+
+}
 
 //----------------------------------
 // Normalize Hardware Value
@@ -530,19 +701,13 @@ function handleHardwareClick(item) {
         );
 
     //----------------------------------
-    // Pipe / Wire Quantity
+    // Wire Quantity Prompt
     //----------------------------------
 
-    if (
-
-        nodeType === "PIPE" ||
-        nodeType === "WIRE"
-
-    ) {
+    if (nodeType === "WIRE") {
 
         const presetName =
 
-            nodeType === "WIRE" &&
             typeof getSelectedWirePreset ===
             "function"
 
@@ -552,7 +717,6 @@ function handleHardwareClick(item) {
 
         const promptLabel =
 
-            nodeType === "WIRE" &&
             presetName !== "SINGLE"
 
                 ? `${item.Type || "WIRE"} ` +
@@ -569,10 +733,6 @@ function handleHardwareClick(item) {
 
         );
 
-        //----------------------------------
-        // Cancel
-        //----------------------------------
-
         if (value === null) {
 
             return;
@@ -580,10 +740,6 @@ function handleHardwareClick(item) {
         }
 
         qty = Number(value);
-
-        //----------------------------------
-        // Validate
-        //----------------------------------
 
         if (
 
@@ -594,6 +750,26 @@ function handleHardwareClick(item) {
 
             alert(
                 "Please enter a valid quantity."
+            );
+
+            return;
+
+        }
+
+    }
+
+    //----------------------------------
+    // Fitting / Pipe / Breaker Quantity
+    //----------------------------------
+
+    else {
+
+        qty = getHardwareAdditionQty();
+
+        if (qty === null) {
+
+            alert(
+                "Please enter a whole quantity greater than zero."
             );
 
             return;
@@ -667,3 +843,4 @@ window.buildHardwarePanel = buildHardwarePanel;
 window.getHardwareModalList = getHardwareModalList;
 window.handleHardwareClick = handleHardwareClick;
 window.addWirePreset = addWirePreset;
+window.getHardwareAdditionQty = getHardwareAdditionQty;
