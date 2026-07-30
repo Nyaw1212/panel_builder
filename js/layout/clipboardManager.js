@@ -41,6 +41,36 @@ function copySelection() {
     );
 
     //----------------------------------
+    // Find Selection Bounds
+    //----------------------------------
+
+    const maxRow = Math.max(
+
+        ...selected.map(item =>
+            Math.floor(item.startCell / SETTINGS.columns) +
+            Number(item.height || item.data?.GridHeight || 1)
+        )
+
+    );
+
+    const maxCol = Math.max(
+
+        ...selected.map(item =>
+            (item.startCell % SETTINGS.columns) +
+            Number(item.width || item.data?.GridWidth || 1)
+        )
+
+    );
+
+    const bounds = {
+
+        width: Math.max(1, maxCol - minCol),
+
+        height: Math.max(1, maxRow - minRow)
+
+    };
+
+    //----------------------------------
     // Serialize Panels
     //----------------------------------
 
@@ -59,14 +89,20 @@ function copySelection() {
         },
 
         //----------------------------------
+        // Selection Bounds
+        //----------------------------------
+
+        bounds,
+
+        //----------------------------------
         // Paste Offset
         //----------------------------------
 
         offset: {
 
-            row: 1,
+            row: bounds.height,
 
-            column: 1
+            column: bounds.width
 
         },
 
@@ -122,6 +158,8 @@ function copySelection() {
 
     console.log("Panels:", clipboard.panels.length);
 
+    console.log("Bounds:", clipboard.bounds);
+
     console.log("Offset:", clipboard.offset);
 
     console.log(clipboard);
@@ -170,9 +208,15 @@ function incrementPasteOffset() {
 
     if (!clipboard) return;
 
-    clipboard.offset.row++;
+    const width =
+        Number(clipboard.bounds?.width) || 1;
 
-    clipboard.offset.column++;
+    const height =
+        Number(clipboard.bounds?.height) || 1;
+
+    clipboard.offset.row += height;
+
+    clipboard.offset.column += width;
 
 }
 
@@ -180,9 +224,15 @@ function resetPasteOffset() {
 
     if (!clipboard) return;
 
-    clipboard.offset.row = 1;
+    const width =
+        Number(clipboard.bounds?.width) || 1;
 
-    clipboard.offset.column = 1;
+    const height =
+        Number(clipboard.bounds?.height) || 1;
+
+    clipboard.offset.row = height;
+
+    clipboard.offset.column = width;
 
 }
 
