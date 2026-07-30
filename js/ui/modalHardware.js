@@ -199,7 +199,6 @@ let hardwareModalLibrary = [];
 //----------------------------------
 
 let hardwareAdditionMode = "ONE";
-let hardwareAdditionQty = 1;
 
 //----------------------------------
 // Build Addition Controls
@@ -264,37 +263,11 @@ function buildHardwareAdditionControls() {
         document.createTextNode("By Qty")
     );
 
-    const qtyInput = document.createElement("input");
-
-    qtyInput.type = "number";
-    qtyInput.min = "1";
-    qtyInput.step = "1";
-    qtyInput.value = String(hardwareAdditionQty);
-    qtyInput.title = "Quantity added per material click";
-    qtyInput.style.width = "72px";
-    qtyInput.style.padding = "5px 7px";
-    qtyInput.style.border = "1px solid #475569";
-    qtyInput.style.borderRadius = "4px";
-    qtyInput.style.background = "#0f172a";
-    qtyInput.style.color = "#fff";
-
-    function syncControls() {
-
-        qtyInput.disabled =
-            hardwareAdditionMode !== "QTY";
-
-        qtyInput.style.opacity =
-            qtyInput.disabled ? "0.5" : "1";
-
-    }
-
     oneInput.onchange = () => {
 
         if (!oneInput.checked) return;
 
         hardwareAdditionMode = "ONE";
-
-        syncControls();
 
     };
 
@@ -304,56 +277,12 @@ function buildHardwareAdditionControls() {
 
         hardwareAdditionMode = "QTY";
 
-        syncControls();
-
-        qtyInput.focus();
-        qtyInput.select();
-
-    };
-
-    qtyInput.oninput = () => {
-
-        const qty = Number(qtyInput.value);
-
-        if (Number.isInteger(qty) && qty > 0) {
-
-            hardwareAdditionQty = qty;
-
-        }
-
     };
 
     controls.appendChild(oneLabel);
     controls.appendChild(qtyLabel);
-    controls.appendChild(qtyInput);
-
-    syncControls();
 
     return controls;
-
-}
-
-//----------------------------------
-// Get Addition Quantity
-//----------------------------------
-
-function getHardwareAdditionQty() {
-
-    if (hardwareAdditionMode === "ONE") {
-
-        return 1;
-
-    }
-
-    const qty = Number(hardwareAdditionQty);
-
-    if (!Number.isInteger(qty) || qty <= 0) {
-
-        return null;
-
-    }
-
-    return qty;
 
 }
 
@@ -762,14 +691,33 @@ function handleHardwareClick(item) {
     // Fitting / Pipe / Breaker Quantity
     //----------------------------------
 
-    else {
+    else if (hardwareAdditionMode === "QTY") {
 
-        qty = getHardwareAdditionQty();
+        const value = prompt(
 
-        if (qty === null) {
+            `Enter quantity for ${item.CatalogNumber}`,
+
+            1
+
+        );
+
+        if (value === null) {
+
+            return;
+
+        }
+
+        qty = Number(value);
+
+        if (
+
+            !Number.isInteger(qty) ||
+            qty <= 0
+
+        ) {
 
             alert(
-                "Please enter a whole quantity greater than zero."
+                "Please enter a valid whole quantity."
             );
 
             return;
@@ -843,4 +791,3 @@ window.buildHardwarePanel = buildHardwarePanel;
 window.getHardwareModalList = getHardwareModalList;
 window.handleHardwareClick = handleHardwareClick;
 window.addWirePreset = addWirePreset;
-window.getHardwareAdditionQty = getHardwareAdditionQty;
