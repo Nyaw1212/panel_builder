@@ -4,28 +4,104 @@
 
 function getBOMMaterialList() {
 
-    //----------------------------------
-    // Complete Project Material Summary
-    //----------------------------------
+    const map = {};
 
-    if (
-        typeof window.serializeMaterialSummary ===
-        "function"
-    ) {
+    function addMaterial(material) {
 
-        return window.serializeMaterialSummary();
+        if (!material) return;
+
+        const catalogNumber = String(
+
+            material.CatalogNumber ??
+            material.catalogNumber ??
+            ""
+
+        ).trim();
+
+        if (!catalogNumber) return;
+
+        const qty = Number(
+
+            material.Qty ??
+            material.qty ??
+            material.Quantity ??
+            1
+
+        ) || 0;
+
+        if (qty <= 0) return;
+
+        if (!map[catalogNumber]) {
+
+            map[catalogNumber] = {
+
+                CatalogNumber: catalogNumber,
+
+                Description:
+                    material.Description ??
+                    material.description ??
+                    "",
+
+                Qty: 0
+
+            };
+
+        }
+
+        map[catalogNumber].Qty += qty;
+
+        if (!map[catalogNumber].Description) {
+
+            map[catalogNumber].Description =
+                material.Description ??
+                material.description ??
+                "";
+
+        }
 
     }
 
     //----------------------------------
-    // Legacy Fallback
+    // Existing Generated BOM
     //----------------------------------
 
     const bom = generateBOM();
 
-    return Object.values(bom || {})
-        .filter(Array.isArray)
-        .flat();
+    Object.values(bom || {}).forEach(group => {
+
+        if (!Array.isArray(group)) return;
+
+        group.forEach(addMaterial);
+
+    });
+
+    //----------------------------------
+    // Equipment Card Components
+    //----------------------------------
+
+    if (typeof getLayout === "function") {
+
+        const seen = new Set();
+
+        getLayout().forEach(item => {
+
+            if (!item || seen.has(item.id)) return;
+
+            seen.add(item.id);
+
+            (item.materials || []).forEach(addMaterial);
+
+        });
+
+    }
+
+    return Object.values(map).sort((a, b) =>
+
+        String(a.CatalogNumber || "").localeCompare(
+            String(b.CatalogNumber || "")
+        )
+
+    );
 
 }
 
@@ -75,31 +151,19 @@ function renderBOM() {
 
                 <div class="bom-qty">
 
-                    ${Number(
-                        item.Qty ??
-                        item.qty ??
-                        0
-                    ) || 0}
+                    ${item.Qty}
 
                 </div>
 
                 <div class="bom-catalog">
 
-                    ${
-                        item.CatalogNumber ??
-                        item.catalogNumber ??
-                        ""
-                    }
+                    ${item.CatalogNumber}
 
                 </div>
 
                 <div class="bom-description">
 
-                    ${
-                        item.Description ??
-                        item.description ??
-                        ""
-                    }
+                    ${item.Description || ""}
 
                 </div>
 
