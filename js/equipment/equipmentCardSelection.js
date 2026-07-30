@@ -31,11 +31,6 @@ function addEquipmentComponent(material) {
 
     if (!catalogNumber) {
 
-        console.warn(
-            "Unable to add equipment component without a catalog number.",
-            material
-        );
-
         return;
 
     }
@@ -51,61 +46,33 @@ function addEquipmentComponent(material) {
     }
 
     //----------------------------------
-    // Add Complete Material Record
+    // Add
     //----------------------------------
 
     equipment.materials.push({
 
-        CatalogNumber: catalogNumber,
+        catalogNumber,
 
-        Description:
+        description:
             material.Description ??
             material.description ??
             "",
 
-        Type:
-            material.Type ??
-            material.type ??
-            "",
-
-        InventoryCategory:
+        inventoryCategory:
             material.InventoryCategory ??
             material.inventoryCategory ??
             material.category ??
             "BOS",
 
-        Supplier:
-            material.Supplier ??
-            material.supplier ??
-            "",
-
-        VendorCode:
-            material.VendorCode ??
-            material.vendorCode ??
-            "",
-
-        Price:
-            Number(
-                material.Price ??
-                material.price ??
-                0
-            ) || 0,
-
-        Qty: 1,
-
-        source: "EQUIPMENT_COMPONENT"
+        qty: 1
 
     });
 
     //----------------------------------
-    // Refresh Equipment Modal
+    // Refresh
     //----------------------------------
 
     refreshEquipmentCardModal();
-
-    //----------------------------------
-    // Refresh Material Views
-    //----------------------------------
 
     if (
         window.MaterialDebugPanelV2 &&
