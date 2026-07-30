@@ -23,7 +23,19 @@ const PROJECT_SPREADSHEET_ID =
 // doGet
 //----------------------------------
 
-function doGet() {
+function doGet(e) {
+
+  const view = String(
+    e?.parameter?.view || ""
+  )
+    .trim()
+    .toLowerCase();
+
+  if (view === "app") {
+
+    return servePanelBuilderApp_();
+
+  }
 
   return jsonOutput({
 
