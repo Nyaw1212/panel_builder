@@ -214,6 +214,41 @@ window.HistoryManagerV2 = (() => {
   }
 
   //----------------------------------
+  // Preserve Uncaptured Live State
+  //----------------------------------
+
+  function captureLiveStateBeforeUndo() {
+    if (restoring || suspended) {
+      return false;
+    }
+
+    const state = getCurrentState();
+
+    if (state === null || state === undefined) {
+      return false;
+    }
+
+    const serialized = stableStringify(state);
+
+    if (serialized === lastSerializedState) {
+      return false;
+    }
+
+    undoStack.push({
+      label: "Latest change",
+      timestamp: Date.now(),
+      state,
+    });
+
+    trimStack(undoStack);
+
+    redoStack = [];
+    lastSerializedState = serialized;
+
+    return true;
+  }
+
+  //----------------------------------
   // Debounced Capture
   //----------------------------------
 
@@ -288,7 +323,16 @@ window.HistoryManagerV2 = (() => {
   async function undo() {
     clearCaptureTimer();
 
-    if (restoring || undoStack.length <= 1) {
+    if (restoring) {
+      return false;
+    }
+
+    // A user may press Ctrl+Z before a delayed capture finishes,
+    // or after a code path changed state without explicitly capturing it.
+    // Preserve that live state first so one undo always means one step.
+    captureLiveStateBeforeUndo();
+
+    if (undoStack.length <= 1) {
       return false;
     }
 
