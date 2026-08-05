@@ -11,6 +11,388 @@ const grid = document.getElementById("grid");
 let autoSaveEnabled = false;
 
 //----------------------------------
+// Command Line State
+//----------------------------------
+
+let commandLineTargetCell = null;
+let commandLineHistory = [];
+let commandLineHistoryIndex = -1;
+
+function installCommandLineStyles() {
+  if (document.getElementById("panelBuilderCommandLineStyles")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "panelBuilderCommandLineStyles";
+  style.textContent = `
+    .panel-command-line {
+      position: fixed;
+      left: 292px;
+      right: 18px;
+      bottom: 16px;
+      z-index: 11000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 42px;
+      padding: 7px 10px;
+      border: 1px solid rgba(96, 165, 250, .42);
+      border-radius: 9px;
+      background: rgba(7, 17, 31, .94);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255,255,255,.06);
+      color: #e2e8f0;
+      font: 600 13px/1.2 Consolas, "Courier New", monospace;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .panel-command-line__prompt {
+      flex: 0 0 auto;
+      color: #60a5fa;
+      font-weight: 900;
+    }
+
+    .panel-command-line__input {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 7px 9px;
+      border: 0 !important;
+      outline: none;
+      color: #f8fafc;
+      background: transparent !important;
+      box-shadow: none !important;
+      font: inherit;
+      text-transform: uppercase;
+    }
+
+    .panel-command-line__status {
+      flex: 0 1 auto;
+      max-width: 42%;
+      overflow: hidden;
+      color: #94a3b8;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .panel-command-line__status--error {
+      color: #f87171;
+    }
+
+    .panel-command-line__status--success {
+      color: #4ade80;
+    }
+
+    #grid .cell.command-target-cell {
+      border-color: #fbbf24 !important;
+      box-shadow: inset 0 0 0 2px rgba(251, 191, 36, .42), 0 0 18px rgba(251, 191, 36, .22) !important;
+    }
+
+    body.theme-smoke .panel-command-line {
+      background: linear-gradient(145deg, rgba(44, 48, 51, .78), rgba(10, 12, 14, .82));
+      border-color: rgba(226, 232, 240, .2);
+    }
+
+    @media (max-width: 900px) {
+      .panel-command-line {
+        left: 12px;
+        right: 12px;
+      }
+
+      .panel-command-line__status {
+        display: none;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function createCommandLine() {
+  if (document.getElementById("panelCommandLine")) {
+    return;
+  }
+
+  installCommandLineStyles();
+
+  const bar = document.createElement("div");
+  bar.id = "panelCommandLine";
+  bar.className = "panel-command-line";
+  bar.innerHTML = `
+    <span class="panel-command-line__prompt">Command:</span>
+    <input
+      id="panelCommandInput"
+      class="panel-command-line__input"
+      type="text"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="Type preset code, HELP, UNDO, REDO, CLEAR..."
+      aria-label="Panel Builder command line"
+    >
+    <span id="panelCommandStatus" class="panel-command-line__status">Ready</span>
+  `;
+
+  document.body.appendChild(bar);
+
+  const input = document.getElementById("panelCommandInput");
+
+  input.addEventListener("keydown", async event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      await executePanelCommand(input.value);
+      input.value = "";
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      input.value = "";
+      clearCommandTargetCell();
+      setCommandLineStatus("Command cancelled.");
+      input.blur();
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!commandLineHistory.length) return;
+      commandLineHistoryIndex = Math.max(0, commandLineHistoryIndex - 1);
+      input.value = commandLineHistory[commandLineHistoryIndex] || "";
+      input.setSelectionRange(input.value.length, input.value.length);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (!commandLineHistory.length) return;
+      commandLineHistoryIndex = Math.min(
+        commandLineHistory.length,
+        commandLineHistoryIndex + 1
+      );
+      input.value = commandLineHistory[commandLineHistoryIndex] || "";
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  });
+
+  document.addEventListener("keydown", event => {
+    if (
+      event.defaultPrevented ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      event.key.length !== 1 ||
+      isCommandTypingElement(document.activeElement) ||
+      isCommandBlockingModalOpen()
+    ) {
+      return;
+    }
+
+    input.focus();
+  });
+}
+
+function isCommandTypingElement(element) {
+  if (!element) return false;
+
+  if (element.id === "panelCommandInput") {
+    return false;
+  }
+
+  const tag = String(element.tagName || "").toUpperCase();
+
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    element.isContentEditable
+  );
+}
+
+function isCommandBlockingModalOpen() {
+  const modal = document.getElementById("equipmentModal");
+
+  if (!modal) return false;
+
+  const style = window.getComputedStyle(modal);
+
+  return (
+    style.display !== "none" &&
+    style.visibility !== "hidden" &&
+    modal.getClientRects().length > 0
+  );
+}
+
+function isCommandLineActive() {
+  return document.activeElement?.id === "panelCommandInput";
+}
+
+function focusPanelCommandLine() {
+  const input = document.getElementById("panelCommandInput");
+  input?.focus();
+  return Boolean(input);
+}
+
+function setCommandLineStatus(message, type = "") {
+  const status = document.getElementById("panelCommandStatus");
+
+  if (!status) return;
+
+  status.textContent = String(message || "Ready");
+  status.classList.toggle(
+    "panel-command-line__status--error",
+    type === "error"
+  );
+  status.classList.toggle(
+    "panel-command-line__status--success",
+    type === "success"
+  );
+}
+
+function setCommandTargetCell(index) {
+  const cellIndex = Number(index);
+
+  if (!Number.isInteger(cellIndex) || cellIndex < 0 || cellIndex >= getGridSize()) {
+    return false;
+  }
+
+  if (getItem(cellIndex)) {
+    setCommandLineStatus(`Cell ${cellIndex} is occupied.`, "error");
+    return false;
+  }
+
+  commandLineTargetCell = cellIndex;
+  applyCommandTargetHighlight();
+  setCommandLineStatus(`Target cell: ${cellIndex}`);
+  return true;
+}
+
+function clearCommandTargetCell() {
+  commandLineTargetCell = null;
+  applyCommandTargetHighlight();
+}
+
+function applyCommandTargetHighlight() {
+  grid
+    ?.querySelectorAll(".command-target-cell")
+    .forEach(cell => cell.classList.remove("command-target-cell"));
+
+  if (commandLineTargetCell === null) return;
+
+  grid
+    ?.querySelector(`[data-index="${commandLineTargetCell}"]`)
+    ?.classList.add("command-target-cell");
+}
+
+function findFirstPresetCell(equipment) {
+  if (!equipment || typeof canPlace !== "function") {
+    return null;
+  }
+
+  for (let index = 0; index < getGridSize(); index++) {
+    if (canPlace(equipment, index)) {
+      return index;
+    }
+  }
+
+  return null;
+}
+
+async function executePanelCommand(rawCommand) {
+  const command = String(rawCommand || "").trim();
+
+  if (!command) {
+    return false;
+  }
+
+  commandLineHistory.push(command);
+  commandLineHistory = commandLineHistory.slice(-50);
+  commandLineHistoryIndex = commandLineHistory.length;
+
+  const parts = command.split(/\s+/);
+  const keyword = String(parts[0] || "").toUpperCase();
+  const argument = String(parts.slice(1).join(" ") || "").trim();
+
+  if (keyword === "HELP" || keyword === "?") {
+    setCommandLineStatus(
+      "Preset code | PLACE code | CELL n | UNDO | REDO | CLEAR",
+      "success"
+    );
+    return true;
+  }
+
+  if (keyword === "CELL") {
+    return setCommandTargetCell(Number(argument));
+  }
+
+  if (keyword === "UNDO") {
+    const result = await window.HistoryManagerV2?.undo?.();
+    setCommandLineStatus(result ? "Undo complete." : "Nothing to undo.", result ? "success" : "error");
+    return Boolean(result);
+  }
+
+  if (keyword === "REDO") {
+    const result = await window.HistoryManagerV2?.redo?.();
+    setCommandLineStatus(result ? "Redo complete." : "Nothing to redo.", result ? "success" : "error");
+    return Boolean(result);
+  }
+
+  if (keyword === "CLEAR") {
+    clearCommandTargetCell();
+    setCommandLineStatus("Target cleared.", "success");
+    return true;
+  }
+
+  const presetCode =
+    keyword === "PLACE"
+      ? argument.toUpperCase()
+      : command.toUpperCase();
+
+  if (!presetCode) {
+    setCommandLineStatus("Enter a preset code.", "error");
+    return false;
+  }
+
+  if (typeof getPresetEquipment !== "function" || typeof placePreset !== "function") {
+    setCommandLineStatus("Preset placement is not ready.", "error");
+    return false;
+  }
+
+  const equipment = getPresetEquipment(presetCode);
+
+  if (!equipment) {
+    setCommandLineStatus(`Preset not found: ${presetCode}`, "error");
+    return false;
+  }
+
+  let targetCell = commandLineTargetCell;
+
+  if (
+    targetCell === null ||
+    typeof canPlace !== "function" ||
+    !canPlace(equipment, targetCell)
+  ) {
+    targetCell = findFirstPresetCell(equipment);
+  }
+
+  if (targetCell === null) {
+    setCommandLineStatus(`No available space for ${presetCode}.`, "error");
+    return false;
+  }
+
+  const placed = placePreset(presetCode, targetCell);
+
+  if (!placed) {
+    setCommandLineStatus(`Unable to place ${presetCode}.`, "error");
+    return false;
+  }
+
+  commandLineTargetCell = null;
+  applyCommandTargetHighlight();
+  setCommandLineStatus(`Placed ${presetCode} at cell ${targetCell}.`, "success");
+  return true;
+}
+
+//----------------------------------
 // Draw Canvas
 //----------------------------------
 
@@ -142,8 +524,16 @@ function drawGrid() {
       //----------------------------------
 
       if (item) {
-        // Selection handled by dragManager.js
+        return;
+      }
 
+      //----------------------------------
+      // Command Target Selection
+      //----------------------------------
+
+      if (isCommandLineActive()) {
+        setCommandTargetCell(index);
+        setTimeout(focusPanelCommandLine, 0);
         return;
       }
 
@@ -182,6 +572,8 @@ function drawGrid() {
 
     grid.appendChild(cell);
   }
+
+  applyCommandTargetHighlight();
 }
 
 //----------------------------------
@@ -273,10 +665,6 @@ function drawPlacedItems() {
 
     img.src = image;
 
-    //----------------------------------
-    // Dynamic Image Size
-    //----------------------------------
-
     const imageWidth = item.width * SETTINGS.cellSize * 0.55;
 
     const imageHeight = item.height * SETTINGS.cellSize * 0.55;
@@ -353,3 +741,9 @@ function drawPlacedItems() {
 window.drawCanvas = drawCanvas;
 window.drawGrid = drawGrid;
 window.drawPlacedItems = drawPlacedItems;
+window.focusPanelCommandLine = focusPanelCommandLine;
+window.executePanelCommand = executePanelCommand;
+window.setCommandTargetCell = setCommandTargetCell;
+window.clearCommandTargetCell = clearCommandTargetCell;
+
+createCommandLine();
