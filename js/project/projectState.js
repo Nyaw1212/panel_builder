@@ -12,6 +12,8 @@ const projectState = {
 
     electrician: "",
 
+    startDate: "",
+
     lender: "",
 
     model: "",
@@ -86,6 +88,9 @@ function setProjectState(project) {
     projectState.electrician =
         String(project.electrician || "").trim();
 
+    projectState.startDate =
+        String(project.startDate || "").trim();
+
     projectState.lender =
         String(project.lender || "").trim();
 
@@ -116,6 +121,8 @@ function clearProjectState() {
     projectState.address = "";
 
     projectState.electrician = "";
+
+    projectState.startDate = "";
 
     projectState.lender = "";
 
