@@ -16,6 +16,16 @@ const PROJECT_API_URL =
     "https://script.google.com/macros/s/AKfycbztkGaSk-SGnzFk5ZnST0bIjma06J1WhPDF2Hd62sHTtkQH8fm6yq-F3FtJYQzFYLfM/exec";
 
 //----------------------------------
+// MML Watcher Configuration
+//----------------------------------
+
+const MML_WATCH_INTERVAL_MS = 30000;
+
+let mmlWatchTimer = null;
+let mmlWatchInFlight = false;
+let mmlUpdateNoticeShown = false;
+
+//----------------------------------
 // API Request
 //----------------------------------
 
@@ -109,23 +119,97 @@ async function fetchMMLFromApi(version = "") {
 }
 
 //----------------------------------
+// Catalog Update Notice
+//----------------------------------
+
+function showMMLUpdateNotice(oldVersion, newVersion) {
+    if (mmlUpdateNoticeShown) {
+        return;
+    }
+
+    mmlUpdateNoticeShown = true;
+
+    let notice = document.getElementById("panelBuilderMMLUpdateNotice");
+
+    if (!notice) {
+        notice = document.createElement("div");
+        notice.id = "panelBuilderMMLUpdateNotice";
+
+        Object.assign(notice.style, {
+            position: "fixed",
+            right: "18px",
+            bottom: "72px",
+            zIndex: "12000",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            maxWidth: "430px",
+            padding: "12px 14px",
+            border: "1px solid rgba(96, 165, 250, .5)",
+            borderRadius: "10px",
+            background: "rgba(7, 17, 31, .96)",
+            boxShadow: "0 14px 36px rgba(0, 0, 0, .42)",
+            color: "#e2e8f0",
+            font: "600 13px/1.3 system-ui, sans-serif"
+        });
+
+        notice.innerHTML = `
+            <span style="flex:1 1 auto;">
+                MML catalog updated. Reload to apply the new catalog.
+            </span>
+            <button
+                id="panelBuilderMMLReloadButton"
+                type="button"
+                style="
+                    border:0;
+                    border-radius:7px;
+                    padding:7px 10px;
+                    background:#2563eb;
+                    color:#fff;
+                    font-weight:700;
+                    cursor:pointer;
+                "
+            >Reload</button>
+        `;
+
+        document.body.appendChild(notice);
+
+        document
+            .getElementById("panelBuilderMMLReloadButton")
+            ?.addEventListener("click", () => location.reload());
+    }
+
+    notice.title = `MML ${oldVersion || "unknown"} → ${newVersion || "unknown"}`;
+}
+
+//----------------------------------
 // Background MML Revalidation
 //----------------------------------
 
-async function revalidateMMLCache(cache) {
+async function revalidateMMLCache(cache = loadMMLCache(), options = {}) {
+    if (LOCAL_MODE || !cache || mmlWatchInFlight) {
+        return false;
+    }
+
+    mmlWatchInFlight = true;
+
     try {
         const remoteVersion = await getMMLVersion();
 
         if (!remoteVersion) {
-            console.warn(
-                "MML version check unavailable; keeping cached catalog."
-            );
-            return;
+            if (!options.silent) {
+                console.warn(
+                    "MML version check unavailable; keeping cached catalog."
+                );
+            }
+            return false;
         }
 
         if (String(cache.version) === String(remoteVersion)) {
-            console.log("MML Cache Current:", remoteVersion);
-            return;
+            if (!options.silent) {
+                console.log("MML Cache Current:", remoteVersion);
+            }
+            return false;
         }
 
         console.log(
@@ -137,16 +221,55 @@ async function revalidateMMLCache(cache) {
 
         const updatedMML = await fetchMMLFromApi(remoteVersion);
 
-        if (updatedMML) {
-            console.log("MML cache updated in background.");
+        if (!updatedMML) {
+            return false;
         }
+
+        console.log("MML cache updated in background.");
+        showMMLUpdateNotice(cache.version, remoteVersion);
+
+        return true;
     }
     catch (err) {
-        console.warn(
-            "MML background version check failed:",
-            err
-        );
+        if (!options.silent) {
+            console.warn(
+                "MML background version check failed:",
+                err
+            );
+        }
+        return false;
     }
+    finally {
+        mmlWatchInFlight = false;
+    }
+}
+
+//----------------------------------
+// MML Watcher
+//----------------------------------
+
+function startMMLWatcher() {
+    if (LOCAL_MODE || mmlWatchTimer) {
+        return;
+    }
+
+    mmlWatchTimer = window.setInterval(() => {
+        void revalidateMMLCache(loadMMLCache(), { silent: true });
+    }, MML_WATCH_INTERVAL_MS);
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            void revalidateMMLCache(loadMMLCache());
+        }
+    });
+
+    window.addEventListener("focus", () => {
+        void revalidateMMLCache(loadMMLCache(), { silent: true });
+    });
+
+    console.log(
+        `MML watcher enabled (${MML_WATCH_INTERVAL_MS / 1000}s).`
+    );
 }
 
 //----------------------------------
@@ -172,8 +295,9 @@ async function getMML() {
         console.log("Catalog Source: Cache", cache.version);
 
         // Do not block application startup waiting for Apps Script.
-        // Revalidate in the background and refresh the cache when needed.
+        // Revalidate in the background and keep watching for later edits.
         void revalidateMMLCache(cache);
+        startMMLWatcher();
 
         return cache.data;
     }
@@ -182,9 +306,15 @@ async function getMML() {
     // First Load
     //----------------------------------
 
-    return (
+    const mml = (
         await fetchMMLFromApi()
     ) || [];
+
+    if (mml.length) {
+        startMMLWatcher();
+    }
+
+    return mml;
 }
 
 //----------------------------------
