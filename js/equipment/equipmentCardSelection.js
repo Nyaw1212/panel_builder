@@ -11,7 +11,25 @@ function addEquipmentComponent(material) {
     const equipment =
         getCurrentEquipment();
 
-    if (!equipment) {
+    if (!equipment || !material) {
+
+        return;
+
+    }
+
+    //----------------------------------
+    // Catalog Number
+    //----------------------------------
+
+    const catalogNumber = String(
+
+        material.CatalogNumber ??
+        material.catalogNumber ??
+        ""
+
+    ).trim();
+
+    if (!catalogNumber) {
 
         return;
 
@@ -33,8 +51,18 @@ function addEquipmentComponent(material) {
 
     equipment.materials.push({
 
-        catalogNumber:
-            material.CatalogNumber,
+        catalogNumber,
+
+        description:
+            material.Description ??
+            material.description ??
+            "",
+
+        inventoryCategory:
+            material.InventoryCategory ??
+            material.inventoryCategory ??
+            material.category ??
+            "BOS",
 
         qty: 1
 
@@ -45,6 +73,21 @@ function addEquipmentComponent(material) {
     //----------------------------------
 
     refreshEquipmentCardModal();
+
+    if (
+        window.MaterialDebugPanelV2 &&
+        typeof window.MaterialDebugPanelV2.refresh === "function"
+    ) {
+
+        window.MaterialDebugPanelV2.refresh();
+
+    }
+
+    if (typeof window.renderBOM === "function") {
+
+        window.renderBOM();
+
+    }
 
     //----------------------------------
     // Debug
@@ -59,7 +102,7 @@ function addEquipmentComponent(material) {
 
     console.log(
         "Added:",
-        material.CatalogNumber
+        catalogNumber
     );
 
     console.table(

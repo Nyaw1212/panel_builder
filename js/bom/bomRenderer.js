@@ -1,4 +1,111 @@
 //----------------------------------
+// Get BOM Material List
+//----------------------------------
+
+function getBOMMaterialList() {
+
+    const map = {};
+
+    function addMaterial(material) {
+
+        if (!material) return;
+
+        const catalogNumber = String(
+
+            material.CatalogNumber ??
+            material.catalogNumber ??
+            ""
+
+        ).trim();
+
+        if (!catalogNumber) return;
+
+        const qty = Number(
+
+            material.Qty ??
+            material.qty ??
+            material.Quantity ??
+            1
+
+        ) || 0;
+
+        if (qty <= 0) return;
+
+        if (!map[catalogNumber]) {
+
+            map[catalogNumber] = {
+
+                CatalogNumber: catalogNumber,
+
+                Description:
+                    material.Description ??
+                    material.description ??
+                    "",
+
+                Qty: 0
+
+            };
+
+        }
+
+        map[catalogNumber].Qty += qty;
+
+        if (!map[catalogNumber].Description) {
+
+            map[catalogNumber].Description =
+                material.Description ??
+                material.description ??
+                "";
+
+        }
+
+    }
+
+    //----------------------------------
+    // Existing Generated BOM
+    //----------------------------------
+
+    const bom = generateBOM();
+
+    Object.values(bom || {}).forEach(group => {
+
+        if (!Array.isArray(group)) return;
+
+        group.forEach(addMaterial);
+
+    });
+
+    //----------------------------------
+    // Equipment Card Components
+    //----------------------------------
+
+    if (typeof getLayout === "function") {
+
+        const seen = new Set();
+
+        getLayout().forEach(item => {
+
+            if (!item || seen.has(item.id)) return;
+
+            seen.add(item.id);
+
+            (item.materials || []).forEach(addMaterial);
+
+        });
+
+    }
+
+    return Object.values(map).sort((a, b) =>
+
+        String(a.CatalogNumber || "").localeCompare(
+            String(b.CatalogNumber || "")
+        )
+
+    );
+
+}
+
+//----------------------------------
 // Render BOM
 //----------------------------------
 
@@ -8,9 +115,7 @@ function renderBOM() {
 
     if (!body) return;
 
-    const bom = generateBOM();
-
-    const list = bom.fittings;
+    const list = getBOMMaterialList();
 
     if (!list.length) {
 
@@ -58,7 +163,7 @@ function renderBOM() {
 
                 <div class="bom-description">
 
-                    ${item.Description}
+                    ${item.Description || ""}
 
                 </div>
 
@@ -69,5 +174,12 @@ function renderBOM() {
     `;
 
 }
+
+//----------------------------------
+// Expose
+//----------------------------------
+
+window.getBOMMaterialList =
+    getBOMMaterialList;
 
 window.renderBOM = renderBOM;
