@@ -71,7 +71,7 @@ function compactCatalogRecord(value) {
   Object.keys(value).forEach(key => {
     const currentValue = value[key];
 
-    // Runtime-only circular/link state should never be persisted here.
+    // Runtime-only state is rebuilt after loading.
     if (key === "links") return;
 
     if (!sameSerializableValue(currentValue, base[key])) {
@@ -79,9 +79,7 @@ function compactCatalogRecord(value) {
     }
   });
 
-  const compact = {
-    $ref: catalogNumber
-  };
+  const compact = { $ref: catalogNumber };
 
   if (Object.keys(overrides).length) {
     compact.$o = overrides;
@@ -135,41 +133,80 @@ function serializeEquipmentData(data) {
 }
 
 function serializeConnection(connection) {
-  return {
+  const result = {
     id: connection.id,
     side: connection.side,
-    offset: connection.offset,
-    connected: connection.connected,
-    hardware: compactCatalogList(connection.hardware || []),
-    wires: compactCatalogList(connection.wires || []),
-    materials: compactCatalogList(connection.materials || []),
-    conduit: connection.conduit
-      ? compactCatalogRecord(connection.conduit)
-      : null,
-    conduitLength: Number(connection.conduitLength || 0),
-    notes: connection.notes || ""
+    offset: connection.offset
   };
+
+  if (connection.connected) {
+    result.connected = true;
+  }
+
+  if (Array.isArray(connection.hardware) && connection.hardware.length) {
+    result.hardware = compactCatalogList(connection.hardware);
+  }
+
+  if (Array.isArray(connection.wires) && connection.wires.length) {
+    result.wires = compactCatalogList(connection.wires);
+  }
+
+  if (Array.isArray(connection.materials) && connection.materials.length) {
+    result.materials = compactCatalogList(connection.materials);
+  }
+
+  if (connection.conduit) {
+    result.conduit = compactCatalogRecord(connection.conduit);
+  }
+
+  const conduitLength = Number(connection.conduitLength || 0);
+  if (conduitLength) {
+    result.conduitLength = conduitLength;
+  }
+
+  const notes = String(connection.notes || "");
+  if (notes) {
+    result.notes = notes;
+  }
+
+  return result;
 }
 
 function serializeItem(item) {
   const connections = {};
 
   CONNECTION_SIDES.forEach(side => {
-    connections[side] = (item.connections?.[side] || [])
+    const list = (item.connections?.[side] || [])
       .map(serializeConnection);
+
+    if (list.length) {
+      connections[side] = list;
+    }
   });
 
-  return {
+  const result = {
     id: item.id,
     startCell: item.startCell,
     width: Number(item.width || 1),
     height: Number(item.height || 1),
-    rotation: Number(item.rotation || 0),
     data: serializeEquipmentData(item.data),
-    preset: item.preset || "",
-    materials: compactCatalogList(item.materials || []),
     connections
   };
+
+  const rotation = Number(item.rotation || 0);
+  if (rotation) {
+    result.rotation = rotation;
+  }
+
+  if (item.preset) {
+    result.preset = item.preset;
+  }
+
+  if (Array.isArray(item.materials) && item.materials.length) {
+    result.materials = compactCatalogList(item.materials);
+  }
+
+  return result;
 }
 
 function serializeLayout() {
@@ -189,21 +226,26 @@ function serializeLayout() {
 // Links
 //----------------------------------
 function serializeLink(link) {
-  return {
+  const result = {
     id: link.id,
     start: cloneSerializable(link.start),
-    end: cloneSerializable(link.end),
-    conduit: link.conduit
-      ? compactCatalogRecord(link.conduit)
-      : null,
-    assembly: compactCatalogList(link.assembly || []),
-
-    // geometry, length and materials are derived again on load.
-    routingMode: link.routingMode || "auto",
-    manualRoute: link.manualRoute
-      ? cloneSerializable(link.manualRoute)
-      : null
+    end: cloneSerializable(link.end)
   };
+
+  if (link.conduit) {
+    result.conduit = compactCatalogRecord(link.conduit);
+  }
+
+  // assembly, geometry, length and materials are derived again on load.
+  if (link.routingMode && link.routingMode !== "auto") {
+    result.routingMode = link.routingMode;
+  }
+
+  if (link.manualRoute) {
+    result.manualRoute = cloneSerializable(link.manualRoute);
+  }
+
+  return result;
 }
 
 function serializeLinks() {
