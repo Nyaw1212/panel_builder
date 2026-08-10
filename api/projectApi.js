@@ -5,9 +5,7 @@
 const LOCAL_MODE = false;
 
 console.log(
-    `Catalog Source: ${
-        LOCAL_MODE ? "Local JSON" : "Apps Script"
-    }`
+    `Catalog Source: ${LOCAL_MODE ? "Local JSON" : "Apps Script"}`
 );
 
 //----------------------------------
@@ -15,53 +13,33 @@ console.log(
 //----------------------------------
 
 const PROJECT_API_URL =
-  "https://script.google.com/macros/s/AKfycbztkGaSk-SGnzFk5ZnST0bIjma06J1WhPDF2Hd62sHTtkQH8fm6yq-F3FtJYQzFYLfM/exec";
+    "https://script.google.com/macros/s/AKfycbztkGaSk-SGnzFk5ZnST0bIjma06J1WhPDF2Hd62sHTtkQH8fm6yq-F3FtJYQzFYLfM/exec";
 
 //----------------------------------
 // API Request
 //----------------------------------
 
 async function apiRequest(data) {
-
     try {
-
-        const response = await fetch(
-
-            PROJECT_API_URL,
-
-            {
-
-                method: "POST",
-
-                body: JSON.stringify(data)
-
-            }
-
-        );
+        const response = await fetch(PROJECT_API_URL, {
+            method: "POST",
+            body: JSON.stringify(data)
+        });
 
         if (!response.ok) {
-
             throw new Error(`HTTP ${response.status}`);
-
         }
 
         return await response.json();
-
     }
     catch (err) {
-
         console.error("Project API Error", err);
 
         return {
-
             success: false,
-
             message: err.message
-
         };
-
     }
-
 }
 
 //----------------------------------
@@ -69,17 +47,13 @@ async function apiRequest(data) {
 //----------------------------------
 
 async function loadLocalJSON(path) {
-
     const response = await fetch(path);
 
     if (!response.ok) {
-
         throw new Error(`Unable to load ${path}`);
-
     }
 
     return await response.json();
-
 }
 
 //----------------------------------
@@ -87,29 +61,19 @@ async function loadLocalJSON(path) {
 //----------------------------------
 
 async function getMMLVersion() {
-
     const result = await apiRequest({
-
         action: "getMMLVersion"
-
     });
 
     if (!result.success) {
-
         return null;
-
     }
 
     return String(
-
         result.version ||
-
         result.mmlVersion ||
-
         ""
-
     );
-
 }
 
 //----------------------------------
@@ -117,55 +81,72 @@ async function getMMLVersion() {
 //----------------------------------
 
 async function fetchMMLFromApi(version = "") {
-
     console.log("Catalog Source: Apps Script");
 
     const result = await apiRequest({
-
         action: "getMML"
-
     });
 
     if (!result.success) {
-
         console.error(result.message);
-
         return null;
-
     }
 
     const mml = result.mml || [];
 
     const resolvedVersion = String(
-
         result.version ||
-
         result.mmlVersion ||
-
         version ||
-
         "unversioned"
-
     );
 
-    saveMMLCache(
+    saveMMLCache(mml, resolvedVersion);
 
-        mml,
-
-        resolvedVersion
-
-    );
-
-    console.log(
-
-        "MML Cached:",
-
-        resolvedVersion
-
-    );
+    console.log("MML Cached:", resolvedVersion);
 
     return mml;
+}
 
+//----------------------------------
+// Background MML Revalidation
+//----------------------------------
+
+async function revalidateMMLCache(cache) {
+    try {
+        const remoteVersion = await getMMLVersion();
+
+        if (!remoteVersion) {
+            console.warn(
+                "MML version check unavailable; keeping cached catalog."
+            );
+            return;
+        }
+
+        if (String(cache.version) === String(remoteVersion)) {
+            console.log("MML Cache Current:", remoteVersion);
+            return;
+        }
+
+        console.log(
+            "MML update detected:",
+            cache.version,
+            "→",
+            remoteVersion
+        );
+
+        const updatedMML = await fetchMMLFromApi(remoteVersion);
+
+        if (updatedMML) {
+            console.log("MML cache updated in background.");
+        }
+    }
+    catch (err) {
+        console.warn(
+            "MML background version check failed:",
+            err
+        );
+    }
 }
 
 //----------------------------------
@@ -173,83 +154,28 @@ async function fetchMMLFromApi(version = "") {
 //----------------------------------
 
 async function getMML() {
-
     //----------------------------------
     // Local
     //----------------------------------
 
     if (LOCAL_MODE) {
-
         return await loadLocalJSON("./Mock/MML.json");
-
     }
 
     //----------------------------------
-    // Cache + Version Check
+    // Cache First
     //----------------------------------
 
     const cache = loadMMLCache();
 
     if (cache) {
+        console.log("Catalog Source: Cache", cache.version);
 
-        const remoteVersion =
+        // Do not block application startup waiting for Apps Script.
+        // Revalidate in the background and refresh the cache when needed.
+        void revalidateMMLCache(cache);
 
-            await getMMLVersion();
-
-        if (!remoteVersion) {
-
-            console.warn(
-
-                "MML version check unavailable; using cache."
-
-            );
-
-            return cache.data;
-
-        }
-
-        if (
-
-            String(cache.version) ===
-
-            remoteVersion
-
-        ) {
-
-            console.log(
-
-                "Catalog Source: Cache",
-
-                remoteVersion
-
-            );
-
-            return cache.data;
-
-        }
-
-        console.log(
-
-            "MML update detected:",
-
-            cache.version,
-
-            "→",
-
-            remoteVersion
-
-        );
-
-        const updatedMML =
-
-            await fetchMMLFromApi(
-
-                remoteVersion
-
-            );
-
-        return updatedMML || cache.data;
-
+        return cache.data;
     }
 
     //----------------------------------
@@ -257,11 +183,8 @@ async function getMML() {
     //----------------------------------
 
     return (
-
         await fetchMMLFromApi()
-
     ) || [];
-
 }
 
 //----------------------------------
@@ -269,15 +192,12 @@ async function getMML() {
 //----------------------------------
 
 async function getPresets() {
-
     //----------------------------------
     // Local
     //----------------------------------
 
     if (LOCAL_MODE) {
-
         return await loadLocalJSON("./Mock/PRESETS.json");
-
     }
 
     //----------------------------------
@@ -287,11 +207,8 @@ async function getPresets() {
     const cache = loadPresetCache();
 
     if (cache) {
-
         console.log("Preset Source: Cache");
-
         return cache.data;
-
     }
 
     //----------------------------------
@@ -301,17 +218,12 @@ async function getPresets() {
     console.log("Preset Source: Apps Script");
 
     const result = await apiRequest({
-
         action: "getPresets"
-
     });
 
     if (!result.success) {
-
         console.error(result.message);
-
         return [];
-
     }
 
     const presets = result.presets || [];
@@ -321,7 +233,6 @@ async function getPresets() {
     console.log("Presets Cached");
 
     return presets;
-
 }
 
 //----------------------------------
@@ -329,17 +240,12 @@ async function getPresets() {
 //----------------------------------
 
 async function saveProject(project) {
-
     const payload = serializeProject(project);
 
     return await apiRequest({
-
         action: "saveProject",
-
         ...payload
-
     });
-
 }
 
 //----------------------------------
@@ -347,17 +253,11 @@ async function saveProject(project) {
 //----------------------------------
 
 async function loadProject(jobName, address) {
-
     return await apiRequest({
-
         action: "loadProject",
-
         jobName,
-
         address
-
     });
-
 }
 
 //----------------------------------
@@ -365,23 +265,16 @@ async function loadProject(jobName, address) {
 //----------------------------------
 
 async function getProjects() {
-
     const result = await apiRequest({
-
         action: "getProjects"
-
     });
 
     if (!result.success) {
-
         console.error(result.message);
-
         return [];
-
     }
 
     return result.projects || [];
-
 }
 
 //----------------------------------
@@ -389,15 +282,10 @@ async function getProjects() {
 //----------------------------------
 
 async function deleteProject(projectId) {
-
     return await apiRequest({
-
         action: "deleteProject",
-
         projectId
-
     });
-
 }
 
 //----------------------------------
@@ -405,27 +293,17 @@ async function deleteProject(projectId) {
 //----------------------------------
 
 function getPresetMaterials(preset) {
-
     if (!preset) {
-
         return [];
-
     }
 
     return (window.presets || [])
-
         .filter(item => item.PRESET === preset)
-
         .map(item => ({
-
             catalogNumber: item.CatalogNumber,
-
             description: item.DESCRIPTION,
-
             qty: Number(item.QTY)
-
         }));
-
 }
 
 //----------------------------------
@@ -433,21 +311,13 @@ function getPresetMaterials(preset) {
 //----------------------------------
 
 window.API = {
-
     getMML,
-
     getMMLVersion,
-
     getPresets,
-
     saveProject,
-
     loadProject,
-
     getProjects,
-
     deleteProject
-
 };
 
 //----------------------------------
