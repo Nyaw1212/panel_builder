@@ -16,14 +16,15 @@ const PROJECT_API_URL =
     "https://script.google.com/macros/s/AKfycbztkGaSk-SGnzFk5ZnST0bIjma06J1WhPDF2Hd62sHTtkQH8fm6yq-F3FtJYQzFYLfM/exec";
 
 //----------------------------------
-// MML Watcher Configuration
+// Catalog Watcher Configuration
 //----------------------------------
 
-const MML_WATCH_INTERVAL_MS = 30000;
+const CATALOG_WATCH_INTERVAL_MS = 30000;
 
-let mmlWatchTimer = null;
+let catalogWatchTimer = null;
 let mmlWatchInFlight = false;
-let mmlUpdateNoticeShown = false;
+let presetWatchInFlight = false;
+let catalogUpdateNoticeShown = false;
 
 //----------------------------------
 // API Request
@@ -87,6 +88,26 @@ async function getMMLVersion() {
 }
 
 //----------------------------------
+// PRESETS Version
+//----------------------------------
+
+async function getPresetsVersion() {
+    const result = await apiRequest({
+        action: "getPresetsVersion"
+    });
+
+    if (!result.success) {
+        return null;
+    }
+
+    return String(
+        result.version ||
+        result.presetsVersion ||
+        ""
+    );
+}
+
+//----------------------------------
 // Fetch MML
 //----------------------------------
 
@@ -119,21 +140,53 @@ async function fetchMMLFromApi(version = "") {
 }
 
 //----------------------------------
+// Fetch PRESETS
+//----------------------------------
+
+async function fetchPresetsFromApi(version = "") {
+    console.log("Preset Source: Apps Script");
+
+    const result = await apiRequest({
+        action: "getPresets"
+    });
+
+    if (!result.success) {
+        console.error(result.message);
+        return null;
+    }
+
+    const presets = result.presets || [];
+
+    const resolvedVersion = String(
+        result.version ||
+        result.presetsVersion ||
+        version ||
+        "unversioned"
+    );
+
+    savePresetCache(presets, resolvedVersion);
+
+    console.log("Presets Cached:", resolvedVersion);
+
+    return presets;
+}
+
+//----------------------------------
 // Catalog Update Notice
 //----------------------------------
 
-function showMMLUpdateNotice(oldVersion, newVersion) {
-    if (mmlUpdateNoticeShown) {
+function showCatalogUpdateNotice(catalogName, oldVersion, newVersion) {
+    if (catalogUpdateNoticeShown) {
         return;
     }
 
-    mmlUpdateNoticeShown = true;
+    catalogUpdateNoticeShown = true;
 
-    let notice = document.getElementById("panelBuilderMMLUpdateNotice");
+    let notice = document.getElementById("panelBuilderCatalogUpdateNotice");
 
     if (!notice) {
         notice = document.createElement("div");
-        notice.id = "panelBuilderMMLUpdateNotice";
+        notice.id = "panelBuilderCatalogUpdateNotice";
 
         Object.assign(notice.style, {
             position: "fixed",
@@ -154,11 +207,9 @@ function showMMLUpdateNotice(oldVersion, newVersion) {
         });
 
         notice.innerHTML = `
-            <span style="flex:1 1 auto;">
-                MML catalog updated. Reload to apply the new catalog.
-            </span>
+            <span id="panelBuilderCatalogUpdateText" style="flex:1 1 auto;"></span>
             <button
-                id="panelBuilderMMLReloadButton"
+                id="panelBuilderCatalogReloadButton"
                 type="button"
                 style="
                     border:0;
@@ -175,11 +226,17 @@ function showMMLUpdateNotice(oldVersion, newVersion) {
         document.body.appendChild(notice);
 
         document
-            .getElementById("panelBuilderMMLReloadButton")
+            .getElementById("panelBuilderCatalogReloadButton")
             ?.addEventListener("click", () => location.reload());
     }
 
-    notice.title = `MML ${oldVersion || "unknown"} → ${newVersion || "unknown"}`;
+    const text = document.getElementById("panelBuilderCatalogUpdateText");
+
+    if (text) {
+        text.textContent = `${catalogName} updated. Reload to apply the new catalog.`;
+    }
+
+    notice.title = `${catalogName} ${oldVersion || "unknown"} → ${newVersion || "unknown"}`;
 }
 
 //----------------------------------
@@ -226,7 +283,7 @@ async function revalidateMMLCache(cache = loadMMLCache(), options = {}) {
         }
 
         console.log("MML cache updated in background.");
-        showMMLUpdateNotice(cache.version, remoteVersion);
+        showCatalogUpdateNotice("MML catalog", cache.version, remoteVersion);
 
         return true;
     }
@@ -245,30 +302,97 @@ async function revalidateMMLCache(cache = loadMMLCache(), options = {}) {
 }
 
 //----------------------------------
-// MML Watcher
+// Background PRESETS Revalidation
 //----------------------------------
 
-function startMMLWatcher() {
-    if (LOCAL_MODE || mmlWatchTimer) {
+async function revalidatePresetCache(cache = loadPresetCache(), options = {}) {
+    if (LOCAL_MODE || !cache || presetWatchInFlight) {
+        return false;
+    }
+
+    presetWatchInFlight = true;
+
+    try {
+        const remoteVersion = await getPresetsVersion();
+
+        if (!remoteVersion) {
+            if (!options.silent) {
+                console.warn(
+                    "PRESETS version check unavailable; keeping cached presets."
+                );
+            }
+            return false;
+        }
+
+        if (String(cache.version) === String(remoteVersion)) {
+            if (!options.silent) {
+                console.log("PRESETS Cache Current:", remoteVersion);
+            }
+            return false;
+        }
+
+        console.log(
+            "PRESETS update detected:",
+            cache.version,
+            "→",
+            remoteVersion
+        );
+
+        const updatedPresets = await fetchPresetsFromApi(remoteVersion);
+
+        if (!updatedPresets) {
+            return false;
+        }
+
+        console.log("PRESETS cache updated in background.");
+        showCatalogUpdateNotice("PRESETS", cache.version, remoteVersion);
+
+        return true;
+    }
+    catch (err) {
+        if (!options.silent) {
+            console.warn(
+                "PRESETS background version check failed:",
+                err
+            );
+        }
+        return false;
+    }
+    finally {
+        presetWatchInFlight = false;
+    }
+}
+
+//----------------------------------
+// Catalog Watcher
+//----------------------------------
+
+function checkCatalogUpdates(options = {}) {
+    void revalidateMMLCache(loadMMLCache(), options);
+    void revalidatePresetCache(loadPresetCache(), options);
+}
+
+function startCatalogWatcher() {
+    if (LOCAL_MODE || catalogWatchTimer) {
         return;
     }
 
-    mmlWatchTimer = window.setInterval(() => {
-        void revalidateMMLCache(loadMMLCache(), { silent: true });
-    }, MML_WATCH_INTERVAL_MS);
+    catalogWatchTimer = window.setInterval(() => {
+        checkCatalogUpdates({ silent: true });
+    }, CATALOG_WATCH_INTERVAL_MS);
 
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
-            void revalidateMMLCache(loadMMLCache());
+            checkCatalogUpdates();
         }
     });
 
     window.addEventListener("focus", () => {
-        void revalidateMMLCache(loadMMLCache(), { silent: true });
+        checkCatalogUpdates({ silent: true });
     });
 
     console.log(
-        `MML watcher enabled (${MML_WATCH_INTERVAL_MS / 1000}s).`
+        `Catalog watcher enabled (${CATALOG_WATCH_INTERVAL_MS / 1000}s).`
     );
 }
 
@@ -277,41 +401,25 @@ function startMMLWatcher() {
 //----------------------------------
 
 async function getMML() {
-    //----------------------------------
-    // Local
-    //----------------------------------
-
     if (LOCAL_MODE) {
         return await loadLocalJSON("./Mock/MML.json");
     }
-
-    //----------------------------------
-    // Cache First
-    //----------------------------------
 
     const cache = loadMMLCache();
 
     if (cache) {
         console.log("Catalog Source: Cache", cache.version);
-
-        // Do not block application startup waiting for Apps Script.
-        // Revalidate in the background and keep watching for later edits.
         void revalidateMMLCache(cache);
-        startMMLWatcher();
-
+        startCatalogWatcher();
         return cache.data;
     }
-
-    //----------------------------------
-    // First Load
-    //----------------------------------
 
     const mml = (
         await fetchMMLFromApi()
     ) || [];
 
     if (mml.length) {
-        startMMLWatcher();
+        startCatalogWatcher();
     }
 
     return mml;
@@ -322,45 +430,26 @@ async function getMML() {
 //----------------------------------
 
 async function getPresets() {
-    //----------------------------------
-    // Local
-    //----------------------------------
-
     if (LOCAL_MODE) {
         return await loadLocalJSON("./Mock/PRESETS.json");
     }
 
-    //----------------------------------
-    // Cache
-    //----------------------------------
-
     const cache = loadPresetCache();
 
     if (cache) {
-        console.log("Preset Source: Cache");
+        console.log("Preset Source: Cache", cache.version);
+        void revalidatePresetCache(cache);
+        startCatalogWatcher();
         return cache.data;
     }
 
-    //----------------------------------
-    // Apps Script
-    //----------------------------------
+    const presets = (
+        await fetchPresetsFromApi()
+    ) || [];
 
-    console.log("Preset Source: Apps Script");
-
-    const result = await apiRequest({
-        action: "getPresets"
-    });
-
-    if (!result.success) {
-        console.error(result.message);
-        return [];
+    if (presets.length) {
+        startCatalogWatcher();
     }
-
-    const presets = result.presets || [];
-
-    savePresetCache(presets);
-
-    console.log("Presets Cached");
 
     return presets;
 }
@@ -444,6 +533,7 @@ window.API = {
     getMML,
     getMMLVersion,
     getPresets,
+    getPresetsVersion,
     saveProject,
     loadProject,
     getProjects,
@@ -455,6 +545,7 @@ window.API = {
 //----------------------------------
 
 window.getMMLVersion = getMMLVersion;
+window.getPresetsVersion = getPresetsVersion;
 window.saveProject = saveProject;
 window.loadProject = loadProject;
 window.getProjects = getProjects;
