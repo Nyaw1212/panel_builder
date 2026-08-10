@@ -8,10 +8,130 @@ function cloneSerializable(value) {
 }
 
 //----------------------------------
+// Catalog-backed compact records
+//----------------------------------
+function getCatalogNumber(value) {
+  return String(
+    value?.CatalogNumber ??
+    value?.catalogNumber ??
+    ""
+  ).trim();
+}
+
+function findCatalogRecord(catalogNumber) {
+  const key = String(catalogNumber || "").trim();
+  if (!key) return null;
+
+  const sources = [
+    window.equipment,
+    window.materials,
+    window.mml,
+    window.MML
+  ];
+
+  for (const source of sources) {
+    if (!Array.isArray(source)) continue;
+
+    const match = source.find(item =>
+      getCatalogNumber(item) === key
+    );
+
+    if (match) return match;
+  }
+
+  return null;
+}
+
+function sameSerializableValue(a, b) {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+  catch {
+    return a === b;
+  }
+}
+
+function compactCatalogRecord(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return cloneSerializable(value);
+  }
+
+  const catalogNumber = getCatalogNumber(value);
+  if (!catalogNumber) {
+    return cloneSerializable(value);
+  }
+
+  const base = findCatalogRecord(catalogNumber);
+  if (!base) {
+    return cloneSerializable(value);
+  }
+
+  const overrides = {};
+
+  Object.keys(value).forEach(key => {
+    const currentValue = value[key];
+
+    // Runtime-only circular/link state should never be persisted here.
+    if (key === "links") return;
+
+    if (!sameSerializableValue(currentValue, base[key])) {
+      overrides[key] = cloneSerializable(currentValue);
+    }
+  });
+
+  const compact = {
+    $ref: catalogNumber
+  };
+
+  if (Object.keys(overrides).length) {
+    compact.$o = overrides;
+  }
+
+  return compact;
+}
+
+function hydrateCatalogRecord(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return cloneSerializable(value);
+  }
+
+  // Legacy project: already contains the full record.
+  if (!value.$ref) {
+    return cloneSerializable(value);
+  }
+
+  const catalogNumber = String(value.$ref || "").trim();
+  const base = findCatalogRecord(catalogNumber);
+  const overrides = cloneSerializable(value.$o || {});
+
+  if (!base) {
+    return {
+      CatalogNumber: catalogNumber,
+      ...overrides
+    };
+  }
+
+  return {
+    ...cloneSerializable(base),
+    ...overrides
+  };
+}
+
+function compactCatalogList(values) {
+  return (Array.isArray(values) ? values : [])
+    .map(compactCatalogRecord);
+}
+
+function hydrateCatalogList(values) {
+  return (Array.isArray(values) ? values : [])
+    .map(hydrateCatalogRecord);
+}
+
+//----------------------------------
 // Equipment / Connection / Item
 //----------------------------------
 function serializeEquipmentData(data) {
-  return cloneSerializable(data);
+  return compactCatalogRecord(data);
 }
 
 function serializeConnection(connection) {
@@ -20,10 +140,12 @@ function serializeConnection(connection) {
     side: connection.side,
     offset: connection.offset,
     connected: connection.connected,
-    hardware: cloneSerializable(connection.hardware || []),
-    wires: cloneSerializable(connection.wires || []),
-    materials: cloneSerializable(connection.materials || []),
-    conduit: cloneSerializable(connection.conduit || null),
+    hardware: compactCatalogList(connection.hardware || []),
+    wires: compactCatalogList(connection.wires || []),
+    materials: compactCatalogList(connection.materials || []),
+    conduit: connection.conduit
+      ? compactCatalogRecord(connection.conduit)
+      : null,
     conduitLength: Number(connection.conduitLength || 0),
     notes: connection.notes || ""
   };
@@ -31,8 +153,10 @@ function serializeConnection(connection) {
 
 function serializeItem(item) {
   const connections = {};
+
   CONNECTION_SIDES.forEach(side => {
-    connections[side] = (item.connections?.[side] || []).map(serializeConnection);
+    connections[side] = (item.connections?.[side] || [])
+      .map(serializeConnection);
   });
 
   return {
@@ -43,7 +167,7 @@ function serializeItem(item) {
     rotation: Number(item.rotation || 0),
     data: serializeEquipmentData(item.data),
     preset: item.preset || "",
-    materials: cloneSerializable(item.materials || []),
+    materials: compactCatalogList(item.materials || []),
     connections
   };
 }
@@ -69,16 +193,16 @@ function serializeLink(link) {
     id: link.id,
     start: cloneSerializable(link.start),
     end: cloneSerializable(link.end),
-    conduit: cloneSerializable(link.conduit || null),
-    assembly: cloneSerializable(link.assembly || null),
-    materials: cloneSerializable(link.materials || []),
-    geometry: cloneSerializable(link.geometry || null),
+    conduit: link.conduit
+      ? compactCatalogRecord(link.conduit)
+      : null,
+    assembly: compactCatalogList(link.assembly || []),
+
+    // geometry, length and materials are derived again on load.
     routingMode: link.routingMode || "auto",
-    manualRoute: link.manualRoute ? cloneSerializable(link.manualRoute) : null,
-    manualRoutingV3:
-      typeof ManualRouteSerializerV3 !== "undefined"
-        ? ManualRouteSerializerV3.serialize(link)
-        : null
+    manualRoute: link.manualRoute
+      ? cloneSerializable(link.manualRoute)
+      : null
   };
 }
 
@@ -157,9 +281,6 @@ function serializeMaterialSummary() {
       ).trim();
 
       if (!catalogNumber) return;
-
-      // The parent equipment is already counted above.
-      // Some equipment cards also contain the parent catalog as a component.
       if (catalogNumber === equipmentCatalogNumber) return;
 
       const material =
@@ -205,7 +326,7 @@ function serializeProjectCore() {
 
   return {
     id: project.id,
-    version: project.version,
+    version: Math.max(Number(project.version || 1), 2),
     jobName: project.jobName || "",
     address: project.address || "",
     electrician: project.electrician || "",
@@ -232,6 +353,12 @@ function serializeProjectHistory() {
 // Expose
 //----------------------------------
 window.cloneSerializable = cloneSerializable;
+window.getCatalogNumber = getCatalogNumber;
+window.findCatalogRecord = findCatalogRecord;
+window.compactCatalogRecord = compactCatalogRecord;
+window.hydrateCatalogRecord = hydrateCatalogRecord;
+window.compactCatalogList = compactCatalogList;
+window.hydrateCatalogList = hydrateCatalogList;
 window.serializeEquipmentData = serializeEquipmentData;
 window.serializeConnection = serializeConnection;
 window.serializeItem = serializeItem;
