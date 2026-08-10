@@ -209,6 +209,7 @@ function serializeProjectCore() {
     jobName: project.jobName || "",
     address: project.address || "",
     electrician: project.electrician || "",
+    startDate: project.startDate || "",
     lender: project.lender || "",
     model: project.model || "",
     layout: serializeLayout(),
