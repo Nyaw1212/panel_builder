@@ -10,6 +10,12 @@ const projectState = {
 
     address: "",
 
+    electrician: "",
+
+    lender: "",
+
+    model: "",
+
     created: null,
 
     modified: null,
@@ -77,6 +83,15 @@ function setProjectState(project) {
     projectState.address =
         String(project.address || "").trim();
 
+    projectState.electrician =
+        String(project.electrician || "").trim();
+
+    projectState.lender =
+        String(project.lender || "").trim();
+
+    projectState.model =
+        String(project.model || "").trim();
+
     projectState.created =
         project.created || null;
 
@@ -99,6 +114,12 @@ function clearProjectState() {
     projectState.jobName = "";
 
     projectState.address = "";
+
+    projectState.electrician = "";
+
+    projectState.lender = "";
+
+    projectState.model = "";
 
     projectState.created = null;
 
