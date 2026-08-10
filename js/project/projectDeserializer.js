@@ -39,6 +39,9 @@ function deserializeProject(project) {
                 ? hydrateCatalogList(savedItem.materials || [])
                 : structuredClone(savedItem.materials || []);
 
+        item.rotation = Number(savedItem.rotation || 0);
+        item.preset = savedItem.preset || "";
+
         if (!item.connections) {
             throw new Error(
                 `Panel ${item.id} has no connections`
@@ -60,16 +63,29 @@ function deserializeProject(project) {
             item.connections[side] = item.connections[side].map(connection => {
                 const restored = structuredClone(connection);
 
+                restored.side = connection.side || side;
+                restored.connected = Boolean(connection.connected);
+                restored.conduitLength = Number(connection.conduitLength || 0);
+                restored.notes = connection.notes || "";
+
                 if (typeof hydrateCatalogList === "function") {
                     restored.hardware = hydrateCatalogList(connection.hardware || []);
                     restored.wires = hydrateCatalogList(connection.wires || []);
                     restored.materials = hydrateCatalogList(connection.materials || []);
+                }
+                else {
+                    restored.hardware = structuredClone(connection.hardware || []);
+                    restored.wires = structuredClone(connection.wires || []);
+                    restored.materials = structuredClone(connection.materials || []);
                 }
 
                 if (typeof hydrateCatalogRecord === "function") {
                     restored.conduit = connection.conduit
                         ? hydrateCatalogRecord(connection.conduit)
                         : null;
+                }
+                else {
+                    restored.conduit = connection.conduit || null;
                 }
 
                 restored.links = [];
@@ -155,11 +171,6 @@ function deserializeProject(project) {
                 ? hydrateCatalogRecord(saved.conduit)
                 : (saved.conduit || null);
 
-        const restoredAssembly =
-            typeof hydrateCatalogList === "function"
-                ? hydrateCatalogList(saved.assembly || [])
-                : structuredClone(saved.assembly || []);
-
         const link = {
             id: saved.id,
 
@@ -195,7 +206,7 @@ function deserializeProject(project) {
 
             conduit: restoredConduit,
             length: 0,
-            assembly: restoredAssembly,
+            assembly: [],
             materials: []
         };
 
