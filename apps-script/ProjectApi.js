@@ -3,18 +3,7 @@
 //----------------------------------
 
 const PROJECT_SHEET = "PROJECTS";
-
-//----------------------------------
-// MML Cache Version Configuration
-//----------------------------------
-
 const MML_VERSION_SHEET = "MML";
-
-// Optional:
-//
-// Use this when the Apps Script is standalone.
-// Leave blank when the script is bound directly
-// to the correct Google Spreadsheet.
 
 const PROJECT_SPREADSHEET_ID =
   "1biSrfupGYl4aZInIMsu2BC-5bdjz2AOVcT-j03XMLjQ";
@@ -24,31 +13,20 @@ const PROJECT_SPREADSHEET_ID =
 //----------------------------------
 
 function doGet(e) {
-
-  const view = String(
-    e?.parameter?.view || ""
-  )
+  const view = String(e?.parameter?.view || "")
     .trim()
     .toLowerCase();
 
   if (view === "app") {
-
     return servePanelBuilderApp_();
-
   }
 
   return jsonOutput({
-
     success: true,
-
     service: "PanelBuilderApi",
-
     message: "Panel Builder API is running.",
-
     timestamp: new Date().toISOString()
-
   });
-
 }
 
 //----------------------------------
@@ -56,233 +34,93 @@ function doGet(e) {
 //----------------------------------
 
 function doPost(e) {
-
   try {
-
-    //----------------------------------
-    // Validate Request
-    //----------------------------------
-
-    if (
-      !e ||
-      !e.postData ||
-      !e.postData.contents
-    ) {
-
+    if (!e || !e.postData || !e.postData.contents) {
       return jsonOutput({
-
         success: false,
-
         message: "Missing POST request body."
-
       });
-
     }
 
-    //----------------------------------
-    // Parse Request
-    //----------------------------------
-
-    const request = JSON.parse(
-      e.postData.contents
-    );
-
-    const action = String(
-      request.action || ""
-    ).trim();
+    const request = JSON.parse(e.postData.contents);
+    const action = String(request.action || "").trim();
 
     if (!action) {
-
       return jsonOutput({
-
         success: false,
-
         message: "Missing API action."
-
       });
-
     }
-
-    //----------------------------------
-    // Route Request
-    //----------------------------------
 
     switch (action) {
-
-      //----------------------------------
-      // Get MML
-      //----------------------------------
-
       case "getMML":
-
         return jsonOutput({
-
           success: true,
-
           mml: getMML(),
-
           version: getMMLVersion()
-
         });
-
-      //----------------------------------
-      // Get MML Version
-      //----------------------------------
 
       case "getMMLVersion":
-
         return jsonOutput({
-
           success: true,
-
           version: getMMLVersion()
-
         });
-
-      //----------------------------------
-      // Get Presets
-      //----------------------------------
 
       case "getPresets":
-
         return jsonOutput({
-
           success: true,
-
           presets: getPresets(),
-
           version: getPresetsVersion()
-
         });
-
-      //----------------------------------
-      // Get PRESETS Version
-      //----------------------------------
 
       case "getPresetsVersion":
-
         return jsonOutput({
-
           success: true,
-
           version: getPresetsVersion()
-
         });
-
-      //----------------------------------
-      // Save Project
-      //----------------------------------
 
       case "saveProject":
-
-        return jsonOutput(
-          saveProject(request)
-        );
-
-      //----------------------------------
-      // Load Project
-      //----------------------------------
+        return jsonOutput(saveProject(request));
 
       case "loadProject":
-
-        return jsonOutput(
-          loadProject(request)
-        );
-
-      //----------------------------------
-      // Load Project By ID
-      //----------------------------------
+        return jsonOutput(loadProject(request));
 
       case "loadProjectById":
-
-        return jsonOutput(
-          loadProjectById(request)
-        );
-
-      //----------------------------------
-      // Get Projects
-      //----------------------------------
+        return jsonOutput(loadProjectById(request));
 
       case "getProjects":
-
         return jsonOutput({
-
           success: true,
-
           projects: getProjects()
-
         });
-
-      //----------------------------------
-      // Delete Project
-      //----------------------------------
 
       case "deleteProject":
-
-        return jsonOutput(
-          deleteProject(request)
-        );
-
-      //----------------------------------
-      // API Health
-      //----------------------------------
+        return jsonOutput(deleteProject(request));
 
       case "health":
-
         return jsonOutput({
-
           success: true,
-
           service: "PanelBuilderApi"
-
         });
-
-      //----------------------------------
-      // Upload Material Image
-      //----------------------------------
 
       case "uploadMaterialImage":
-
         validateApiKey(request);
-
-        return jsonOutput(
-
-          uploadMaterialImage(request)
-
-        );
-
-      //----------------------------------
-      // Unknown Action
-      //----------------------------------
+        return jsonOutput(uploadMaterialImage(request));
 
       default:
-
         return jsonOutput({
-
           success: false,
-
-          message:
-            "Unknown Action: " + action
-
+          message: "Unknown Action: " + action
         });
-
     }
-
   }
   catch (err) {
-
     return jsonOutput({
-
       success: false,
-
       message: String(err),
-
       stack: err.stack || ""
-
     });
-
   }
-
 }
 
 //----------------------------------
@@ -290,61 +128,43 @@ function doPost(e) {
 //----------------------------------
 
 function jsonOutput(data) {
-
   return ContentService
-    .createTextOutput(
-      JSON.stringify(data)
-    )
-    .setMimeType(
-      ContentService.MimeType.JSON
-    );
-
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 //----------------------------------
-// Get Project Spreadsheet
+// Spreadsheet
 //----------------------------------
 
 function getProjectSpreadsheet() {
-
   if (PROJECT_SPREADSHEET_ID) {
-
-    return SpreadsheetApp.openById(
-      PROJECT_SPREADSHEET_ID
-    );
-
+    return SpreadsheetApp.openById(PROJECT_SPREADSHEET_ID);
   }
 
-  const spreadsheet =
-    SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
 
   if (!spreadsheet) {
-
     throw new Error(
       "No active spreadsheet. Add the spreadsheet ID to PROJECT_SPREADSHEET_ID."
     );
-
   }
 
   return spreadsheet;
-
 }
 
 //----------------------------------
-// Get Project Sheet
+// Project Sheet Headers
 //----------------------------------
 
 function normalizeProjectHeader_(value) {
-
   return String(value || "")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
-
 }
 
 function ensureProjectHeaders_(sheet) {
-
   const requiredHeaders = [
     "ProjectID",
     "JobName",
@@ -352,9 +172,11 @@ function ensureProjectHeaders_(sheet) {
     "Created",
     "Modified",
     "JSON",
+    "JSONFileID",
     "Model",
     "Lender",
-    "Electrician"
+    "Electrician",
+    "StartDate"
   ];
 
   const lastColumn = Math.max(sheet.getLastColumn(), 1);
@@ -368,10 +190,7 @@ function ensureProjectHeaders_(sheet) {
     headers = [];
   }
 
-  const existing = new Set(
-    headers.map(normalizeProjectHeader_)
-  );
-
+  const existing = new Set(headers.map(normalizeProjectHeader_));
   const missing = requiredHeaders.filter(
     header => !existing.has(normalizeProjectHeader_(header))
   );
@@ -396,24 +215,19 @@ function ensureProjectHeaders_(sheet) {
   });
 
   return { headers, map };
-
 }
 
 function projectColumn_(map, ...aliases) {
-
   for (const alias of aliases) {
     const column = map[normalizeProjectHeader_(alias)];
     if (column) return column;
   }
 
   return 0;
-
 }
 
 function getProjectSheet() {
-
   const spreadsheet = getProjectSpreadsheet();
-
   let sheet = spreadsheet.getSheetByName(PROJECT_SHEET);
 
   if (!sheet) {
@@ -421,9 +235,34 @@ function getProjectSheet() {
   }
 
   ensureProjectHeaders_(sheet);
-
   return sheet;
+}
 
+function getStoredProjectFromRow_(rowValues, map) {
+  const jsonFileColumn = projectColumn_(
+    map,
+    "JSONFileID",
+    "JSON File ID"
+  );
+
+  const jsonColumn = projectColumn_(
+    map,
+    "JSON",
+    "Project JSON"
+  );
+
+  if (jsonFileColumn) {
+    const fileId = String(rowValues[jsonFileColumn - 1] || "").trim();
+
+    if (fileId && typeof readProjectJsonFile_ === "function") {
+      const project = readProjectJsonFile_(fileId);
+      if (project) return project;
+    }
+  }
+
+  return jsonColumn
+    ? parseProjectJSON(rowValues[jsonColumn - 1])
+    : null;
 }
 
 //----------------------------------
@@ -431,7 +270,6 @@ function getProjectSheet() {
 //----------------------------------
 
 function saveProject(request) {
-
   const start = Date.now();
   const sheet = getProjectSheet();
   const { headers, map } = ensureProjectHeaders_(sheet);
@@ -439,6 +277,7 @@ function saveProject(request) {
   const jobName = String(request.jobName || "").trim();
   const address = String(request.address || "").trim();
   const electrician = String(request.electrician || "").trim();
+  const startDate = String(request.startDate || "").trim();
   const lender = String(request.lender || "").trim();
   const model = String(request.model || "").trim();
 
@@ -477,6 +316,7 @@ function saveProject(request) {
     jobName,
     address,
     electrician,
+    startDate,
     lender,
     model,
     layout: Array.isArray(request.layout) ? request.layout : [],
@@ -484,7 +324,8 @@ function saveProject(request) {
     materialSummary,
     bos,
     van,
-    summary
+    summary,
+    savedAt: request.savedAt || Date.now()
   };
 
   let row = 0;
@@ -499,6 +340,7 @@ function saveProject(request) {
 
   const idColumn = projectColumn_(map, "ProjectID", "Project ID");
   const createdColumn = projectColumn_(map, "Created");
+  const jsonFileColumn = projectColumn_(map, "JSONFileID", "JSON File ID");
 
   if (row && idColumn) {
     const existingProjectId = String(
@@ -536,15 +378,37 @@ function saveProject(request) {
       ? existingRow[createdColumn - 1]
       : now;
 
+  const existingJsonFileId =
+    jsonFileColumn
+      ? String(existingRow[jsonFileColumn - 1] || "").trim()
+      : "";
+
+  if (typeof saveProjectJsonFile_ !== "function") {
+    throw new Error(
+      "ProjectStorage.js is missing. Unable to save project JSON safely."
+    );
+  }
+
+  const jsonFileId = saveProjectJsonFile_(
+    projectId,
+    project,
+    existingJsonFileId
+  );
+
   setByHeader(projectId, "ProjectID", "Project ID");
   setByHeader(jobName, "JobName", "Job Name");
   setByHeader(address, "Address");
   setByHeader(created, "Created");
   setByHeader(now, "Modified");
-  setByHeader(JSON.stringify(project), "JSON", "Project JSON");
+
+  // Full project JSON now lives in Drive. Keep the legacy cell empty so
+  // large projects never hit the 50,000-character Google Sheets limit.
+  setByHeader("", "JSON", "Project JSON");
+  setByHeader(jsonFileId, "JSONFileID", "JSON File ID");
   setByHeader(model, "Model");
   setByHeader(lender, "Lender");
   setByHeader(electrician, "Electrician");
+  setByHeader(startDate, "StartDate", "Start Date");
 
   sheet
     .getRange(row, 1, 1, output.length)
@@ -564,9 +428,9 @@ function saveProject(request) {
   return {
     success: true,
     action: wasExisting ? "updated" : "created",
-    projectId
+    projectId,
+    jsonFileId
   };
-
 }
 
 //----------------------------------
@@ -574,7 +438,6 @@ function saveProject(request) {
 //----------------------------------
 
 function getProjects() {
-
   const sheet = getProjectSheet();
   const lastRow = sheet.getLastRow();
 
@@ -587,10 +450,11 @@ function getProjects() {
   const addressColumn = projectColumn_(map, "Address");
   const createdColumn = projectColumn_(map, "Created");
   const modifiedColumn = projectColumn_(map, "Modified");
-  const jsonColumn = projectColumn_(map, "JSON", "Project JSON");
   const modelColumn = projectColumn_(map, "Model");
   const lenderColumn = projectColumn_(map, "Lender");
   const electricianColumn = projectColumn_(map, "Electrician");
+  const startDateColumn = projectColumn_(map, "StartDate", "Start Date");
+  const jsonFileColumn = projectColumn_(map, "JSONFileID", "JSON File ID");
 
   const values = sheet
     .getRange(2, 1, lastRow - 1, headers.length)
@@ -599,14 +463,17 @@ function getProjects() {
   return values
     .filter(row => idColumn && row[idColumn - 1])
     .map(row => {
-      const project = jsonColumn
-        ? parseProjectJSON(row[jsonColumn - 1])
-        : null;
+      const project = getStoredProjectFromRow_(row, map);
 
       if (project) {
-        project.model = project.model || (modelColumn ? String(row[modelColumn - 1] || "").trim() : "");
-        project.lender = project.lender || (lenderColumn ? String(row[lenderColumn - 1] || "").trim() : "");
-        project.electrician = project.electrician || (electricianColumn ? String(row[electricianColumn - 1] || "").trim() : "");
+        project.model = project.model ||
+          (modelColumn ? String(row[modelColumn - 1] || "").trim() : "");
+        project.lender = project.lender ||
+          (lenderColumn ? String(row[lenderColumn - 1] || "").trim() : "");
+        project.electrician = project.electrician ||
+          (electricianColumn ? String(row[electricianColumn - 1] || "").trim() : "");
+        project.startDate = project.startDate ||
+          (startDateColumn ? String(row[startDateColumn - 1] || "").trim() : "");
       }
 
       return {
@@ -616,12 +483,13 @@ function getProjects() {
         model: modelColumn ? String(row[modelColumn - 1] || "") : "",
         lender: lenderColumn ? String(row[lenderColumn - 1] || "") : "",
         electrician: electricianColumn ? String(row[electricianColumn - 1] || "") : "",
+        startDate: startDateColumn ? String(row[startDateColumn - 1] || "") : "",
+        jsonFileId: jsonFileColumn ? String(row[jsonFileColumn - 1] || "") : "",
         created: createdColumn ? row[createdColumn - 1] : null,
         modified: modifiedColumn ? row[modifiedColumn - 1] : null,
         project
       };
     });
-
 }
 
 //----------------------------------
@@ -629,44 +497,24 @@ function getProjects() {
 //----------------------------------
 
 function loadProject(request) {
-
   const sheet = getProjectSheet();
-
-  const jobName = String(
-    request.jobName || ""
-  ).trim();
-
-  const address = String(
-    request.address || ""
-  ).trim();
+  const jobName = String(request.jobName || "").trim();
+  const address = String(request.address || "").trim();
 
   const row = findProjectRowByDetails(
-
     sheet,
-
     jobName,
-
     address
-
   );
 
   if (!row) {
-
     return {
-
       success: true,
-
       found: false
-
     };
-
   }
 
-  return buildLoadedProjectResponse(
-    sheet,
-    row
-  );
-
+  return buildLoadedProjectResponse(sheet, row);
 }
 
 //----------------------------------
@@ -674,56 +522,29 @@ function loadProject(request) {
 //----------------------------------
 
 function loadProjectById(request) {
-
   const sheet = getProjectSheet();
-
   const projectId = String(
-
-    request.projectId ||
-    request.id ||
-    ""
-
+    request.projectId || request.id || ""
   ).trim();
 
   if (!projectId) {
-
     return {
-
       success: false,
-
       found: false,
-
       message: "Project ID is required."
-
     };
-
   }
 
-  const row = findProjectRowById(
-
-    sheet,
-
-    projectId
-
-  );
+  const row = findProjectRowById(sheet, projectId);
 
   if (!row) {
-
     return {
-
       success: true,
-
       found: false
-
     };
-
   }
 
-  return buildLoadedProjectResponse(
-    sheet,
-    row
-  );
-
+  return buildLoadedProjectResponse(sheet, row);
 }
 
 //----------------------------------
@@ -731,111 +552,95 @@ function loadProjectById(request) {
 //----------------------------------
 
 function deleteProject(request) {
-
   const sheet = getProjectSheet();
-
   const projectId = String(
-
-    request.projectId ||
-    request.id ||
-    ""
-
+    request.projectId || request.id || ""
   ).trim();
 
   if (!projectId) {
-
     return {
-
       success: false,
-
       message: "Project ID is required."
-
     };
-
   }
 
-  const row = findProjectRowById(
-
-    sheet,
-
-    projectId
-
-  );
+  const row = findProjectRowById(sheet, projectId);
 
   if (!row) {
-
     return {
-
       success: true,
-
       deleted: false,
-
       message: "Project not found."
-
     };
-
   }
 
-  sheet.deleteRow(row);
+  const { map } = ensureProjectHeaders_(sheet);
+  const jsonFileColumn = projectColumn_(map, "JSONFileID", "JSON File ID");
+  const jsonFileId = jsonFileColumn
+    ? String(sheet.getRange(row, jsonFileColumn).getValue() || "").trim()
+    : "";
 
+  sheet.deleteRow(row);
   deleteProjectBOMSafe(projectId);
 
+  if (jsonFileId && typeof deleteProjectJsonFile_ === "function") {
+    deleteProjectJsonFile_(jsonFileId);
+  }
+
   return {
-
     success: true,
-
     deleted: true,
-
     projectId
-
   };
-
 }
 
 //----------------------------------
 // Build Loaded Project Response
 //----------------------------------
 
-function buildLoadedProjectResponse(
-  sheet,
-  row
-) {
-
-  const { map } = ensureProjectHeaders_(sheet);
+function buildLoadedProjectResponse(sheet, row) {
+  const { headers, map } = ensureProjectHeaders_(sheet);
 
   const idColumn = projectColumn_(map, "ProjectID", "Project ID");
-  const jsonColumn = projectColumn_(map, "JSON", "Project JSON");
   const jobColumn = projectColumn_(map, "JobName", "Job Name");
   const addressColumn = projectColumn_(map, "Address");
   const modelColumn = projectColumn_(map, "Model");
   const lenderColumn = projectColumn_(map, "Lender");
   const electricianColumn = projectColumn_(map, "Electrician");
+  const startDateColumn = projectColumn_(map, "StartDate", "Start Date");
+
+  const rowValues = sheet
+    .getRange(row, 1, 1, headers.length)
+    .getValues()[0];
 
   const projectId = idColumn
-    ? String(sheet.getRange(row, idColumn).getValue() || "").trim()
+    ? String(rowValues[idColumn - 1] || "").trim()
     : "";
 
-  const json = jsonColumn
-    ? sheet.getRange(row, jsonColumn).getValue()
-    : "";
-
-  const project = parseProjectJSON(json);
+  const project = getStoredProjectFromRow_(rowValues, map);
 
   if (!project) {
     return {
       success: false,
       found: true,
       projectId,
-      message: "Project JSON is empty or invalid."
+      message: "Project JSON is empty, invalid, or unavailable."
     };
   }
 
   project.id = project.id || projectId;
-  project.jobName = project.jobName || (jobColumn ? String(sheet.getRange(row, jobColumn).getValue() || "").trim() : "");
-  project.address = project.address || (addressColumn ? String(sheet.getRange(row, addressColumn).getValue() || "").trim() : "");
-  project.model = project.model || (modelColumn ? String(sheet.getRange(row, modelColumn).getValue() || "").trim() : "");
-  project.lender = project.lender || (lenderColumn ? String(sheet.getRange(row, lenderColumn).getValue() || "").trim() : "");
-  project.electrician = project.electrician || (electricianColumn ? String(sheet.getRange(row, electricianColumn).getValue() || "").trim() : "");
+  project.jobName = project.jobName ||
+    (jobColumn ? String(rowValues[jobColumn - 1] || "").trim() : "");
+  project.address = project.address ||
+    (addressColumn ? String(rowValues[addressColumn - 1] || "").trim() : "");
+  project.model = project.model ||
+    (modelColumn ? String(rowValues[modelColumn - 1] || "").trim() : "");
+  project.lender = project.lender ||
+    (lenderColumn ? String(rowValues[lenderColumn - 1] || "").trim() : "");
+  project.electrician = project.electrician ||
+    (electricianColumn ? String(rowValues[electricianColumn - 1] || "").trim() : "");
+  project.startDate = project.startDate ||
+    (startDateColumn ? String(rowValues[startDateColumn - 1] || "").trim() : "");
 
   return {
     success: true,
@@ -843,18 +648,13 @@ function buildLoadedProjectResponse(
     projectId,
     project
   };
-
 }
 
 //----------------------------------
 // Find Project Row By ID
 //----------------------------------
 
-function findProjectRowById(
-  sheet,
-  projectId
-) {
-
+function findProjectRowById(sheet, projectId) {
   if (!projectId) return 0;
 
   const lastRow = sheet.getLastRow();
@@ -871,21 +671,14 @@ function findProjectRowById(
     .matchEntireCell(true);
 
   const cell = finder.findNext();
-
   return cell ? cell.getRow() : 0;
-
 }
 
 //----------------------------------
 // Find Project Row By Details
 //----------------------------------
 
-function findProjectRowByDetails(
-  sheet,
-  jobName,
-  address
-) {
-
+function findProjectRowByDetails(sheet, jobName, address) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return 0;
 
@@ -910,7 +703,6 @@ function findProjectRowByDetails(
   }
 
   return 0;
-
 }
 
 //----------------------------------
@@ -918,7 +710,6 @@ function findProjectRowByDetails(
 //----------------------------------
 
 function createProjectId(sheet) {
-
   const lastRow = sheet.getLastRow();
 
   if (lastRow < 2) {
@@ -953,7 +744,6 @@ function createProjectId(sheet) {
   });
 
   return "PJ" + String(highestNumber + 1).padStart(6, "0");
-
 }
 
 //----------------------------------
@@ -961,107 +751,48 @@ function createProjectId(sheet) {
 //----------------------------------
 
 function parseProjectJSON(value) {
-
   if (!value) {
-
     return null;
-
   }
 
-  if (
-    typeof value === "object"
-  ) {
-
+  if (typeof value === "object") {
     return value;
-
   }
 
   try {
-
-    return JSON.parse(
-      String(value)
-    );
-
+    return JSON.parse(String(value));
   }
   catch (err) {
-
-    Logger.log(
-      "Invalid Project JSON: " +
-      err.message
-    );
-
+    Logger.log("Invalid Project JSON: " + err.message);
     return null;
-
   }
-
 }
 
 //----------------------------------
-// Save Project BOM Safely
+// BOM Safe Wrappers
 //----------------------------------
 
-function saveProjectBOMSafe(
-
-  projectId,
-
-  jobName,
-
-  address,
-
-  materials
-
-) {
-
-  if (
-    typeof saveProjectBOM !==
-    "function"
-  ) {
-
-    Logger.log(
-      "saveProjectBOM() not found. BOM save skipped."
-    );
-
+function saveProjectBOMSafe(projectId, jobName, address, materials) {
+  if (typeof saveProjectBOM !== "function") {
+    Logger.log("saveProjectBOM() not found. BOM save skipped.");
     return;
-
   }
 
   saveProjectBOM(
-
     projectId,
-
     jobName,
-
     address,
-
     materials
-
   );
-
 }
 
-//----------------------------------
-// Delete Project BOM Safely
-//----------------------------------
-
-function deleteProjectBOMSafe(
-  projectId
-) {
-
-  if (
-    typeof deleteProjectBOM !==
-    "function"
-  ) {
-
-    Logger.log(
-      "deleteProjectBOM() not found. BOM deletion skipped."
-    );
-
+function deleteProjectBOMSafe(projectId) {
+  if (typeof deleteProjectBOM !== "function") {
+    Logger.log("deleteProjectBOM() not found. BOM deletion skipped.");
     return;
-
   }
 
   deleteProjectBOM(projectId);
-
 }
 
 //----------------------------------
@@ -1069,83 +800,44 @@ function deleteProjectBOMSafe(
 //----------------------------------
 
 function getMMLVersion() {
-
-  const spreadsheet =
-    getProjectSpreadsheet();
-
-  const sheet = spreadsheet.getSheetByName(
-    MML_VERSION_SHEET
-  );
+  const spreadsheet = getProjectSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(MML_VERSION_SHEET);
 
   if (!sheet) {
-
-    throw new Error(
-      "MML sheet not found."
-    );
-
+    throw new Error("MML sheet not found.");
   }
 
   const lastRow = sheet.getLastRow();
   const lastColumn = sheet.getLastColumn();
 
-  if (
-    lastRow < 1 ||
-    lastColumn < 1
-  ) {
-
+  if (lastRow < 1 || lastColumn < 1) {
     return "mml-empty";
-
   }
 
-  //----------------------------------
-  // Build Stable Sheet Snapshot
-  //----------------------------------
-
   const values = sheet
-    .getRange(
-      1,
-      1,
-      lastRow,
-      lastColumn
-    )
+    .getRange(1, 1, lastRow, lastColumn)
     .getDisplayValues();
 
   const snapshot = JSON.stringify({
-
     rows: lastRow,
-
     columns: lastColumn,
-
     values
-
   });
 
-  //----------------------------------
-  // SHA-256 Version Hash
-  //----------------------------------
-
   const digest = Utilities.computeDigest(
-
     Utilities.DigestAlgorithm.SHA_256,
-
     snapshot,
-
     Utilities.Charset.UTF_8
-
   );
 
   return digest
     .map(byte =>
-
       (byte + 256)
         .toString(16)
         .slice(-2)
-
     )
     .join("");
-
 }
-
 
 //----------------------------------
 // Material Image API Configuration
@@ -1169,7 +861,6 @@ const CONFIG = {
 
   API_KEY: ""
 };
-
 
 //----------------------------------
 // Upload Image and Update MML
@@ -1217,7 +908,6 @@ function uploadMaterialImage(request) {
     }
 
     const table = readMmlTable(sheet);
-
     const matchingRows = findCatalogRows(
       table,
       catalogNumbers
@@ -1236,8 +926,6 @@ function uploadMaterialImage(request) {
       CONFIG.DRIVE_FOLDER_ID
     );
 
-    // The image is uploaded only once, even when multiple catalog
-    // variants are selected.
     driveFile = folder.createFile(blob);
 
     if (CONFIG.MAKE_FILES_PUBLIC) {
@@ -1246,8 +934,8 @@ function uploadMaterialImage(request) {
           DriveApp.Access.ANYONE_WITH_LINK,
           DriveApp.Permission.VIEW
         );
-      } catch (sharingError) {
-        // Keep the upload, but report the sharing restriction.
+      }
+      catch (sharingError) {
         console.warn(
           "Could not enable public link sharing: " +
           sharingError.message
@@ -1274,8 +962,8 @@ function uploadMaterialImage(request) {
         "Uploaded one image and updated " +
         matchingRows.length +
         " MML row(s).",
-      fileId: fileId,
-      fileUrl: fileUrl,
+      fileId,
+      fileUrl,
       fileName: driveFile.getName(),
       updatedRows: matchingRows.length,
       updatedCatalogs: getUniqueCatalogs(matchingRows),
@@ -1284,12 +972,13 @@ function uploadMaterialImage(request) {
         matchingRows
       )
     };
-  } catch (error) {
-    // Prevent an orphaned Drive image when the sheet update fails.
+  }
+  catch (error) {
     if (driveFile) {
       try {
         driveFile.setTrashed(true);
-      } catch (cleanupError) {
+      }
+      catch (cleanupError) {
         console.error(
           "Unable to trash failed upload: " +
           cleanupError.message
@@ -1298,15 +987,11 @@ function uploadMaterialImage(request) {
     }
 
     throw error;
-  } finally {
+  }
+  finally {
     lock.releaseLock();
   }
 }
-
-
-//----------------------------------
-// Read MML
-//----------------------------------
 
 function readMmlTable(sheet) {
   const lastRow = sheet.getLastRow();
@@ -1338,15 +1023,10 @@ function readMmlTable(sheet) {
       : [];
 
   return {
-    headers: headers,
-    values: values
+    headers,
+    values
   };
 }
-
-
-//----------------------------------
-// Find Catalog Rows
-//----------------------------------
 
 function findCatalogRows(table, catalogNumbers) {
   const catalogColumn = table.headers.indexOf(
@@ -1371,20 +1051,14 @@ function findCatalogRows(table, catalogNumbers) {
       requested[normalizeCatalogKey(catalogNumber)]
     ) {
       matchingRows.push({
-        // Sheet data starts at row 2.
         rowNumber: index + 2,
-        catalogNumber: catalogNumber
+        catalogNumber
       });
     }
   });
 
   return matchingRows;
 }
-
-
-//----------------------------------
-// Update MML Rows
-//----------------------------------
 
 function updateMmlRows(
   sheet,
@@ -1412,11 +1086,6 @@ function updateMmlRows(
   });
 }
 
-
-//----------------------------------
-// Validation
-//----------------------------------
-
 function validateConfiguration() {
   const required = [
     ["SPREADSHEET_ID", CONFIG.SPREADSHEET_ID],
@@ -1436,7 +1105,6 @@ function validateConfiguration() {
   });
 }
 
-
 function validateApiKey(request) {
   if (!CONFIG.API_KEY) {
     return;
@@ -1447,7 +1115,6 @@ function validateApiKey(request) {
   }
 }
 
-
 function requireHeader(headers, headerName) {
   if (headers.indexOf(headerName) === -1) {
     throw new Error(
@@ -1455,11 +1122,6 @@ function requireHeader(headers, headerName) {
     );
   }
 }
-
-
-//----------------------------------
-// Request Helpers
-//----------------------------------
 
 function normalizeCatalogNumbers(request) {
   let values =
@@ -1478,8 +1140,7 @@ function normalizeCatalogNumbers(request) {
     const catalogNumber = String(value || "").trim();
 
     if (catalogNumber) {
-      unique[normalizeCatalogKey(catalogNumber)] =
-        catalogNumber;
+      unique[normalizeCatalogKey(catalogNumber)] = catalogNumber;
     }
   });
 
@@ -1488,16 +1149,12 @@ function normalizeCatalogNumbers(request) {
   });
 }
 
-
 function normalizeCatalogKey(value) {
   return String(value || "").trim().toUpperCase();
 }
 
-
 function normalizeBase64(value) {
   let base64 = String(value || "").trim();
-
-  // Also accepts complete data URLs.
   const marker = ";base64,";
   const markerIndex = base64.indexOf(marker);
 
@@ -1509,7 +1166,6 @@ function normalizeBase64(value) {
 
   return base64.replace(/\s/g, "");
 }
-
 
 function sanitizeFileName(value) {
   let name = String(value || "").trim();
@@ -1523,11 +1179,6 @@ function sanitizeFileName(value) {
   return name.substring(0, 200);
 }
 
-
-//----------------------------------
-// Result Helpers
-//----------------------------------
-
 function getUniqueCatalogs(matchingRows) {
   const catalogs = {};
 
@@ -1538,11 +1189,7 @@ function getUniqueCatalogs(matchingRows) {
   return Object.keys(catalogs);
 }
 
-
-function findMissingCatalogs(
-  requestedCatalogs,
-  matchingRows
-) {
+function findMissingCatalogs(requestedCatalogs, matchingRows) {
   const found = {};
 
   matchingRows.forEach(function (match) {
