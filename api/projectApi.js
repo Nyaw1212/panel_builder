@@ -83,6 +83,92 @@ async function loadLocalJSON(path) {
 }
 
 //----------------------------------
+// MML Version
+//----------------------------------
+
+async function getMMLVersion() {
+
+    const result = await apiRequest({
+
+        action: "getMMLVersion"
+
+    });
+
+    if (!result.success) {
+
+        return null;
+
+    }
+
+    return String(
+
+        result.version ||
+
+        result.mmlVersion ||
+
+        ""
+
+    );
+
+}
+
+//----------------------------------
+// Fetch MML
+//----------------------------------
+
+async function fetchMMLFromApi(version = "") {
+
+    console.log("Catalog Source: Apps Script");
+
+    const result = await apiRequest({
+
+        action: "getMML"
+
+    });
+
+    if (!result.success) {
+
+        console.error(result.message);
+
+        return null;
+
+    }
+
+    const mml = result.mml || [];
+
+    const resolvedVersion = String(
+
+        result.version ||
+
+        result.mmlVersion ||
+
+        version ||
+
+        "unversioned"
+
+    );
+
+    saveMMLCache(
+
+        mml,
+
+        resolvedVersion
+
+    );
+
+    console.log(
+
+        "MML Cached:",
+
+        resolvedVersion
+
+    );
+
+    return mml;
+
+}
+
+//----------------------------------
 // Get MML
 //----------------------------------
 
@@ -106,39 +192,120 @@ async function getMML() {
 
     if (cache) {
 
-        console.log("Catalog Source: Cache");
+        console.log(
+
+            "Catalog Source: Cache",
+
+            cache.version
+
+        );
+
+        //----------------------------------
+        // Revalidate In Background
+        //----------------------------------
+
+        revalidateMMLCache(cache);
+
+        //----------------------------------
+        // Return Immediately
+        //----------------------------------
 
         return cache.data;
 
     }
 
     //----------------------------------
-    // Apps Script
+    // First Load
     //----------------------------------
 
-    console.log("Catalog Source: Apps Script");
+    return (
 
-    const result = await apiRequest({
+        await fetchMMLFromApi()
 
-        action: "getMML"
+    ) || [];
 
-    });
+}
 
-    if (!result.success) {
+//----------------------------------
+// Revalidate MML Cache
+//----------------------------------
 
-        console.error(result.message);
+async function revalidateMMLCache(cache) {
 
-        return [];
+    try {
+
+        const remoteVersion =
+
+            await getMMLVersion();
+
+        if (!remoteVersion) {
+
+            console.warn(
+
+                "MML version check unavailable; keeping cache."
+
+            );
+
+            return;
+
+        }
+
+        if (
+
+            String(cache.version) ===
+
+            String(remoteVersion)
+
+        ) {
+
+            console.log(
+
+                "MML Cache Current:",
+
+                remoteVersion
+
+            );
+
+            return;
+
+        }
+
+        console.log(
+
+            "MML update detected:",
+
+            cache.version,
+
+            "→",
+
+            remoteVersion
+
+        );
+
+        await fetchMMLFromApi(
+
+            remoteVersion
+
+        );
+
+        console.log(
+
+            "MML cache updated in background."
+
+        );
 
     }
+    catch (err) {
 
-    const mml = result.mml || [];
+        console.warn(
 
-    saveMMLCache(mml);
+            "MML background version check failed:",
 
-    console.log("MML Cached");
+            err
 
-    return mml;
+        );
+
+    }
 
 }
 
@@ -314,6 +481,8 @@ window.API = {
 
     getMML,
 
+    getMMLVersion,
+
     getPresets,
 
     saveProject,
@@ -330,6 +499,7 @@ window.API = {
 // Legacy Compatibility
 //----------------------------------
 
+window.getMMLVersion = getMMLVersion;
 window.saveProject = saveProject;
 window.loadProject = loadProject;
 window.getProjects = getProjects;
