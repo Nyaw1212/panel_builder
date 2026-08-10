@@ -149,7 +149,23 @@ function doPost(e) {
 
           success: true,
 
-          presets: getPresets()
+          presets: getPresets(),
+
+          version: getPresetsVersion()
+
+        });
+
+      //----------------------------------
+      // Get PRESETS Version
+      //----------------------------------
+
+      case "getPresetsVersion":
+
+        return jsonOutput({
+
+          success: true,
+
+          version: getPresetsVersion()
 
         });
 
