@@ -3,6 +3,7 @@
 //----------------------------------
 
 const PROJECT_BOM_SHEET = "PROJECT_BOM";
+const PROJECT_EE_SHEET = "EE";
 
 //----------------------------------
 // Normalize BOM Header
@@ -80,7 +81,8 @@ function getProjectBOMProjectMeta_(projectId) {
   const empty = {
     model: "",
     lender: "",
-    electrician: ""
+    electrician: "",
+    startDate: ""
   };
 
   if (!sheet || sheet.getLastRow() < 2 || sheet.getLastColumn() < 1) {
@@ -140,39 +142,130 @@ function getProjectBOMProjectMeta_(projectId) {
   let model = valueFor("model");
   let lender = valueFor("lender");
   let electrician = valueFor("electrician");
+  let startDate = valueFor("startdate");
 
-  // Backward-compatible fallback: read the saved project JSON.
-  if (!model || !lender || !electrician) {
-    const jsonIndex =
-      map.json !== undefined
-        ? map.json
-        : map.projectjson;
+  //----------------------------------
+  // Backward-Compatible Project JSON Fallback
+  //----------------------------------
 
-    if (jsonIndex !== undefined && row[jsonIndex]) {
-      try {
-        const project =
-          typeof row[jsonIndex] === "object"
-            ? row[jsonIndex]
-            : JSON.parse(String(row[jsonIndex]));
+  if (!model || !lender || !electrician || !startDate) {
+    let project = null;
 
-        model = model || String(project.model || "").trim();
-        lender = lender || String(project.lender || "").trim();
-        electrician = electrician || String(project.electrician || "").trim();
+    const jsonFileIndex =
+      map.jsonfileid !== undefined
+        ? map.jsonfileid
+        : undefined;
+
+    if (
+      jsonFileIndex !== undefined &&
+      row[jsonFileIndex] &&
+      typeof readProjectJsonFile_ === "function"
+    ) {
+      project = readProjectJsonFile_(row[jsonFileIndex]);
+    }
+
+    if (!project) {
+      const jsonIndex =
+        map.json !== undefined
+          ? map.json
+          : map.projectjson;
+
+      if (jsonIndex !== undefined && row[jsonIndex]) {
+        try {
+          project =
+            typeof row[jsonIndex] === "object"
+              ? row[jsonIndex]
+              : JSON.parse(String(row[jsonIndex]));
+        }
+        catch (err) {
+          Logger.log(
+            "Unable to parse project metadata for PROJECT_BOM: " +
+            err.message
+          );
+        }
       }
-      catch (err) {
-        Logger.log(
-          "Unable to parse project metadata for PROJECT_BOM: " +
-          err.message
-        );
-      }
+    }
+
+    if (project) {
+      model = model || String(project.model || "").trim();
+      lender = lender || String(project.lender || "").trim();
+      electrician = electrician || String(project.electrician || "").trim();
+      startDate = startDate || String(project.startDate || "").trim();
     }
   }
 
   return {
     model,
     lender,
-    electrician
+    electrician,
+    startDate
   };
+}
+
+//----------------------------------
+// EE Lookup
+//----------------------------------
+
+function normalizeElectricianName_(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();
+}
+
+function getElectricianEELink_(electrician) {
+  const target = normalizeElectricianName_(electrician);
+
+  if (!target) {
+    return "";
+  }
+
+  const spreadsheet = getProjectSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(PROJECT_EE_SHEET);
+
+  if (!sheet || sheet.getLastRow() < 1) {
+    return "";
+  }
+
+  const values = sheet
+    .getRange(1, 1, sheet.getLastRow(), Math.min(2, sheet.getLastColumn()))
+    .getDisplayValues();
+
+  for (let index = 0; index < values.length; index++) {
+    const name = normalizeElectricianName_(values[index][0]);
+
+    if (name === target) {
+      return String(values[index][1] || "").trim();
+    }
+  }
+
+  Logger.log(
+    "No EE lookup match for electrician: " + electrician
+  );
+
+  return "";
+}
+
+//----------------------------------
+// BOS Date Value
+//----------------------------------
+
+function getProjectBOSDateValue_(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) {
+    return text;
+  }
+
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    12,
+    0,
+    0
+  );
 }
 
 //----------------------------------
@@ -228,6 +321,8 @@ function saveProjectBOM(
 
   const { headers, map } = getProjectBOMHeaderMap(sheet);
   const projectMeta = getProjectBOMProjectMeta_(normalizedProjectId);
+  const eeLink = getElectricianEELink_(projectMeta.electrician);
+  const bosDate = getProjectBOSDateValue_(projectMeta.startDate);
 
   //----------------------------------
   // Build Rows
@@ -276,6 +371,20 @@ function saveProjectBOM(
       map,
       ["Electrician"],
       projectMeta.electrician
+    );
+
+    setProjectBOMValue(
+      row,
+      map,
+      ["EE"],
+      eeLink
+    );
+
+    setProjectBOMValue(
+      row,
+      map,
+      ["BOSdate", "BOS Date", "StartDate", "Start Date"],
+      bosDate
     );
 
     setProjectBOMValue(
@@ -384,10 +493,28 @@ function saveProjectBOM(
     )
     .setValues(rows);
 
+  const bosDateColumn = getProjectBOMColumn(
+    map,
+    ["BOSdate", "BOS Date", "StartDate", "Start Date"]
+  );
+
+  if (bosDateColumn !== undefined && projectMeta.startDate) {
+    sheet
+      .getRange(
+        sheet.getLastRow() - rows.length + 1,
+        bosDateColumn + 1,
+        rows.length,
+        1
+      )
+      .setNumberFormat("m/d/yyyy");
+  }
+
   return {
     success: true,
     projectId: normalizedProjectId,
-    materialCount: rows.length
+    materialCount: rows.length,
+    eeMatched: Boolean(eeLink),
+    bosDate: projectMeta.startDate
   };
 }
 
@@ -432,10 +559,6 @@ function deleteProjectBOM(projectId) {
     .getValues();
 
   const normalizedProjectId = String(projectId || "").trim();
-
-  //----------------------------------
-  // Delete Bottom-Up
-  //----------------------------------
 
   for (let index = values.length - 1; index >= 0; index--) {
     const savedProjectId = String(
