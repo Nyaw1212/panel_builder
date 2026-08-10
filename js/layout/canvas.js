@@ -17,6 +17,17 @@ let autoSaveEnabled = false;
 let commandLineTargetCell = null;
 let commandLineHistory = [];
 let commandLineHistoryIndex = -1;
+let commandLineSuggestions = [];
+let commandLineSuggestionIndex = -1;
+
+const PANEL_COMMANDS = [
+  { value: "HELP", label: "HELP", detail: "Show available commands" },
+  { value: "PLACE ", label: "PLACE", detail: "Place a preset" },
+  { value: "CELL ", label: "CELL", detail: "Choose target cell" },
+  { value: "UNDO", label: "UNDO", detail: "Undo last change" },
+  { value: "REDO", label: "REDO", detail: "Redo last change" },
+  { value: "CLEAR", label: "CLEAR", detail: "Clear target cell" }
+];
 
 function installCommandLineStyles() {
   if (document.getElementById("panelBuilderCommandLineStyles")) {
@@ -83,6 +94,55 @@ function installCommandLineStyles() {
       color: #4ade80;
     }
 
+    .panel-command-suggestions {
+      position: absolute;
+      left: 92px;
+      right: 10px;
+      bottom: calc(100% + 7px);
+      display: none;
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid rgba(96, 165, 250, .34);
+      border-radius: 8px;
+      background: rgba(7, 17, 31, .98);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .48);
+      padding: 4px;
+    }
+
+    .panel-command-suggestions.is-open {
+      display: block;
+    }
+
+    .panel-command-suggestion {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #dbeafe;
+    }
+
+    .panel-command-suggestion:hover,
+    .panel-command-suggestion.is-active {
+      background: rgba(59, 130, 246, .2);
+    }
+
+    .panel-command-suggestion__value {
+      font-weight: 800;
+      color: #f8fafc;
+    }
+
+    .panel-command-suggestion__detail {
+      overflow: hidden;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     #grid .cell.command-target-cell {
       border-color: #fbbf24 !important;
       box-shadow: inset 0 0 0 2px rgba(251, 191, 36, .42), 0 0 18px rgba(251, 191, 36, .22) !important;
@@ -93,6 +153,11 @@ function installCommandLineStyles() {
       border-color: rgba(226, 232, 240, .2);
     }
 
+    body.theme-smoke .panel-command-suggestions {
+      background: rgba(24, 27, 30, .98);
+      border-color: rgba(226, 232, 240, .18);
+    }
+
     @media (max-width: 900px) {
       .panel-command-line {
         left: 12px;
@@ -101,6 +166,11 @@ function installCommandLineStyles() {
 
       .panel-command-line__status {
         display: none;
+      }
+
+      .panel-command-suggestions {
+        left: 8px;
+        right: 8px;
       }
     }
   `;
@@ -130,15 +200,60 @@ function createCommandLine() {
       aria-label="Panel Builder command line"
     >
     <span id="panelCommandStatus" class="panel-command-line__status">Ready</span>
+    <div id="panelCommandSuggestions" class="panel-command-suggestions" role="listbox"></div>
   `;
 
   document.body.appendChild(bar);
 
   const input = document.getElementById("panelCommandInput");
 
+  input.addEventListener("input", () => {
+    refreshCommandSuggestions(input.value);
+  });
+
+  input.addEventListener("focus", () => {
+    refreshCommandSuggestions(input.value);
+  });
+
   input.addEventListener("keydown", async event => {
+    if (isCommandSuggestionOpen()) {
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        moveCommandSuggestion(-1);
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        moveCommandSuggestion(1);
+        return;
+      }
+
+      if (event.key === "Tab") {
+        event.preventDefault();
+        acceptCommandSuggestion();
+        return;
+      }
+
+      if (event.key === "Enter" && commandLineSuggestionIndex >= 0) {
+        event.preventDefault();
+        acceptCommandSuggestion();
+        closeCommandSuggestions();
+        await executePanelCommand(input.value);
+        input.value = "";
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCommandSuggestions();
+        return;
+      }
+    }
+
     if (event.key === "Enter") {
       event.preventDefault();
+      closeCommandSuggestions();
       await executePanelCommand(input.value);
       input.value = "";
       return;
@@ -147,6 +262,7 @@ function createCommandLine() {
     if (event.key === "Escape") {
       event.preventDefault();
       input.value = "";
+      closeCommandSuggestions();
       clearCommandTargetCell();
       setCommandLineStatus("Command cancelled.");
       input.blur();
@@ -159,6 +275,7 @@ function createCommandLine() {
       commandLineHistoryIndex = Math.max(0, commandLineHistoryIndex - 1);
       input.value = commandLineHistory[commandLineHistoryIndex] || "";
       input.setSelectionRange(input.value.length, input.value.length);
+      refreshCommandSuggestions(input.value);
       return;
     }
 
@@ -171,6 +288,13 @@ function createCommandLine() {
       );
       input.value = commandLineHistory[commandLineHistoryIndex] || "";
       input.setSelectionRange(input.value.length, input.value.length);
+      refreshCommandSuggestions(input.value);
+    }
+  });
+
+  document.addEventListener("click", event => {
+    if (!bar.contains(event.target)) {
+      closeCommandSuggestions();
     }
   });
 
@@ -189,6 +313,158 @@ function createCommandLine() {
 
     input.focus();
   });
+}
+
+function getPresetCommandSuggestions() {
+  const rows = Array.isArray(window.presets) ? window.presets : [];
+  const counts = new Map();
+
+  rows.forEach(row => {
+    const code = String(row?.PRESET || "").trim().toUpperCase();
+    if (!code) return;
+    counts.set(code, (counts.get(code) || 0) + 1);
+  });
+
+  return Array.from(counts.entries()).map(([code, count]) => ({
+    value: code,
+    label: code,
+    detail: `${count} material${count === 1 ? "" : "s"}`,
+    kind: "preset"
+  }));
+}
+
+function buildCommandSuggestions(rawValue) {
+  const raw = String(rawValue || "");
+  const normalized = raw.trim().toUpperCase();
+  const presetSuggestions = getPresetCommandSuggestions();
+
+  if (!normalized) {
+    return PANEL_COMMANDS.slice(0, 6);
+  }
+
+  if (normalized === "PLACE" || normalized.startsWith("PLACE ")) {
+    const query = normalized.replace(/^PLACE\s*/, "").trim();
+
+    return presetSuggestions
+      .filter(item => !query || item.label.includes(query))
+      .sort((a, b) => {
+        const aStarts = a.label.startsWith(query) ? 0 : 1;
+        const bStarts = b.label.startsWith(query) ? 0 : 1;
+        return aStarts - bStarts || a.label.localeCompare(b.label);
+      })
+      .slice(0, 10)
+      .map(item => ({ ...item, value: `PLACE ${item.value}` }));
+  }
+
+  const commandMatches = PANEL_COMMANDS.filter(item =>
+    item.label.startsWith(normalized)
+  );
+
+  const presetMatches = presetSuggestions
+    .filter(item => item.label.includes(normalized))
+    .sort((a, b) => {
+      const aStarts = a.label.startsWith(normalized) ? 0 : 1;
+      const bStarts = b.label.startsWith(normalized) ? 0 : 1;
+      return aStarts - bStarts || a.label.localeCompare(b.label);
+    });
+
+  return [...commandMatches, ...presetMatches].slice(0, 10);
+}
+
+function refreshCommandSuggestions(rawValue) {
+  commandLineSuggestions = buildCommandSuggestions(rawValue);
+  commandLineSuggestionIndex = commandLineSuggestions.length ? 0 : -1;
+  renderCommandSuggestions();
+}
+
+function renderCommandSuggestions() {
+  const popup = document.getElementById("panelCommandSuggestions");
+
+  if (!popup) return;
+
+  popup.innerHTML = "";
+
+  if (!commandLineSuggestions.length) {
+    popup.classList.remove("is-open");
+    return;
+  }
+
+  commandLineSuggestions.forEach((suggestion, index) => {
+    const row = document.createElement("div");
+    row.className = "panel-command-suggestion";
+    row.classList.toggle("is-active", index === commandLineSuggestionIndex);
+    row.setAttribute("role", "option");
+    row.setAttribute("aria-selected", index === commandLineSuggestionIndex ? "true" : "false");
+
+    const value = document.createElement("span");
+    value.className = "panel-command-suggestion__value";
+    value.textContent = suggestion.label;
+
+    const detail = document.createElement("span");
+    detail.className = "panel-command-suggestion__detail";
+    detail.textContent = suggestion.detail || "";
+
+    row.appendChild(value);
+    row.appendChild(detail);
+
+    row.addEventListener("mouseenter", () => {
+      commandLineSuggestionIndex = index;
+      renderCommandSuggestions();
+    });
+
+    row.addEventListener("mousedown", event => {
+      event.preventDefault();
+      commandLineSuggestionIndex = index;
+      acceptCommandSuggestion();
+    });
+
+    popup.appendChild(row);
+  });
+
+  popup.classList.add("is-open");
+}
+
+function isCommandSuggestionOpen() {
+  return document
+    .getElementById("panelCommandSuggestions")
+    ?.classList.contains("is-open");
+}
+
+function closeCommandSuggestions() {
+  commandLineSuggestions = [];
+  commandLineSuggestionIndex = -1;
+  document
+    .getElementById("panelCommandSuggestions")
+    ?.classList.remove("is-open");
+}
+
+function moveCommandSuggestion(direction) {
+  if (!commandLineSuggestions.length) return false;
+
+  const count = commandLineSuggestions.length;
+  commandLineSuggestionIndex =
+    (commandLineSuggestionIndex + direction + count) % count;
+  renderCommandSuggestions();
+  return true;
+}
+
+function acceptCommandSuggestion() {
+  const suggestion = commandLineSuggestions[commandLineSuggestionIndex];
+  const input = document.getElementById("panelCommandInput");
+
+  if (!suggestion || !input) return false;
+
+  input.value = suggestion.value;
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+
+  if (suggestion.value.endsWith(" ")) {
+    refreshCommandSuggestions(input.value);
+  } else {
+    closeCommandSuggestions();
+  }
+
+  return true;
 }
 
 function isCommandTypingElement(element) {
