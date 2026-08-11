@@ -26,14 +26,161 @@ function pasteSelection(
         getClipboard();
 
     //----------------------------------
-    // Paste Offset
+    // Mouse Target
     //----------------------------------
 
-    const rowOffset =
-        data.offset.row;
+    const hoveredCell =
+        document.querySelector(
+            "#grid .cell:hover"
+        );
 
-    const colOffset =
-        data.offset.column;
+    const hoveredIndex =
+        hoveredCell
+            ? Number(
+                hoveredCell.dataset.index
+              )
+            : NaN;
+
+    const hasMouseTarget =
+        Number.isInteger(hoveredIndex) &&
+        hoveredIndex >= 0;
+
+    //----------------------------------
+    // Paste Origin
+    //----------------------------------
+
+    const targetRow =
+        hasMouseTarget
+            ? Math.floor(
+                hoveredIndex /
+                SETTINGS.columns
+              )
+            : data.origin.row +
+              data.offset.row;
+
+    const targetColumn =
+        hasMouseTarget
+            ? hoveredIndex %
+              SETTINGS.columns
+            : data.origin.column +
+              data.offset.column;
+
+    //----------------------------------
+    // Build Paste Plan
+    //----------------------------------
+
+    const plan =
+        data.panels.map(panel => {
+
+            const row =
+                targetRow +
+                panel.row;
+
+            const column =
+                targetColumn +
+                panel.column;
+
+            return {
+                panel,
+                row,
+                column,
+                startCell:
+                    row *
+                    SETTINGS.columns +
+                    column
+            };
+
+        });
+
+    //----------------------------------
+    // Validate Entire Paste First
+    //----------------------------------
+
+    const plannedCells =
+        new Set();
+
+    const valid =
+        plan.every(entry => {
+
+            const equipment =
+                entry.panel.equipment;
+
+            const width =
+                Number(
+                    equipment.GridWidth ??
+                    entry.panel.width ??
+                    1
+                ) || 1;
+
+            const height =
+                Number(
+                    equipment.GridHeight ??
+                    entry.panel.height ??
+                    1
+                ) || 1;
+
+            for (
+                let r = 0;
+                r < height;
+                r++
+            ) {
+
+                for (
+                    let c = 0;
+                    c < width;
+                    c++
+                ) {
+
+                    const row =
+                        entry.row + r;
+
+                    const column =
+                        entry.column + c;
+
+                    if (
+                        row < 0 ||
+                        column < 0 ||
+                        row >= SETTINGS.rows ||
+                        column >= SETTINGS.columns
+                    ) {
+
+                        return false;
+
+                    }
+
+                    const index =
+                        row *
+                        SETTINGS.columns +
+                        column;
+
+                    if (
+                        getLayout()[index] ||
+                        plannedCells.has(index)
+                    ) {
+
+                        return false;
+
+                    }
+
+                    plannedCells.add(index);
+
+                }
+
+            }
+
+            return true;
+
+        });
+
+    if (!valid) {
+
+        console.warn(
+            "Paste target is occupied or outside the grid."
+        );
+
+        return false;
+
+    }
 
     //----------------------------------
     // Paste Panels
@@ -41,130 +188,94 @@ function pasteSelection(
 
     const pasted = [];
 
-    data.panels.forEach(
-        panel => {
+    plan.forEach(entry => {
 
-            //----------------------------------
-            // Calculate Cell
-            //----------------------------------
+        const panel =
+            entry.panel;
 
-            const row =
-                data.origin.row +
-                panel.row +
-                rowOffset;
-
-            const col =
-                data.origin.column +
-                panel.column +
-                colOffset;
-
-            const startCell =
-                row *
-                    SETTINGS.columns +
-                col;
-
-            //----------------------------------
-            // Place
-            //----------------------------------
-
-            const item =
-                placeItem(
-                    panel.equipment,
-                    startCell,
-                    panel.preset,
-                    {
-                        /*
-                         * Disable per-item history.
-                         * Paste is captured once
-                         * after all panels finish.
-                         */
-                        captureHistory:
-                            false
-                    }
-                );
-
-            //----------------------------------
-            // Placement Failed
-            //----------------------------------
-
-            if (!item) {
-
-                console.warn(
-                    "Paste failed:",
-                    panel
-                        .equipment
-                        .CatalogNumber
-                );
-
-                return;
-
-            }
-
-            //----------------------------------
-            // Restore Properties
-            //----------------------------------
-
-            item.rotation =
-                panel.rotation || 0;
-
-            if (
-                typeof cloneSerializable ===
-                "function"
-            ) {
-
-                item.materials =
-                    cloneSerializable(
-                        panel.materials || []
-                    );
-
-            }
-            else if (
-                typeof structuredClone ===
-                "function"
-            ) {
-
-                item.materials =
-                    structuredClone(
-                        panel.materials || []
-                    );
-
-            }
-            else {
-
-                item.materials =
-                    JSON.parse(
-                        JSON.stringify(
-                            panel.materials ||
-                            []
-                        )
-                    );
-
-            }
-
-            pasted.push(
-                item
+        const item =
+            placeItem(
+                panel.equipment,
+                entry.startCell,
+                panel.preset,
+                {
+                    captureHistory:
+                        false
+                }
             );
 
-        }
-    );
+        if (!item) {
 
-    //----------------------------------
-    // Nothing Pasted
-    //----------------------------------
+            return;
+
+        }
+
+        //----------------------------------
+        // Restore Properties
+        //----------------------------------
+
+        item.rotation =
+            panel.rotation || 0;
+
+        if (
+            typeof cloneSerializable ===
+            "function"
+        ) {
+
+            item.materials =
+                cloneSerializable(
+                    panel.materials || []
+                );
+
+        }
+        else if (
+            typeof structuredClone ===
+            "function"
+        ) {
+
+            item.materials =
+                structuredClone(
+                    panel.materials || []
+                );
+
+        }
+        else {
+
+            item.materials =
+                JSON.parse(
+                    JSON.stringify(
+                        panel.materials || []
+                    )
+                );
+
+        }
+
+        pasted.push(item);
+
+    });
 
     if (
-        !pasted.length
+        pasted.length !==
+        plan.length
     ) {
+
+        console.error(
+            "Paste aborted unexpectedly."
+        );
 
         return false;
 
     }
 
     //----------------------------------
-    // Next Paste Offset
+    // Next Keyboard Paste Offset
     //----------------------------------
 
-    incrementPasteOffset();
+    if (!hasMouseTarget) {
+
+        incrementPasteOffset();
+
+    }
 
     //----------------------------------
     // Select Newly Pasted
@@ -222,8 +333,10 @@ function pasteSelection(
     );
 
     console.log(
-        "Next Offset:",
-        data.offset
+        "Target:",
+        hasMouseTarget
+            ? `Mouse cell ${hoveredIndex}`
+            : data.offset
     );
 
     console.groupEnd();
