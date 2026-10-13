@@ -9,6 +9,7 @@ let activeFittingRunId = null;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
+    { key: "RT", label: "RT", pattern: /\bRT\b|RAIN\s*TIGHT|CONCRETE\s*TIGHT/ },
     { key: "EMT", label: "EMT", pattern: /\bEMT\b/ },
     { key: "PVC", label: "PVC", pattern: /\bPVC\b|SCH\s*\d+/ },
     { key: "LQT", label: "LQT", pattern: /SEALTIGHT|LIQUID|\bL\/?T\b/ }
