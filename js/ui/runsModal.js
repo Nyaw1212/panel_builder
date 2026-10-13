@@ -45,6 +45,8 @@ function createRun() {
 
     runs.push(run);
 
+    saveRunsDraft();
+
     return run;
 
 }
@@ -80,6 +82,16 @@ function refreshRunsBOM() {
 
     if (typeof renderBOM === "function") {
         renderBOM();
+    }
+
+    saveRunsDraft();
+
+}
+
+function saveRunsDraft() {
+
+    if (typeof saveDraft === "function") {
+        saveDraft();
     }
 
 }
@@ -278,6 +290,21 @@ function renderRunsModal() {
         row.querySelector("[data-action='wire']")?.addEventListener(
             "click",
             () => openRunMaterialPicker(runId, "wire")
+        );
+
+        row.querySelector(".run-length-input")?.addEventListener(
+            "input",
+            event => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                const value = Math.max(0, Number(event.target.value || 0));
+                run.length = Number.isFinite(value) ? value : 0;
+
+                // Preserve an in-progress value even if the page refreshes
+                // before the field loses focus.
+                saveRunsDraft();
+            }
         );
 
         row.querySelector(".run-length-input")?.addEventListener(
