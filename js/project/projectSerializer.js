@@ -275,14 +275,21 @@ function serializeRuns() {
           Array.isArray(run?.wires)
             ? run.wires
             : (run?.wire ? [run.wire] : [])
-        )
+        ),
+        fittings: (Array.isArray(run?.fittings) ? run.fittings : [])
+          .map(fitting => ({
+            material: compactCatalogRecord(fitting),
+            qty: Math.max(0, Number(fitting?.qty ?? fitting?.Qty ?? 0))
+          }))
+          .filter(fitting => fitting.material && fitting.qty > 0)
       };
     })
     .filter(run =>
       run.id ||
       run.length ||
       run.conduit ||
-      run.wires.length
+      run.wires.length ||
+      run.fittings.length
     );
 }
 

@@ -36,6 +36,24 @@ function deserializeProject(project) {
                         ? savedRun.wires
                         : (savedRun?.wire ? [savedRun.wire] : [])
                 )
+            ,
+            fittings: (Array.isArray(savedRun?.fittings)
+                ? savedRun.fittings
+                : []
+            ).map(savedFitting => {
+                const material = savedFitting?.material ?? savedFitting;
+
+                return {
+                    ...(typeof hydrateCatalogRecord === "function"
+                        ? hydrateCatalogRecord(material)
+                        : structuredClone(material)
+                    ),
+                    qty: Math.max(
+                        0,
+                        Number(savedFitting?.qty ?? savedFitting?.Qty ?? 0)
+                    )
+                };
+            }).filter(fitting => fitting?.CatalogNumber && fitting.qty > 0)
         }));
 
         setProjectRuns(runs);

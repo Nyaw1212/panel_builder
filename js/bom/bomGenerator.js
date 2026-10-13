@@ -107,6 +107,13 @@ function getFittingBOM() {
             });
         });
 
+        (Array.isArray(run.fittings) ? run.fittings : []).forEach(fitting => {
+            mergeMaterial(map, {
+                ...fitting,
+                qty: Number(fitting?.qty || fitting?.Qty || 0)
+            });
+        });
+
     });
 
     //----------------------------------

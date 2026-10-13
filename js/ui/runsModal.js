@@ -4,6 +4,32 @@
 
 let runsModalElement = null;
 let expandedGutterId = null;
+let fittingModalElement = null;
+let activeFittingRunId = null;
+
+const FITTING_MATRIX_COLUMNS = [
+    { key: "EMT", label: "EMT", pattern: /\bEMT\b/ },
+    { key: "PVC", label: "PVC", pattern: /\bPVC\b|SCH\s*\d+/ },
+    { key: "LQT", label: "LQT", pattern: /SEALTIGHT|LIQUID|\bL\/?T\b/ }
+];
+
+const FITTING_MATRIX_ROWS = [
+    { key: "HUB", label: "Commercial hub", match: (node, desc) => node === "HUB" && /COMMERCIAL|MYERS|HUB/.test(desc) },
+    { key: "CONNECTOR", label: "Connector", match: node => node === "CONNECTOR" },
+    { key: "COUPLING", label: "Coupling", match: node => node === "COUPLING" },
+    { key: "ELBOW", label: "Elbow 90", match: (node, desc) => node === "ELBOW" && /90/.test(desc) },
+    { key: "OFFSET", label: "Offset", match: (node, desc) => node === "NIPPLE" && /OFFSET/.test(desc) },
+    { key: "NIPPLE", label: "Nipple", match: (node, desc) => node === "NIPPLE" && !/OFFSET/.test(desc) },
+    { key: "ADAPTER", label: "Adapter", match: node => node === "ADAPTER" },
+    { key: "LB", label: "LB", match: node => node === "LB" },
+    { key: "LR", label: "LR", match: node => node === "LR" },
+    { key: "LF", label: "LF", match: (node, desc) => node === "LF" || /\bLF\b/.test(desc) },
+    { key: "GROUND_BUSHING", label: "Ground bushing", match: (node, desc) => node === "GROUND BUSHING" || /GROUNDING BUSHING/.test(desc) },
+    { key: "SEALING_LOCKNUT", label: "Sealing locknut", match: (node, desc) => node === "LOCKNUT" && /SEALING/.test(desc) },
+    { key: "PLASTIC_LOCKNUT", label: "Plastic locknut", match: (node, desc) => node === "LOCKNUT" && /PLASTIC/.test(desc) },
+    { key: "GROUND_ROD", label: "Ground rod", match: (node, desc) => node === "GROUND ROD" || /GROUND ROD/.test(desc) },
+    { key: "GROUND_CLAMP", label: "Ground clamp", match: (node, desc) => /GROUND CLAMP/.test(desc) }
+];
 
 function runModalEscape(value) {
 
@@ -65,7 +91,8 @@ function createRun() {
         name,
         length,
         conduit: null,
-        wires: []
+        wires: [],
+        fittings: []
     };
 
     runs.push(run);
@@ -256,6 +283,156 @@ function getGutterRunSummary(gutter, runs) {
 
 }
 
+function getRunFittings(run) {
+
+    if (!Array.isArray(run?.fittings)) {
+        run.fittings = [];
+    }
+
+    return run.fittings;
+
+}
+
+function getRunFittingsSummary(run) {
+
+    const fittings = getRunFittings(run);
+    const quantity = fittings.reduce(
+        (total, fitting) => total + Number(fitting?.qty || 0),
+        0
+    );
+
+    return quantity
+        ? `${fittings.length} fitting types (${quantity} qty)`
+        : "Select fittings";
+
+}
+
+function normalizeFittingValue(value) {
+
+    return String(value || "")
+        .trim()
+        .toUpperCase();
+
+}
+
+function isSameFittingSize(material, size) {
+
+    if (!size) return true;
+
+    const materialSize = normalizeFittingValue(material?.Size)
+        .replace(/\s+/g, "");
+    const selectedSize = normalizeFittingValue(size)
+        .replace(/\s+/g, "");
+
+    return !materialSize || materialSize === selectedSize;
+
+}
+
+function getFittingColumn(material) {
+
+    const description = normalizeFittingValue(material?.Description);
+
+    return FITTING_MATRIX_COLUMNS.find(column =>
+        column.pattern.test(description)
+    ) || null;
+
+}
+
+function getFittingCandidates(materials, run, row, column) {
+
+    const selectedSize = run?.conduit?.Size || "";
+
+    return (Array.isArray(materials) ? materials : [])
+        .filter(item => !item?.Placeable)
+        .filter(item => {
+            const node = normalizeFittingValue(item?.NodeType);
+            const description = normalizeFittingValue(item?.Description);
+
+            return row.match(node, description);
+        })
+        .filter(item => isSameFittingSize(item, selectedSize))
+        .filter(item => {
+            const itemColumn = getFittingColumn(item);
+
+            // Rigid/neutral fittings and grounding parts are listed under
+            // EMT when the catalog does not label a conduit system.
+            if (!itemColumn && column.key === "EMT") {
+                return [
+                    "HUB",
+                    "LB",
+                    "LR",
+                    "LF",
+                    "NIPPLE",
+                    "GROUND_BUSHING",
+                    "SEALING_LOCKNUT",
+                    "PLASTIC_LOCKNUT",
+                    "GROUND_ROD",
+                    "GROUND_CLAMP"
+                ].includes(row.key);
+            }
+
+            return itemColumn?.key === column.key;
+        })
+        .sort((a, b) => {
+            const favorite = Number(b.Favorite || 0) - Number(a.Favorite || 0);
+            if (favorite) return favorite;
+
+            return String(a.CatalogNumber || "").localeCompare(
+                String(b.CatalogNumber || "")
+            );
+        });
+
+}
+
+function getFittingQuantity(run, material) {
+
+    const catalog = String(material?.CatalogNumber || "");
+
+    return getRunFittings(run).find(fitting =>
+        String(fitting?.CatalogNumber || "") === catalog
+    )?.qty || 0;
+
+}
+
+function addRunFitting(run, material) {
+
+    const fittings = getRunFittings(run);
+    const catalog = String(material?.CatalogNumber || "");
+    const existing = fittings.find(fitting =>
+        String(fitting?.CatalogNumber || "") === catalog
+    );
+
+    if (existing) {
+        existing.qty = Number(existing.qty || 0) + 1;
+    }
+    else {
+        fittings.push({
+            ...structuredClone(material),
+            qty: 1
+        });
+    }
+
+}
+
+function removeRunFitting(run, material) {
+
+    const fittings = getRunFittings(run);
+    const catalog = String(material?.CatalogNumber || "");
+    const index = fittings.findIndex(fitting =>
+        String(fitting?.CatalogNumber || "") === catalog
+    );
+
+    if (index < 0) return;
+
+    const fitting = fittings[index];
+    fitting.qty = Number(fitting.qty || 0) - 1;
+
+    if (fitting.qty <= 0) {
+        fittings.splice(index, 1);
+    }
+
+}
+
 function ensureRunsModal() {
 
     if (runsModalElement) return runsModalElement;
@@ -300,6 +477,7 @@ function renderRunsModal() {
                 <span>Run</span>
                 <span>Conduit</span>
                 <span>Wire</span>
+                <span>Fittings</span>
                 <span>Length</span>
                 <span>Calculated BOM</span>
                 <span></span>
@@ -327,6 +505,9 @@ function renderRunsModal() {
                                 </button>
                                 <button class="run-material-button" type="button" data-action="wire" title="Select wire using ampacity filters">
                                     ${runModalEscape(getRunWireLabel(wires))}
+                                </button>
+                                <button class="run-material-button" type="button" data-action="fittings" title="Select run fittings">
+                                    ${runModalEscape(getRunFittingsSummary(run))}
                                 </button>
                                 <label class="run-length-field">
                                     <input
@@ -500,6 +681,11 @@ function renderRunsModal() {
         row.querySelector("[data-action='wire']")?.addEventListener(
             "click",
             () => openRunMaterialPicker(runId, "wire")
+        );
+
+        row.querySelector("[data-action='fittings']")?.addEventListener(
+            "click",
+            () => openRunFittingModal(runId)
         );
 
         row.querySelector(".run-length-input")?.addEventListener(
@@ -724,6 +910,165 @@ function openRunWireModal(runId) {
             openRunsModal();
         }
     });
+
+}
+
+function ensureFittingModal() {
+
+    if (fittingModalElement) return fittingModalElement;
+
+    const overlay = document.createElement("div");
+
+    overlay.id = "runFittingModal";
+    overlay.className = "run-fitting-modal";
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) closeRunFittingModal();
+    });
+
+    document.body.appendChild(overlay);
+    fittingModalElement = overlay;
+
+    return overlay;
+
+}
+
+function getFittingImage(material) {
+
+    const driveId = String(material?.DriveFileID || "").trim();
+
+    if (driveId) {
+        return `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveId)}&sz=w200`;
+    }
+
+    return `images/materials/${encodeURIComponent(
+        String(material?.CatalogNumber || "")
+    )}.png`;
+
+}
+
+async function openRunFittingModal(runId) {
+
+    const run = findRun(runId);
+
+    if (!run) return;
+
+    if (!run.conduit?.Size) {
+        alert("Select the conduit first so fittings can be filtered by size.");
+        return;
+    }
+
+    activeFittingRunId = runId;
+
+    const materials = typeof getMaterials === "function"
+        ? await getMaterials()
+        : [];
+
+    renderRunFittingModal(run, materials);
+
+}
+
+function renderRunFittingModal(run, materials) {
+
+    const overlay = ensureFittingModal();
+    const catalogLookup = new Map();
+
+    const rows = FITTING_MATRIX_ROWS.map(row => {
+        const cells = FITTING_MATRIX_COLUMNS.map(column => {
+            const material = getFittingCandidates(materials, run, row, column)[0] || null;
+
+            if (!material) return `<td class="fitting-matrix-empty">—</td>`;
+
+            const catalog = String(material.CatalogNumber || "");
+            const quantity = getFittingQuantity(run, material);
+            catalogLookup.set(catalog, material);
+
+            return `
+                <td>
+                    <div class="fitting-matrix-cell ${quantity ? "has-quantity" : ""}">
+                        <button type="button" class="fitting-image-button" data-catalog="${runModalEscape(catalog)}" title="Add 1 × ${runModalEscape(material.Description || catalog)}">
+                            <img src="${runModalEscape(getFittingImage(material))}" alt="${runModalEscape(material.Description || catalog)}">
+                            <span class="fitting-image-fallback">${runModalEscape(catalog)}</span>
+                        </button>
+                        <div class="fitting-cell-footer">
+                            <small title="${runModalEscape(material.Description || catalog)}">${runModalEscape(catalog)}</small>
+                            <span class="fitting-quantity">${quantity}</span>
+                            <button type="button" class="fitting-remove-button" data-catalog="${runModalEscape(catalog)}" ${quantity ? "" : "disabled"} title="Remove 1">−</button>
+                        </div>
+                    </div>
+                </td>
+            `;
+        }).join("");
+
+        return `<tr><th scope="row">${runModalEscape(row.label)}</th>${cells}</tr>`;
+    }).join("");
+
+    overlay.innerHTML = `
+        <section class="run-fitting-dialog" role="dialog" aria-modal="true" aria-labelledby="runFittingTitle">
+            <header class="run-fitting-header">
+                <div>
+                    <h2 id="runFittingTitle">${runModalEscape(run.name || "Run")} Fittings</h2>
+                    <p>Conduit size: <strong>${runModalEscape(run.conduit.Size)}</strong>. Click an image to add one fitting.</p>
+                </div>
+                <button class="run-fitting-close" type="button" aria-label="Close fittings">&times;</button>
+            </header>
+            <div class="run-fitting-table-wrap">
+                <table class="run-fitting-table">
+                    <thead><tr><th>Fitting</th>${FITTING_MATRIX_COLUMNS.map(column => `<th>${column.label}</th>`).join("")}</tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+            <footer class="run-fitting-footer">
+                <span>${runModalEscape(getRunFittingsSummary(run))}</span>
+                <button class="runs-done fitting-done" type="button">Done</button>
+            </footer>
+        </section>
+    `;
+
+    overlay.querySelector(".run-fitting-close")?.addEventListener("click", closeRunFittingModal);
+    overlay.querySelector(".fitting-done")?.addEventListener("click", closeRunFittingModal);
+
+    overlay.querySelectorAll(".fitting-image-button img").forEach(image => {
+        image.addEventListener("error", () => {
+            image.style.display = "none";
+            const fallback = image.nextElementSibling;
+            if (fallback) fallback.style.display = "block";
+        });
+    });
+
+    overlay.querySelectorAll(".fitting-image-button").forEach(button => {
+        button.addEventListener("click", () => {
+            const material = catalogLookup.get(button.dataset.catalog || "");
+            if (!material) return;
+
+            addRunFitting(run, material);
+            captureRunsHistory("Run fitting added");
+            refreshRunsBOM();
+            renderRunFittingModal(run, materials);
+        });
+    });
+
+    overlay.querySelectorAll(".fitting-remove-button").forEach(button => {
+        button.addEventListener("click", () => {
+            const material = catalogLookup.get(button.dataset.catalog || "");
+            if (!material) return;
+
+            removeRunFitting(run, material);
+            captureRunsHistory("Run fitting removed");
+            refreshRunsBOM();
+            renderRunFittingModal(run, materials);
+        });
+    });
+
+    overlay.style.display = "flex";
+
+}
+
+function closeRunFittingModal() {
+
+    if (fittingModalElement) fittingModalElement.style.display = "none";
+
+    activeFittingRunId = null;
+    renderRunsModal();
 
 }
 

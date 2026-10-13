@@ -66,7 +66,7 @@
 .runs-grid-header,
 .run-row {
     display: grid;
-    grid-template-columns: minmax(72px, .55fr) minmax(160px, 1.5fr) minmax(160px, 1.5fr) minmax(100px, .7fr) minmax(155px, 1fr) 36px;
+    grid-template-columns: minmax(62px, .5fr) minmax(135px, 1.3fr) minmax(135px, 1.3fr) minmax(135px, 1.25fr) minmax(92px, .65fr) minmax(130px, .9fr) 36px;
     gap: 12px;
     align-items: center;
 }
@@ -267,6 +267,199 @@
     color: var(--v2-blue-light, #60a5fa);
 }
 
+.run-fitting-modal {
+    position: fixed;
+    z-index: 950;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    background: rgba(2, 6, 23, .82);
+    backdrop-filter: blur(5px);
+}
+
+.run-fitting-dialog {
+    width: min(1180px, 100%);
+    max-height: min(760px, 92vh);
+    overflow: hidden;
+    color: var(--v2-text, #f8fafc);
+    background: var(--v2-bg, #0f172a);
+    border: 1px solid var(--v2-border, #2b3b54);
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .58);
+}
+
+.run-fitting-header,
+.run-fitting-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+}
+
+.run-fitting-header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--v2-border, #2b3b54);
+}
+
+.run-fitting-header h2 {
+    margin: 0;
+    font-size: 21px;
+}
+
+.run-fitting-header p {
+    margin: 5px 0 0;
+    color: var(--v2-text-soft, #cbd5e1);
+    font-size: 13px;
+}
+
+.run-fitting-close {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 8px;
+    color: #fff;
+    background: var(--v2-red, #dc2626);
+    cursor: pointer;
+    font-size: 27px;
+    line-height: 1;
+}
+
+.run-fitting-table-wrap {
+    max-height: min(560px, 68vh);
+    overflow: auto;
+}
+
+.run-fitting-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+}
+
+.run-fitting-table th,
+.run-fitting-table td {
+    border-right: 1px solid rgba(148, 163, 184, .2);
+    border-bottom: 1px solid rgba(148, 163, 184, .2);
+    padding: 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.run-fitting-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: #bae6fd;
+    background: #102238;
+    font-size: 12px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.run-fitting-table tbody th {
+    min-width: 130px;
+    color: var(--v2-text-soft, #cbd5e1);
+    text-align: left;
+    font-size: 12px;
+}
+
+.fitting-matrix-cell {
+    min-width: 132px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: rgba(8, 15, 28, .58);
+    padding: 5px;
+}
+
+.fitting-matrix-cell.has-quantity {
+    border-color: rgba(34, 211, 238, .65);
+    background: rgba(8, 47, 73, .45);
+}
+
+.fitting-image-button {
+    display: grid;
+    width: 100%;
+    height: 78px;
+    overflow: hidden;
+    place-items: center;
+    border: 0;
+    border-radius: 6px;
+    color: #cbd5e1;
+    background: #0b1524;
+    cursor: pointer;
+}
+
+.fitting-image-button:hover {
+    outline: 1px solid #22d3ee;
+    background: #122a41;
+}
+
+.fitting-image-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.fitting-image-fallback {
+    padding: 6px;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.fitting-image-button img + .fitting-image-fallback {
+    display: none;
+}
+
+.fitting-cell-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22px 22px;
+    gap: 4px;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.fitting-cell-footer small {
+    overflow: hidden;
+    color: var(--v2-text-muted, #7f91aa);
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fitting-quantity {
+    color: #a5f3fc;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.fitting-remove-button {
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 5px;
+    color: #fecaca;
+    background: rgba(220, 38, 38, .18);
+    cursor: pointer;
+}
+
+.fitting-remove-button:disabled {
+    cursor: default;
+    opacity: .35;
+}
+
+.fitting-matrix-empty {
+    color: var(--v2-text-muted, #7f91aa);
+}
+
+.run-fitting-footer {
+    justify-content: space-between;
+    color: var(--v2-text-soft, #cbd5e1);
+    border-top: 1px solid var(--v2-border, #2b3b54);
+    font-size: 13px;
+}
+
 .run-delete {
     width: 30px;
     height: 30px;
@@ -339,6 +532,10 @@
 
     .run-material-button {
         grid-column: span 1;
+    }
+
+    .run-row .run-calculated {
+        grid-column: span 2;
     }
 
     .gutter-name {
