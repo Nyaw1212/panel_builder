@@ -338,6 +338,31 @@
     font-size: 13px;
 }
 
+.fitting-size-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    color: var(--v2-text-soft, #cbd5e1);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.fitting-size-filter select {
+    min-width: 150px;
+    border: 1px solid var(--v2-border, #2b3b54);
+    border-radius: 6px;
+    outline: 0;
+    color: var(--v2-text, #f8fafc);
+    background: var(--v2-bg-deep, #080f1c);
+    padding: 6px 8px;
+    font: inherit;
+}
+
+.fitting-size-filter select:focus {
+    border-color: #22d3ee;
+}
+
 .run-fitting-close {
     width: 36px;
     height: 36px;

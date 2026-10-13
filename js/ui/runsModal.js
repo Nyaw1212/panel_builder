@@ -135,8 +135,15 @@ function getGutterFittings(gutter) {
 function getGutterFittingSizeOptions(gutter, runs) {
 
     const options = new Map();
+    const excluded = new Set(
+        Array.isArray(gutter?.excludedRunIds)
+            ? gutter.excludedRunIds.map(id => String(id))
+            : []
+    );
 
-    getIncludedGutterRuns(gutter, runs).forEach((run, index) => {
+    (Array.isArray(runs) ? runs : []).forEach((run, index) => {
+        if (excluded.has(String(run?.id || ""))) return;
+
         const size = String(run?.conduit?.Size || "").trim();
         if (!size) return;
 
@@ -144,7 +151,7 @@ function getGutterFittingSizeOptions(gutter, runs) {
             options.set(size, []);
         }
 
-        options.get(size).push(`Run ${index + 1}`);
+        options.get(size).push(run?.name || `Run ${index + 1}`);
     });
 
     return [...options.entries()].map(([size, sourceRuns]) => ({
@@ -1053,24 +1060,7 @@ async function openGutterFittingModal(gutterId) {
         return;
     }
 
-    let selected = options[0];
-
-    if (options.length > 1) {
-        const choices = options.map((option, index) =>
-            `${index + 1}. ${option.size} (${option.sourceRuns.join(", ")})`
-        ).join("\n");
-        const answer = window.prompt(
-            `Choose the run conduit size for this gutter fitting:\n${choices}`,
-            "1"
-        );
-        const choice = Number(answer) - 1;
-
-        if (answer === null || !Number.isInteger(choice) || !options[choice]) {
-            return;
-        }
-
-        selected = options[choice];
-    }
+    const selected = options[0];
 
     const target = {
         name: gutter.name || "Gutter",
@@ -1081,7 +1071,8 @@ async function openGutterFittingModal(gutterId) {
     openFittingModalForTarget(target, {
         title: `${gutter.name || "Gutter"} Fittings`,
         context: selected.sourceRuns.join(", "),
-        historyLabel: "Gutter fitting"
+        historyLabel: "Gutter fitting",
+        sizeOptions: options
     });
 
 }
@@ -1136,6 +1127,20 @@ function renderRunFittingModal(run, materials, options = {}) {
     const fittingContext = options.context
         ? `${options.context} · Size`
         : "Conduit size";
+    const sizeFilter = Array.isArray(options.sizeOptions) && options.sizeOptions.length > 1
+        ? `
+            <label class="fitting-size-filter">
+                <span>Size filter</span>
+                <select>
+                    ${options.sizeOptions.map(option => `
+                        <option value="${runModalEscape(option.size)}" ${option.size === run.conduit.Size ? "selected" : ""}>
+                            ${runModalEscape(option.size)} (${runModalEscape(option.sourceRuns.join(", "))})
+                        </option>
+                    `).join("")}
+                </select>
+            </label>
+        `
+        : "";
 
     // Put conduit systems on the vertical axis and fitting types across the
     // horizontal axis. This gives each square material tile more room.
@@ -1175,6 +1180,7 @@ function renderRunFittingModal(run, materials, options = {}) {
                 <div>
                     <h2 id="runFittingTitle">${runModalEscape(options.title || `${run.name || "Run"} Fittings`)}</h2>
                     <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(run.conduit.Size)}</strong>. Click an image to add one fitting.</p>
+                    ${sizeFilter}
                 </div>
                 <button class="run-fitting-close" type="button" aria-label="Close fittings">&times;</button>
             </header>
@@ -1214,6 +1220,17 @@ function renderRunFittingModal(run, materials, options = {}) {
             const fallback = image.nextElementSibling;
             if (fallback) fallback.style.display = "grid";
         });
+    });
+
+    overlay.querySelector(".fitting-size-filter select")?.addEventListener("change", event => {
+        const selected = options.sizeOptions.find(option =>
+            option.size === event.target.value
+        );
+        if (!selected) return;
+
+        run.conduit.Size = selected.size;
+        options.context = selected.sourceRuns.join(", ");
+        renderRunFittingModal(run, materials, options);
     });
 
     overlay.querySelectorAll(".fitting-image-button").forEach(button => {
