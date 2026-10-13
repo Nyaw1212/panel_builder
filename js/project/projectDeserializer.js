@@ -25,9 +25,17 @@ function deserializeProject(project) {
             conduit: savedRun?.conduit && typeof hydrateCatalogRecord === "function"
                 ? hydrateCatalogRecord(savedRun.conduit)
                 : (savedRun?.conduit || null),
-            wire: savedRun?.wire && typeof hydrateCatalogRecord === "function"
-                ? hydrateCatalogRecord(savedRun.wire)
-                : (savedRun?.wire || null)
+            wires: typeof hydrateCatalogList === "function"
+                ? hydrateCatalogList(
+                    Array.isArray(savedRun?.wires)
+                        ? savedRun.wires
+                        : (savedRun?.wire ? [savedRun.wire] : [])
+                )
+                : structuredClone(
+                    Array.isArray(savedRun?.wires)
+                        ? savedRun.wires
+                        : (savedRun?.wire ? [savedRun.wire] : [])
+                )
         }));
 
         setProjectRuns(runs);

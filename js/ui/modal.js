@@ -541,17 +541,17 @@ function openModal(index) {
 // Connection Hardware
 //----------------------------------
 
-async function openMaterialModal(connection) {
+async function openMaterialModal(connection, options = {}) {
 
     modalMode = "material";
 
-    modalTitle = "Connection Hardware";
+    modalTitle = options.title || "Connection Hardware";
 
     modalSource = await getMaterials();
 
     modalOnSelect = null;
-    modalOnClose = null;
-    modalPickerOptions = {};
+    modalOnClose = options.onClose || null;
+    modalPickerOptions = options;
 
     currentConnection = connection;
 
@@ -571,6 +571,13 @@ async function openMaterialModal(connection) {
 
     if (typeof resetModalFilters === "function") {
         resetModalFilters();
+    }
+
+    if (
+        options.category &&
+        typeof setModalCategory === "function"
+    ) {
+        setModalCategory(options.category);
     }
 
     if (typeof buildFilterChips === "function") {

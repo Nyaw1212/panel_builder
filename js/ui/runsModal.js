@@ -40,7 +40,7 @@ function createRun() {
         name: `Run ${runs.length + 1}`,
         length: 0,
         conduit: null,
-        wire: null
+        wires: []
     };
 
     runs.push(run);
@@ -112,6 +112,35 @@ function getRunMaterialLabel(material, emptyLabel) {
 
 }
 
+function getRunWireLabel(wires) {
+
+    const selection = Array.isArray(wires)
+        ? wires
+        : [];
+
+    if (selection.length === 0) return "Select wire";
+
+    const preset = String(
+        selection[0]?.wirePreset || ""
+    ).trim();
+
+    const type = String(selection[0]?.Type || "").trim();
+    const size = String(selection[0]?.Size || "").trim();
+
+    if (preset) {
+        return [preset, type, size]
+            .filter(Boolean)
+            .join(" — ") + ` (${selection.length} wires)`;
+    }
+
+    if (selection.length === 1) {
+        return getRunMaterialLabel(selection[0], "Select wire");
+    }
+
+    return `${selection.length} wires selected`;
+
+}
+
 function ensureRunsModal() {
 
     if (runsModalElement) return runsModalElement;
@@ -167,7 +196,10 @@ function renderRunsModal() {
                         const conduitQty = run.conduit
                             ? `${formatRunFeet(length)} ft`
                             : "—";
-                        const wireQty = run.wire
+                        const wires = Array.isArray(run.wires)
+                            ? run.wires
+                            : (run.wire ? [run.wire] : []);
+                        const wireQty = wires.length
                             ? `${formatRunFeet(length + 4)} ft`
                             : "—";
 
@@ -178,7 +210,7 @@ function renderRunsModal() {
                                     ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
                                 </button>
                                 <button class="run-material-button" type="button" data-action="wire" title="Select wire using ampacity filters">
-                                    ${runModalEscape(getRunMaterialLabel(run.wire, "Select wire"))}
+                                    ${runModalEscape(getRunWireLabel(wires))}
                                 </button>
                                 <label class="run-length-field">
                                     <input
@@ -288,7 +320,12 @@ async function openRunMaterialPicker(runId, materialType) {
         ? await getMaterials()
         : [];
 
-    const nodeType = materialType === "wire" ? "WIRE" : "PIPE";
+    if (materialType === "wire") {
+        openRunWireModal(runId);
+        return;
+    }
+
+    const nodeType = "PIPE";
 
     const source = (Array.isArray(materials) ? materials : [])
         .filter(item => String(item?.NodeType || "").toUpperCase() === nodeType);
@@ -302,9 +339,7 @@ async function openRunMaterialPicker(runId, materialType) {
     overlay.style.display = "none";
 
     openPickerModal(
-        materialType === "wire"
-            ? "Select Wire"
-            : "Select Conduit",
+        "Select Conduit",
         source,
         item => {
             const run = findRun(runId);
@@ -313,9 +348,7 @@ async function openRunMaterialPicker(runId, materialType) {
             run[materialType] = structuredClone(item);
 
             captureRunsHistory(
-                materialType === "wire"
-                    ? "Run wire selected"
-                    : "Run conduit selected"
+                "Run conduit selected"
             );
 
             refreshRunsBOM();
@@ -328,6 +361,45 @@ async function openRunMaterialPicker(runId, materialType) {
             }
         }
     );
+
+}
+
+function openRunWireModal(runId) {
+
+    const run = findRun(runId);
+
+    if (!run) return;
+
+    const draftConnection = {
+        hardware: structuredClone(
+            Array.isArray(run.wires)
+                ? run.wires
+                : (run.wire ? [run.wire] : [])
+        ),
+        runWirePicker: true
+    };
+
+    const overlay = ensureRunsModal();
+    overlay.style.display = "none";
+
+    openMaterialModal(draftConnection, {
+        category: "WIRE",
+        onClose: () => {
+            const currentRun = findRun(runId);
+
+            if (currentRun) {
+                currentRun.wires = structuredClone(
+                    draftConnection.hardware
+                );
+                delete currentRun.wire;
+
+                captureRunsHistory("Run wire selection updated");
+                refreshRunsBOM();
+            }
+
+            openRunsModal();
+        }
+    });
 
 }
 

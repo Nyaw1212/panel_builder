@@ -271,12 +271,19 @@ function serializeRuns() {
         conduit: run?.conduit
           ? compactCatalogRecord(run.conduit)
           : null,
-        wire: run?.wire
-          ? compactCatalogRecord(run.wire)
-          : null
+        wires: compactCatalogList(
+          Array.isArray(run?.wires)
+            ? run.wires
+            : (run?.wire ? [run.wire] : [])
+        )
       };
     })
-    .filter(run => run.id || run.length || run.conduit || run.wire);
+    .filter(run =>
+      run.id ||
+      run.length ||
+      run.conduit ||
+      run.wires.length
+    );
 }
 
 //----------------------------------

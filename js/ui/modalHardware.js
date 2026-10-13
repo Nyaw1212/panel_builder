@@ -22,11 +22,18 @@ function buildHardwarePanel() {
 
     hardwarePanel.className = "selected-hardware";
 
+    const isRunWirePicker = Boolean(
+        currentConnection.runWirePicker
+    );
+
     hardwarePanel.innerHTML = `
 
         <div class="selected-title">
 
-            Connection Assembly (${currentConnection.hardware.length})
+            ${isRunWirePicker
+                ? "Run Wire Selection"
+                : "Connection Assembly"}
+            (${currentConnection.hardware.length})
 
         </div>
 
@@ -42,7 +49,9 @@ function buildHardwarePanel() {
 
         empty.className = "selected-empty";
 
-        empty.textContent = "No fittings added.";
+        empty.textContent = isRunWirePicker
+            ? "No wires selected. Choose a wire or preset."
+            : "No fittings added.";
 
         hardwarePanel.appendChild(empty);
 
@@ -159,13 +168,22 @@ function buildHardwarePanel() {
 
     saveButton.className = "save-connection";
 
-    saveButton.textContent = "Done";
+    saveButton.textContent = isRunWirePicker
+        ? "Use Selected Wires"
+        : "Done";
 
     saveButton.onclick = () => {
 
-        modal.style.display = "none";
+        if (typeof drawCanvas === "function") {
+            drawCanvas();
+        }
 
-        drawCanvas();
+        if (typeof closeActiveModal === "function") {
+            closeActiveModal();
+        }
+        else {
+            modal.style.display = "none";
+        }
 
     };
 
@@ -535,8 +553,11 @@ function handleHardwareClick(item) {
 
     if (
 
-        nodeType === "PIPE" ||
-        nodeType === "WIRE"
+        (
+            nodeType === "PIPE" ||
+            nodeType === "WIRE"
+        ) &&
+        !currentConnection?.runWirePicker
 
     ) {
 

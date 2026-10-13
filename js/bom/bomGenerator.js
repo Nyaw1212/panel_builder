@@ -95,13 +95,17 @@ function getFittingBOM() {
             });
         }
 
-        if (run.wire) {
+        const wires = Array.isArray(run.wires)
+            ? run.wires
+            : (run.wire ? [run.wire] : []);
+
+        wires.forEach(wire => {
             mergeMaterial(map, {
-                ...run.wire,
+                ...wire,
                 // Two feet of service allowance at each end.
                 qty: length + 4
             });
-        }
+        });
 
     });
 
