@@ -209,6 +209,25 @@
     font-weight: 800;
 }
 
+.run-name-input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    outline: 0;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    padding: 8px;
+}
+
+.run-name-input:hover,
+.run-name-input:focus {
+    border-color: var(--v2-blue-light, #60a5fa);
+    background: var(--v2-bg-deep, #080f1c);
+}
+
 .run-material-button {
     min-height: 40px;
     overflow: hidden;

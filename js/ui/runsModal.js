@@ -539,7 +539,15 @@ function renderRunsModal() {
 
                         return `
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
-                                <div class="run-name">Run ${index + 1}</div>
+                                <label class="run-name">
+                                    <input
+                                        class="run-name-input"
+                                        type="text"
+                                        maxlength="80"
+                                        value="${runModalEscape(run.name || `Run ${index + 1}`)}"
+                                        aria-label="Run ${index + 1} name"
+                                    >
+                                </label>
                                 <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
                                     ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
                                 </button>
@@ -732,6 +740,30 @@ function renderRunsModal() {
             () => openRunFittingModal(runId)
         );
 
+        row.querySelector(".run-name-input")?.addEventListener(
+            "input",
+            event => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                run.name = String(event.target.value || "").trim() || "Run";
+                saveRunsDraft();
+            }
+        );
+
+        row.querySelector(".run-name-input")?.addEventListener(
+            "change",
+            event => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                run.name = String(event.target.value || "").trim() || "Run";
+                event.target.value = run.name;
+                captureRunsHistory("Run renamed");
+                saveRunsDraft();
+            }
+        );
+
         row.querySelector(".run-length-input")?.addEventListener(
             "input",
             event => {
@@ -771,7 +803,6 @@ function renderRunsModal() {
                 if (index < 0) return;
 
                 runs.splice(index, 1);
-                normalizeRunNames();
                 captureRunsHistory("Run removed");
                 refreshRunsBOM();
                 renderRunsModal();
