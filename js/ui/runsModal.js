@@ -1097,6 +1097,13 @@ async function openFittingModalForTarget(target, options = {}) {
 function renderRunFittingModal(run, materials, options = {}) {
 
     const overlay = ensureFittingModal();
+    const previousTable = overlay.querySelector(".run-fitting-table-wrap");
+    const previousSummary = overlay.querySelector(".fitting-summary-list");
+    const scrollState = {
+        tableLeft: previousTable?.scrollLeft || 0,
+        tableTop: previousTable?.scrollTop || 0,
+        summaryTop: previousSummary?.scrollTop || 0
+    };
     const catalogLookup = new Map();
     const selectedFittings = getRunFittings(run)
         .filter(fitting => Number(fitting?.qty || 0) > 0)
@@ -1258,6 +1265,16 @@ function renderRunFittingModal(run, materials, options = {}) {
     });
 
     overlay.style.display = "flex";
+
+    // Adding/removing a fitting rebuilds the quantities. Keep the user at
+    // the same position in the large matrix instead of jumping back to top.
+    const table = overlay.querySelector(".run-fitting-table-wrap");
+    const summary = overlay.querySelector(".fitting-summary-list");
+    if (table) {
+        table.scrollLeft = scrollState.tableLeft;
+        table.scrollTop = scrollState.tableTop;
+    }
+    if (summary) summary.scrollTop = scrollState.summaryTop;
 
 }
 
