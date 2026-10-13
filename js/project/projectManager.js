@@ -95,6 +95,23 @@ function buildProject() {
 
 async function saveCurrentProject() {
 
+    // Open the tab while the Save click still has browser user activation.
+    // Navigating a tab after the async request alone can be blocked as a popup.
+    let usedMaterialsWindow = null;
+
+    if (
+        typeof window !== "undefined" &&
+        typeof window.open === "function"
+    ) {
+
+        usedMaterialsWindow =
+            window.open(
+                "",
+                "_blank"
+            );
+
+    }
+
     console.time(
         "Build Project"
     );
@@ -139,6 +156,27 @@ async function saveCurrentProject() {
                 String(result.usedMaterials.spreadsheetId || "");
             state.usedMaterialsSpreadsheetUrl =
                 String(result.usedMaterials.spreadsheetUrl || "");
+
+            if (
+                usedMaterialsWindow &&
+                state.usedMaterialsSpreadsheetUrl
+            ) {
+
+                usedMaterialsWindow.location.replace(
+                    state.usedMaterialsSpreadsheetUrl
+                );
+
+            }
+            else if (usedMaterialsWindow) {
+
+                usedMaterialsWindow.close();
+
+            }
+        }
+        else if (usedMaterialsWindow) {
+
+            usedMaterialsWindow.close();
+
         }
 
         //----------------------------------
@@ -153,6 +191,11 @@ async function saveCurrentProject() {
             invalidateProjectCache();
 
         }
+
+    }
+    else if (usedMaterialsWindow) {
+
+        usedMaterialsWindow.close();
 
     }
 
