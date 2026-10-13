@@ -441,6 +441,9 @@ function saveProject(request) {
   const electrician = String(request.electrician || "").trim();
   const lender = String(request.lender || "").trim();
   const model = String(request.model || "").trim();
+  const usedMaterialsSpreadsheetId = String(
+    request.usedMaterialsSpreadsheetId || ""
+  ).trim();
 
   let projectId = String(
     request.id || request.projectId || ""
@@ -479,6 +482,7 @@ function saveProject(request) {
     electrician,
     lender,
     model,
+    usedMaterialsSpreadsheetId,
     layout: Array.isArray(request.layout) ? request.layout : [],
     links: Array.isArray(request.links) ? request.links : [],
     runs: Array.isArray(request.runs) ? request.runs : [],
@@ -559,6 +563,24 @@ function saveProject(request) {
     materials
   );
 
+  const usedMaterials = saveProjectUsedMaterialsSafe_(
+    usedMaterialsSpreadsheetId,
+    jobName,
+    address,
+    model,
+    materials
+  );
+
+  if (usedMaterials?.success) {
+    project.usedMaterialsSpreadsheetId = usedMaterials.spreadsheetId;
+    project.usedMaterialsSpreadsheetUrl = usedMaterials.spreadsheetUrl;
+
+    const jsonColumn = projectColumn_(map, "JSON", "Project JSON");
+    if (jsonColumn) {
+      sheet.getRange(row, jsonColumn).setValue(JSON.stringify(project));
+    }
+  }
+
   Logger.log(
     "Project saved in " + (Date.now() - start) + " ms"
   );
@@ -566,7 +588,8 @@ function saveProject(request) {
   return {
     success: true,
     action: wasExisting ? "updated" : "created",
-    projectId
+    projectId,
+    usedMaterials
   };
 
 }
@@ -1039,6 +1062,33 @@ function saveProjectBOMSafe(
 
   );
 
+}
+
+function saveProjectUsedMaterialsSafe_(
+  existingSpreadsheetId,
+  jobName,
+  address,
+  model,
+  materials
+) {
+  if (typeof saveProjectUsedMaterials !== "function") {
+    Logger.log("saveProjectUsedMaterials() not found. Export skipped.");
+    return { success: false, skipped: true };
+  }
+
+  try {
+    return saveProjectUsedMaterials(
+      existingSpreadsheetId,
+      jobName,
+      address,
+      model,
+      materials
+    );
+  }
+  catch (err) {
+    Logger.log("Used Materials export failed: " + err.message);
+    return { success: false, message: err.message };
+  }
 }
 
 //----------------------------------

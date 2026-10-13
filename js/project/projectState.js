@@ -16,6 +16,10 @@ const projectState = {
 
     model: "",
 
+    usedMaterialsSpreadsheetId: "",
+
+    usedMaterialsSpreadsheetUrl: "",
+
     created: null,
 
     modified: null,
@@ -96,6 +100,12 @@ function setProjectState(project) {
     projectState.model =
         String(project.model || "").trim();
 
+    projectState.usedMaterialsSpreadsheetId =
+        String(project.usedMaterialsSpreadsheetId || "").trim();
+
+    projectState.usedMaterialsSpreadsheetUrl =
+        String(project.usedMaterialsSpreadsheetUrl || "").trim();
+
     projectState.created =
         project.created || null;
 
@@ -132,6 +142,10 @@ function clearProjectState() {
     projectState.lender = "";
 
     projectState.model = "";
+
+    projectState.usedMaterialsSpreadsheetId = "";
+
+    projectState.usedMaterialsSpreadsheetUrl = "";
 
     projectState.created = null;
 

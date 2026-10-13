@@ -448,6 +448,8 @@ function serializeProjectCore() {
     electrician: project.electrician || "",
     lender: project.lender || "",
     model: project.model || "",
+    usedMaterialsSpreadsheetId: project.usedMaterialsSpreadsheetId || "",
+    usedMaterialsSpreadsheetUrl: project.usedMaterialsSpreadsheetUrl || "",
     layout: serializeLayout(),
     links: serializeLinks(),
     runs: serializeRuns(),

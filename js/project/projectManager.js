@@ -133,6 +133,14 @@ async function saveCurrentProject() {
             result.projectId
         );
 
+        if (result.usedMaterials?.success) {
+            const state = getProjectState();
+            state.usedMaterialsSpreadsheetId =
+                String(result.usedMaterials.spreadsheetId || "");
+            state.usedMaterialsSpreadsheetUrl =
+                String(result.usedMaterials.spreadsheetUrl || "");
+        }
+
         //----------------------------------
         // Refresh Project Cache
         //----------------------------------
@@ -202,7 +210,13 @@ async function loadCurrentProject(
 
             version:
                 result.project?.version ||
-                2
+                2,
+
+            usedMaterialsSpreadsheetId:
+                result.project?.usedMaterialsSpreadsheetId || "",
+
+            usedMaterialsSpreadsheetUrl:
+                result.project?.usedMaterialsSpreadsheetUrl || ""
 
         });
 
