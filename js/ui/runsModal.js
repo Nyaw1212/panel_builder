@@ -978,6 +978,32 @@ function renderRunFittingModal(run, materials) {
 
     const overlay = ensureFittingModal();
     const catalogLookup = new Map();
+    const selectedFittings = getRunFittings(run)
+        .filter(fitting => Number(fitting?.qty || 0) > 0)
+        .sort((a, b) => String(a?.CatalogNumber || "").localeCompare(
+            String(b?.CatalogNumber || "")
+        ));
+
+    const fittingSummary = selectedFittings.length
+        ? selectedFittings.map(fitting => {
+            const catalog = String(fitting?.CatalogNumber || "");
+            const description = String(fitting?.Description || catalog);
+
+            return `
+                <article class="fitting-summary-item">
+                    <div class="fitting-summary-image-wrap">
+                        <img class="fitting-summary-image" src="${runModalEscape(getFittingImage(fitting))}" alt="${runModalEscape(description)}">
+                        <span class="fitting-summary-fallback">${runModalEscape(catalog)}</span>
+                    </div>
+                    <div class="fitting-summary-details">
+                        <strong>${runModalEscape(catalog)}</strong>
+                        <small title="${runModalEscape(description)}">${runModalEscape(description)}</small>
+                    </div>
+                    <b class="fitting-summary-qty">${Number(fitting.qty || 0)}</b>
+                </article>
+            `;
+        }).join("")
+        : `<p class="fitting-summary-empty">Click a fitting image to add it here.</p>`;
 
     // Put conduit systems on the vertical axis and fitting types across the
     // horizontal axis. This gives each square material tile more room.
@@ -1020,11 +1046,17 @@ function renderRunFittingModal(run, materials) {
                 </div>
                 <button class="run-fitting-close" type="button" aria-label="Close fittings">&times;</button>
             </header>
-            <div class="run-fitting-table-wrap">
-                <table class="run-fitting-table">
-                    <thead><tr><th>System</th>${FITTING_MATRIX_ROWS.map(row => `<th>${runModalEscape(row.label)}</th>`).join("")}</tr></thead>
-                    <tbody>${rows}</tbody>
-                </table>
+            <div class="run-fitting-content">
+                <div class="run-fitting-table-wrap">
+                    <table class="run-fitting-table">
+                        <thead><tr><th>System</th>${FITTING_MATRIX_ROWS.map(row => `<th>${runModalEscape(row.label)}</th>`).join("")}</tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <aside class="fitting-summary" aria-label="Selected fitting summary">
+                    <header><h3>Material summary</h3><span>${selectedFittings.length} item${selectedFittings.length === 1 ? "" : "s"}</span></header>
+                    <div class="fitting-summary-list">${fittingSummary}</div>
+                </aside>
             </div>
             <footer class="run-fitting-footer">
                 <span>${runModalEscape(getRunFittingsSummary(run))}</span>
@@ -1041,6 +1073,14 @@ function renderRunFittingModal(run, materials) {
             image.style.display = "none";
             const fallback = image.nextElementSibling;
             if (fallback) fallback.style.display = "block";
+        });
+    });
+
+    overlay.querySelectorAll(".fitting-summary-image").forEach(image => {
+        image.addEventListener("error", () => {
+            image.style.display = "none";
+            const fallback = image.nextElementSibling;
+            if (fallback) fallback.style.display = "grid";
         });
     });
 
