@@ -668,7 +668,7 @@ function renderRunsModal() {
                                                             data-run-id="${runModalEscape(run.id)}"
                                                             ${excluded.has(String(run.id)) ? "" : "checked"}
                                                         >
-                                                        <span>Run ${runIndex + 1}</span>
+                                                        <span>${runModalEscape(run.name || `Run ${runIndex + 1}`)}</span>
                                                         <small>${runModalEscape(getRunWireLabel(
                                                             Array.isArray(run.wires)
                                                                 ? run.wires
