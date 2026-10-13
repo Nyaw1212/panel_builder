@@ -44,6 +44,9 @@ function aggregateUsedMaterials_(materials) {
         description: String(material?.Description || material?.description || "").trim(),
         supplier: String(material?.Supplier || material?.supplier || "").trim(),
         vendorCode: String(material?.VendorCode || material?.vendorCode || "").trim(),
+      inventoryCategory: String(
+        material?.InventoryCategory || material?.inventoryCategory || ""
+      ).trim().toUpperCase(),
         price: Number(material?.Price ?? material?.price ?? 0) || 0,
         qty: 0
       };
@@ -52,9 +55,15 @@ function aggregateUsedMaterials_(materials) {
     byCatalog[catalog].qty += qty;
   });
 
-  return Object.values(byCatalog).sort((a, b) =>
-    a.catalog.localeCompare(b.catalog)
-  );
+  const categoryOrder = { BOS: 0, VAN: 1 };
+
+  return Object.values(byCatalog).sort((a, b) => {
+    const categoryDifference =
+      (categoryOrder[a.inventoryCategory] ?? 2) -
+      (categoryOrder[b.inventoryCategory] ?? 2);
+
+    return categoryDifference || a.catalog.localeCompare(b.catalog);
+  });
 }
 
 function saveProjectUsedMaterials(
@@ -116,9 +125,23 @@ function saveProjectUsedMaterials(
   const usedHeaders = [["Description", "Catalog Number", "Qty", "Unit Price", "Total"]];
   usedSheet.getRange(6, 1, 1, 5).setValues(usedHeaders);
 
-  if (rows.length) {
-    usedSheet.getRange(7, 1, rows.length, 5).setValues(
-      rows.map(item => [
+  let outputRow = 7;
+
+  ["BOS", "VAN"].forEach(category => {
+    const categoryRows = rows.filter(item => item.inventoryCategory === category);
+
+    if (!categoryRows.length) return;
+
+    usedSheet.getRange(outputRow, 1, 1, 5).merge();
+    usedSheet.getRange(outputRow, 1)
+      .setValue(category)
+      .setBackground(category === "BOS" ? "#0f766e" : "#7c3d12")
+      .setFontColor("#ffffff")
+      .setFontWeight("bold");
+    outputRow += 1;
+
+    usedSheet.getRange(outputRow, 1, categoryRows.length, 5).setValues(
+      categoryRows.map(item => [
         item.description,
         item.catalog,
         item.qty,
@@ -126,7 +149,47 @@ function saveProjectUsedMaterials(
         item.qty * item.price
       ])
     );
+    outputRow += categoryRows.length;
+  });
+
+  const otherRows = rows.filter(item =>
+    item.inventoryCategory !== "BOS" && item.inventoryCategory !== "VAN"
+  );
+
+  if (otherRows.length) {
+    usedSheet.getRange(outputRow, 1, 1, 5).merge();
+    usedSheet.getRange(outputRow, 1)
+      .setValue("OTHER")
+      .setBackground("#475569")
+      .setFontColor("#ffffff")
+      .setFontWeight("bold");
+    outputRow += 1;
+
+    usedSheet.getRange(outputRow, 1, otherRows.length, 5).setValues(
+      otherRows.map(item => [
+        item.description,
+        item.catalog,
+        item.qty,
+        item.price,
+        item.qty * item.price
+      ])
+    );
+    outputRow += otherRows.length;
   }
+
+  usedSheet.getRange(outputRow, 4).setValue("Grand Total");
+  const grandTotalCell = usedSheet.getRange(outputRow, 5);
+
+  if (outputRow > 7) {
+    grandTotalCell.setFormula(`=SUM(E7:E${outputRow - 1})`);
+  }
+  else {
+    grandTotalCell.setValue(0);
+  }
+  usedSheet.getRange(outputRow, 4, 1, 2)
+    .setBackground("#0f172a")
+    .setFontColor("#ffffff")
+    .setFontWeight("bold");
 
   usedSheet.getRange("A1:E1").setBackground("#0f172a").setFontColor("#ffffff").setFontWeight("bold");
   usedSheet.getRange("A2:E3").setFontWeight("bold");

@@ -353,8 +353,11 @@ function serializeMaterialSummary() {
       fallbackCategory
     );
 
-    if (!map[catalogNumber]) {
-      map[catalogNumber] = {
+    const materialKey =
+      `${category || "OTHER"}::${catalogNumber}`;
+
+    if (!map[materialKey]) {
+      map[materialKey] = {
         CatalogNumber: catalogNumber,
         Description: item.Description ?? item.description ?? "",
         Type: item.Type ?? item.type ?? "",
@@ -366,7 +369,7 @@ function serializeMaterialSummary() {
       };
     }
 
-    const row = map[catalogNumber];
+    const row = map[materialKey];
 
     if (!row.InventoryCategory && category) row.InventoryCategory = category;
     if (!row.Description) row.Description = item.Description ?? item.description ?? "";
