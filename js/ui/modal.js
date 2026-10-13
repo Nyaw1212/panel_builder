@@ -547,9 +547,7 @@ async function openMaterialModal(connection, options = {}) {
 
     modalTitle = options.title || "Connection Hardware";
 
-    modalSource = Array.isArray(options.source)
-        ? options.source
-        : await getMaterials();
+    modalSource = await getMaterials();
 
     modalOnSelect = null;
     modalOnClose = options.onClose || null;

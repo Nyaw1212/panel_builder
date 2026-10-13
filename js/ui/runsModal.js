@@ -640,14 +640,14 @@ function renderRunsModal() {
 
 async function openRunMaterialPicker(runId, materialType) {
 
+    const materials = typeof getMaterials === "function"
+        ? await getMaterials()
+        : [];
+
     if (materialType === "wire") {
         openRunWireModal(runId);
         return;
     }
-
-    const materials = typeof getMaterials === "function"
-        ? await getMaterials()
-        : [];
 
     const nodeType = "PIPE";
 
@@ -688,37 +688,11 @@ async function openRunMaterialPicker(runId, materialType) {
 
 }
 
-function isPieceWireMaterial(material) {
-
-    const nodeType = String(material?.NodeType || "")
-        .trim()
-        .toUpperCase();
-
-    const description = String(material?.Description || "")
-        .trim()
-        .toUpperCase();
-
-    return nodeType === "WIRE" && /\bPCS\b/.test(description);
-
-}
-
-async function openRunWireModal(runId) {
+function openRunWireModal(runId) {
 
     const run = findRun(runId);
 
     if (!run) return;
-
-    const materials = typeof getMaterials === "function"
-        ? await getMaterials()
-        : [];
-
-    const pieceWires = (Array.isArray(materials) ? materials : [])
-        .filter(isPieceWireMaterial);
-
-    if (pieceWires.length === 0) {
-        alert("No PCS wire materials are available.");
-        return;
-    }
 
     const draftConnection = {
         hardware: structuredClone(
@@ -734,7 +708,6 @@ async function openRunWireModal(runId) {
 
     openMaterialModal(draftConnection, {
         category: "WIRE",
-        source: pieceWires,
         onClose: () => {
             const currentRun = findRun(runId);
 
