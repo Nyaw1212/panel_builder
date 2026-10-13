@@ -972,8 +972,10 @@ function renderRunFittingModal(run, materials) {
     const overlay = ensureFittingModal();
     const catalogLookup = new Map();
 
-    const rows = FITTING_MATRIX_ROWS.map(row => {
-        const cells = FITTING_MATRIX_COLUMNS.map(column => {
+    // Put conduit systems on the vertical axis and fitting types across the
+    // horizontal axis. This gives each square material tile more room.
+    const rows = FITTING_MATRIX_COLUMNS.map(column => {
+        const cells = FITTING_MATRIX_ROWS.map(row => {
             const material = getFittingCandidates(materials, run, row, column)[0] || null;
 
             if (!material) return `<td class="fitting-matrix-empty">—</td>`;
@@ -999,7 +1001,7 @@ function renderRunFittingModal(run, materials) {
             `;
         }).join("");
 
-        return `<tr><th scope="row">${runModalEscape(row.label)}</th>${cells}</tr>`;
+        return `<tr><th scope="row">${runModalEscape(column.label)}</th>${cells}</tr>`;
     }).join("");
 
     overlay.innerHTML = `
@@ -1013,7 +1015,7 @@ function renderRunFittingModal(run, materials) {
             </header>
             <div class="run-fitting-table-wrap">
                 <table class="run-fitting-table">
-                    <thead><tr><th>Fitting</th>${FITTING_MATRIX_COLUMNS.map(column => `<th>${column.label}</th>`).join("")}</tr></thead>
+                    <thead><tr><th>System</th>${FITTING_MATRIX_ROWS.map(row => `<th>${runModalEscape(row.label)}</th>`).join("")}</tr></thead>
                     <tbody>${rows}</tbody>
                 </table>
             </div>

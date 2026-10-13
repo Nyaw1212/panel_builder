@@ -336,7 +336,7 @@
 
 .run-fitting-table {
     width: 100%;
-    min-width: 720px;
+    min-width: 2160px;
     border-collapse: collapse;
 }
 
@@ -360,9 +360,18 @@
     text-transform: uppercase;
 }
 
+.run-fitting-table thead th:first-child {
+    left: 0;
+    z-index: 2;
+}
+
 .run-fitting-table tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
     min-width: 130px;
     color: var(--v2-text-soft, #cbd5e1);
+    background: var(--v2-bg, #0f172a);
     text-align: left;
     font-size: 12px;
 }
