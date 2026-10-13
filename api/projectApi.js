@@ -409,9 +409,14 @@ async function getMML() {
 
     if (cache) {
         console.log("Catalog Source: Cache", cache.version);
-        void revalidateMMLCache(cache);
+
+        // Refresh before the catalog is used so a changed MML sheet is
+        // reflected immediately instead of only after a later reload.
+        await revalidateMMLCache(cache);
+
+        const refreshedCache = loadMMLCache();
         startCatalogWatcher();
-        return cache.data;
+        return refreshedCache?.data || cache.data;
     }
 
     const mml = (
