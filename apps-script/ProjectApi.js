@@ -482,6 +482,7 @@ function saveProject(request) {
     layout: Array.isArray(request.layout) ? request.layout : [],
     links: Array.isArray(request.links) ? request.links : [],
     runs: Array.isArray(request.runs) ? request.runs : [],
+    gutters: Array.isArray(request.gutters) ? request.gutters : [],
     materialSummary,
     bos,
     van,

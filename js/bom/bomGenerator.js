@@ -109,6 +109,44 @@ function getFittingBOM() {
 
     });
 
+    //----------------------------------
+    // Gutter wires: every included run contributes its
+    // selected wires for the exact gutter length.
+    //----------------------------------
+
+    const gutters = typeof getProjectGutters === "function"
+        ? getProjectGutters()
+        : [];
+
+    gutters.forEach(gutter => {
+
+        const length = Number(gutter?.length || 0);
+
+        if (!Number.isFinite(length) || length <= 0) return;
+
+        const excluded = new Set(
+            Array.isArray(gutter?.excludedRunIds)
+                ? gutter.excludedRunIds.map(id => String(id))
+                : []
+        );
+
+        runs
+            .filter(run => !excluded.has(String(run?.id || "")))
+            .forEach(run => {
+                const wires = Array.isArray(run?.wires)
+                    ? run.wires
+                    : (run?.wire ? [run.wire] : []);
+
+                wires.forEach(wire => {
+                    mergeMaterial(map, {
+                        ...wire,
+                        qty: length
+                    });
+                });
+            });
+
+    });
+
     return Object.values(map)
 
         .sort((a, b) =>

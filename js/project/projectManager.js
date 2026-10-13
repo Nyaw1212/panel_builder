@@ -78,6 +78,11 @@ function buildProject() {
         runs:
             typeof serializeRuns === "function"
                 ? serializeRuns()
+                : [],
+
+        gutters:
+            typeof serializeGutters === "function"
+                ? serializeGutters()
                 : []
 
     };

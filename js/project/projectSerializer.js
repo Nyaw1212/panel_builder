@@ -286,6 +286,28 @@ function serializeRuns() {
     );
 }
 
+function serializeGutters() {
+  const gutters = typeof getProjectGutters === "function"
+    ? getProjectGutters()
+    : [];
+
+  return gutters
+    .map((gutter, index) => {
+      const length = Number(gutter?.length || 0);
+
+      return {
+        id: String(gutter?.id || ""),
+        name: String(gutter?.name || `Gutter ${index + 1}`),
+        length: Number.isFinite(length) && length >= 0 ? length : 0,
+        excludedRunIds: (Array.isArray(gutter?.excludedRunIds)
+          ? gutter.excludedRunIds
+          : []
+        ).map(id => String(id)).filter(Boolean)
+      };
+    })
+    .filter(gutter => gutter.id || gutter.length || gutter.excludedRunIds.length);
+}
+
 //----------------------------------
 // Material Summary
 //----------------------------------
@@ -411,6 +433,7 @@ function serializeProjectCore() {
     layout: serializeLayout(),
     links: serializeLinks(),
     runs: serializeRuns(),
+    gutters: serializeGutters(),
     materialSummary: serializeMaterialSummary()
   };
 }
@@ -443,6 +466,7 @@ window.serializeLayout = serializeLayout;
 window.serializeLink = serializeLink;
 window.serializeLinks = serializeLinks;
 window.serializeRuns = serializeRuns;
+window.serializeGutters = serializeGutters;
 window.serializeMaterialSummary = serializeMaterialSummary;
 window.serializeProjectCore = serializeProjectCore;
 window.serializeProject = serializeProject;

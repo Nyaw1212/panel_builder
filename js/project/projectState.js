@@ -22,7 +22,9 @@ const projectState = {
 
     version: 1,
 
-    runs: []
+    runs: [],
+
+    gutters: []
 
 };
 
@@ -107,6 +109,10 @@ function setProjectState(project) {
         ? structuredClone(project.runs)
         : [];
 
+    projectState.gutters = Array.isArray(project.gutters)
+        ? structuredClone(project.gutters)
+        : [];
+
 }
 
 //----------------------------------
@@ -135,6 +141,8 @@ function clearProjectState() {
 
     projectState.runs = [];
 
+    projectState.gutters = [];
+
 }
 
 //----------------------------------
@@ -157,6 +165,22 @@ function setProjectRuns(runs) {
 
 }
 
+function getProjectGutters() {
+
+    return Array.isArray(projectState.gutters)
+        ? projectState.gutters
+        : [];
+
+}
+
+function setProjectGutters(gutters) {
+
+    projectState.gutters = Array.isArray(gutters)
+        ? structuredClone(gutters)
+        : [];
+
+}
+
 //----------------------------------
 // Expose
 //----------------------------------
@@ -174,3 +198,5 @@ window.setAddress = setAddress;
 window.clearProjectState = clearProjectState;
 window.getProjectRuns = getProjectRuns;
 window.setProjectRuns = setProjectRuns;
+window.getProjectGutters = getProjectGutters;
+window.setProjectGutters = setProjectGutters;

@@ -3,6 +3,7 @@
 //----------------------------------
 
 let runsModalElement = null;
+let expandedGutterId = null;
 
 function runModalEscape(value) {
 
@@ -31,14 +32,38 @@ function getEditableRuns() {
 
 }
 
+function promptRunLength(label) {
+
+    const input = window.prompt(
+        `Enter length for ${label} (ft)`,
+        "0"
+    );
+
+    if (input === null) return null;
+
+    const length = Math.max(0, Number(input || 0));
+
+    if (!Number.isFinite(length)) {
+        alert("Please enter a valid length in feet.");
+        return null;
+    }
+
+    return length;
+
+}
+
 function createRun() {
 
     const runs = getEditableRuns();
+    const name = `Run ${runs.length + 1}`;
+    const length = promptRunLength(name);
+
+    if (length === null) return null;
 
     const run = {
         id: crypto.randomUUID(),
-        name: `Run ${runs.length + 1}`,
-        length: 0,
+        name,
+        length,
         conduit: null,
         wires: []
     };
@@ -51,6 +76,44 @@ function createRun() {
 
 }
 
+function getEditableGutters() {
+
+    const project = typeof getProjectState === "function"
+        ? getProjectState()
+        : null;
+
+    if (!project) return [];
+
+    if (!Array.isArray(project.gutters)) {
+        project.gutters = [];
+    }
+
+    return project.gutters;
+
+}
+
+function createGutter() {
+
+    const gutters = getEditableGutters();
+    const name = `Gutter ${gutters.length + 1}`;
+    const length = promptRunLength(name);
+
+    if (length === null) return null;
+
+    const gutter = {
+        id: crypto.randomUUID(),
+        name,
+        length,
+        excludedRunIds: []
+    };
+
+    gutters.push(gutter);
+    saveRunsDraft();
+
+    return gutter;
+
+}
+
 function findRun(runId) {
 
     return getEditableRuns().find(
@@ -59,10 +122,26 @@ function findRun(runId) {
 
 }
 
+function findGutter(gutterId) {
+
+    return getEditableGutters().find(
+        gutter => gutter.id === gutterId
+    ) || null;
+
+}
+
 function normalizeRunNames() {
 
     getEditableRuns().forEach((run, index) => {
         run.name = `Run ${index + 1}`;
+    });
+
+}
+
+function normalizeGutterNames() {
+
+    getEditableGutters().forEach((gutter, index) => {
+        gutter.name = `Gutter ${index + 1}`;
     });
 
 }
@@ -153,6 +232,30 @@ function getRunWireLabel(wires) {
 
 }
 
+function getIncludedGutterRuns(gutter, runs) {
+
+    const excluded = new Set(
+        Array.isArray(gutter?.excludedRunIds)
+            ? gutter.excludedRunIds.map(id => String(id))
+            : []
+    );
+
+    return runs.filter(run =>
+        !excluded.has(String(run?.id || ""))
+    );
+
+}
+
+function getGutterRunSummary(gutter, runs) {
+
+    const included = getIncludedGutterRuns(gutter, runs);
+
+    if (runs.length === 0) return "No runs available";
+
+    return `${included.length} of ${runs.length} runs included`;
+
+}
+
 function ensureRunsModal() {
 
     if (runsModalElement) return runsModalElement;
@@ -179,6 +282,7 @@ function renderRunsModal() {
 
     const overlay = ensureRunsModal();
     const runs = getEditableRuns();
+    const gutters = getEditableGutters();
 
     overlay.innerHTML = `
         <section class="runs-dialog" role="dialog" aria-modal="true" aria-labelledby="runsModalTitle">
@@ -252,8 +356,101 @@ function renderRunsModal() {
                 }
             </div>
 
+            <section class="gutters-section" aria-labelledby="guttersTitle">
+                <div class="runs-section-heading">
+                    <div>
+                        <h3 id="guttersTitle">Gutters</h3>
+                        <p>Included run wires are added at the gutter length.</p>
+                    </div>
+                </div>
+
+                <div class="gutters-grid-header" aria-hidden="true">
+                    <span>Gutter</span>
+                    <span>Included runs</span>
+                    <span>Length</span>
+                    <span>Calculated BOM</span>
+                    <span></span>
+                </div>
+
+                <div class="gutters-list">
+                    ${gutters.length
+                        ? gutters.map((gutter, index) => {
+                            const length = Math.max(0, Number(gutter.length || 0));
+                            const includedRuns = getIncludedGutterRuns(gutter, runs);
+                            const includedWireCount = includedRuns.reduce(
+                                (total, run) => total + (
+                                    Array.isArray(run?.wires)
+                                        ? run.wires.length
+                                        : (run?.wire ? 1 : 0)
+                                ),
+                                0
+                            );
+                            const isExpanded = expandedGutterId === gutter.id;
+                            const excluded = new Set(
+                                Array.isArray(gutter.excludedRunIds)
+                                    ? gutter.excludedRunIds.map(id => String(id))
+                                    : []
+                            );
+
+                            return `
+                                <article class="gutter-entry" data-gutter-id="${runModalEscape(gutter.id)}">
+                                    <div class="gutter-row">
+                                        <div class="gutter-name">Gutter ${index + 1}</div>
+                                        <button class="gutter-runs-button" type="button" data-action="toggle-gutter-runs">
+                                            ${runModalEscape(getGutterRunSummary(gutter, runs))}
+                                        </button>
+                                        <label class="run-length-field">
+                                            <input
+                                                class="gutter-length-input"
+                                                type="number"
+                                                min="0"
+                                                step="0.1"
+                                                inputmode="decimal"
+                                                value="${runModalEscape(length)}"
+                                                aria-label="Gutter ${index + 1} length in feet"
+                                            >
+                                            <span>ft</span>
+                                        </label>
+                                        <div class="run-calculated">
+                                            <span>Wires: <strong>${includedWireCount}</strong></span>
+                                            <span>Each: <strong>${formatRunFeet(length)} ft</strong></span>
+                                        </div>
+                                        <button class="run-delete" type="button" data-action="delete-gutter" title="Remove Gutter ${index + 1}" aria-label="Remove Gutter ${index + 1}">✕</button>
+                                    </div>
+                                    ${isExpanded ? `
+                                        <div class="gutter-run-picker">
+                                            <div class="gutter-run-picker-title">Include wires from:</div>
+                                            ${runs.length
+                                                ? runs.map((run, runIndex) => `
+                                                    <label class="gutter-run-choice">
+                                                        <input
+                                                            type="checkbox"
+                                                            data-run-id="${runModalEscape(run.id)}"
+                                                            ${excluded.has(String(run.id)) ? "" : "checked"}
+                                                        >
+                                                        <span>Run ${runIndex + 1}</span>
+                                                        <small>${runModalEscape(getRunWireLabel(
+                                                            Array.isArray(run.wires)
+                                                                ? run.wires
+                                                                : (run.wire ? [run.wire] : [])
+                                                        ))}</small>
+                                                    </label>
+                                                `).join("")
+                                                : `<div class="gutter-run-none">Add a Run first, then it will appear here.</div>`
+                                            }
+                                        </div>
+                                    ` : ""}
+                                </article>
+                            `;
+                        }).join("")
+                        : `<div class="runs-empty">No gutters yet. Add one to route selected run wires through a shared gutter.</div>`
+                    }
+                </div>
+            </section>
+
             <footer class="runs-footer">
                 <button id="addRunButton" class="runs-add" type="button">+ Add Run</button>
+                <button id="addGutterButton" class="runs-add" type="button">+ Add Gutter</button>
                 <div class="runs-rule">Wire BOM = run length + 4 ft</div>
                 <button id="doneRunsButton" class="runs-done" type="button">Done</button>
             </footer>
@@ -273,8 +470,21 @@ function renderRunsModal() {
     overlay.querySelector("#addRunButton")?.addEventListener(
         "click",
         () => {
-            createRun();
+            const run = createRun();
+            if (!run) return;
+
             captureRunsHistory("Run added");
+            renderRunsModal();
+        }
+    );
+
+    overlay.querySelector("#addGutterButton")?.addEventListener(
+        "click",
+        () => {
+            const gutter = createGutter();
+            if (!gutter) return;
+
+            captureRunsHistory("Gutter added");
             renderRunsModal();
         }
     );
@@ -333,6 +543,93 @@ function renderRunsModal() {
                 runs.splice(index, 1);
                 normalizeRunNames();
                 captureRunsHistory("Run removed");
+                refreshRunsBOM();
+                renderRunsModal();
+            }
+        );
+    });
+
+    overlay.querySelectorAll(".gutter-entry").forEach(entry => {
+        const gutterId = entry.dataset.gutterId;
+
+        entry.querySelector("[data-action='toggle-gutter-runs']")?.addEventListener(
+            "click",
+            () => {
+                expandedGutterId = expandedGutterId === gutterId
+                    ? null
+                    : gutterId;
+                renderRunsModal();
+            }
+        );
+
+        entry.querySelector(".gutter-length-input")?.addEventListener(
+            "input",
+            event => {
+                const gutter = findGutter(gutterId);
+                if (!gutter) return;
+
+                const value = Math.max(0, Number(event.target.value || 0));
+                gutter.length = Number.isFinite(value) ? value : 0;
+                saveRunsDraft();
+            }
+        );
+
+        entry.querySelector(".gutter-length-input")?.addEventListener(
+            "change",
+            event => {
+                const gutter = findGutter(gutterId);
+                if (!gutter) return;
+
+                const value = Math.max(0, Number(event.target.value || 0));
+                gutter.length = Number.isFinite(value) ? value : 0;
+
+                captureRunsHistory("Gutter length updated");
+                refreshRunsBOM();
+                renderRunsModal();
+            }
+        );
+
+        entry.querySelectorAll(".gutter-run-choice input").forEach(input => {
+            input.addEventListener("change", event => {
+                const gutter = findGutter(gutterId);
+                if (!gutter) return;
+
+                const runId = String(event.target.dataset.runId || "");
+                const excluded = new Set(
+                    Array.isArray(gutter.excludedRunIds)
+                        ? gutter.excludedRunIds.map(id => String(id))
+                        : []
+                );
+
+                if (event.target.checked) {
+                    excluded.delete(runId);
+                }
+                else {
+                    excluded.add(runId);
+                }
+
+                gutter.excludedRunIds = [...excluded];
+                captureRunsHistory("Gutter run selection updated");
+                refreshRunsBOM();
+                renderRunsModal();
+            });
+        });
+
+        entry.querySelector("[data-action='delete-gutter']")?.addEventListener(
+            "click",
+            () => {
+                const gutters = getEditableGutters();
+                const index = gutters.findIndex(gutter => gutter.id === gutterId);
+
+                if (index < 0) return;
+
+                gutters.splice(index, 1);
+                normalizeGutterNames();
+                if (expandedGutterId === gutterId) {
+                    expandedGutterId = null;
+                }
+
+                captureRunsHistory("Gutter removed");
                 refreshRunsBOM();
                 renderRunsModal();
             }
@@ -433,10 +730,6 @@ function openRunWireModal(runId) {
 function openRunsModal() {
 
     const overlay = ensureRunsModal();
-
-    if (getEditableRuns().length === 0) {
-        createRun();
-    }
 
     renderRunsModal();
     overlay.style.display = "flex";

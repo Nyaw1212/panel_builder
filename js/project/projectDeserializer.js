@@ -41,6 +41,20 @@ function deserializeProject(project) {
         setProjectRuns(runs);
     }
 
+    if (typeof setProjectGutters === "function") {
+        const gutters = (project.gutters || []).map((savedGutter, index) => ({
+            id: String(savedGutter?.id || crypto.randomUUID()),
+            name: String(savedGutter?.name || `Gutter ${index + 1}`),
+            length: Math.max(0, Number(savedGutter?.length || 0)),
+            excludedRunIds: (Array.isArray(savedGutter?.excludedRunIds)
+                ? savedGutter.excludedRunIds
+                : []
+            ).map(id => String(id)).filter(Boolean)
+        }));
+
+        setProjectGutters(gutters);
+    }
+
     //----------------------------------
     // Restore Panels
     //----------------------------------
