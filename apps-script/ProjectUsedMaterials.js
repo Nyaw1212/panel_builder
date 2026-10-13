@@ -127,21 +127,9 @@ function saveProjectUsedMaterials(
 
   let outputRow = 7;
 
-  ["BOS", "VAN"].forEach(category => {
-    const categoryRows = rows.filter(item => item.inventoryCategory === category);
-
-    if (!categoryRows.length) return;
-
-    usedSheet.getRange(outputRow, 1, 1, 5).merge();
-    usedSheet.getRange(outputRow, 1)
-      .setValue(category)
-      .setBackground(category === "BOS" ? "#0f766e" : "#7c3d12")
-      .setFontColor("#ffffff")
-      .setFontWeight("bold");
-    outputRow += 1;
-
-    usedSheet.getRange(outputRow, 1, categoryRows.length, 5).setValues(
-      categoryRows.map(item => [
+  if (rows.length) {
+    usedSheet.getRange(outputRow, 1, rows.length, 5).setValues(
+      rows.map(item => [
         item.description,
         item.catalog,
         item.qty,
@@ -149,32 +137,7 @@ function saveProjectUsedMaterials(
         item.qty * item.price
       ])
     );
-    outputRow += categoryRows.length;
-  });
-
-  const otherRows = rows.filter(item =>
-    item.inventoryCategory !== "BOS" && item.inventoryCategory !== "VAN"
-  );
-
-  if (otherRows.length) {
-    usedSheet.getRange(outputRow, 1, 1, 5).merge();
-    usedSheet.getRange(outputRow, 1)
-      .setValue("OTHER")
-      .setBackground("#475569")
-      .setFontColor("#ffffff")
-      .setFontWeight("bold");
-    outputRow += 1;
-
-    usedSheet.getRange(outputRow, 1, otherRows.length, 5).setValues(
-      otherRows.map(item => [
-        item.description,
-        item.catalog,
-        item.qty,
-        item.price,
-        item.qty * item.price
-      ])
-    );
-    outputRow += otherRows.length;
+    outputRow += rows.length;
   }
 
   usedSheet.getRange(outputRow, 4).setValue("Grand Total");
@@ -187,14 +150,30 @@ function saveProjectUsedMaterials(
     grandTotalCell.setValue(0);
   }
   usedSheet.getRange(outputRow, 4, 1, 2)
-    .setBackground("#0f172a")
-    .setFontColor("#ffffff")
+    .setBackground("#b7b7b7")
+    .setFontColor("#000000")
     .setFontWeight("bold");
 
-  usedSheet.getRange("A1:E1").setBackground("#0f172a").setFontColor("#ffffff").setFontWeight("bold");
-  usedSheet.getRange("A2:E3").setFontWeight("bold");
-  usedSheet.getRange("A5:E5").setBackground("#102238").setFontColor("#bae6fd").setFontWeight("bold");
-  usedSheet.getRange("A6:E6").setBackground("#1e3a5f").setFontColor("#ffffff").setFontWeight("bold");
+  usedSheet.getRange("A1:E1")
+    .setBackground("#999999")
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center");
+  usedSheet.getRange("A2:E3")
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center");
+  usedSheet.getRange("A5:E5")
+    .setBackground("#999999")
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center");
+  usedSheet.getRange("A6:E6")
+    .setBackground("#b7b7b7")
+    .setFontColor("#000000")
+    .setFontWeight("bold")
+    .setHorizontalAlignment("center");
+  if (rows.length) {
+    usedSheet.getRange(7, 1, rows.length, 5)
+      .setHorizontalAlignment("center");
+  }
   usedSheet.getRange("C7:C").setNumberFormat("#,##0.##");
   usedSheet.getRange("D7:E").setNumberFormat("$#,##0.00");
   usedSheet.setFrozenRows(6);
