@@ -9,6 +9,7 @@ let activeFittingRunId = null;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
+    { key: "SRT", label: "SRT", pattern: /\bSRT\b|STEEL.*RAIN\s*TIGHT|STL.*RAIN\s*TIGHT/ },
     { key: "RT", label: "RT", pattern: /\bRT\b|RAIN\s*TIGHT|CONCRETE\s*TIGHT/ },
     { key: "EMT", label: "EMT", pattern: /\bEMT\b/ },
     { key: "PVC", label: "PVC", pattern: /\bPVC\b|SCH\s*\d+/ },
@@ -333,6 +334,7 @@ function isSameFittingSize(material, size) {
 function getFittingColumn(material) {
 
     const searchableText = [
+        material?.CatalogNumber,
         material?.Description,
         material?.Color
     ].map(normalizeFittingValue).join(" ");
