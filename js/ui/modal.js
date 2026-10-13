@@ -25,6 +25,8 @@ let modalMode = "equipment";
 let modalTitle = "Place Node";
 let modalSource = [];
 let modalOnSelect = null;
+let modalOnClose = null;
+let modalPickerOptions = {};
 
 let currentCell = null;
 let currentConnection = null;
@@ -401,6 +403,13 @@ function closeActiveModal() {
 
     modal.style.display = "none";
 
+    const onClose = modalOnClose;
+    modalOnClose = null;
+
+    if (typeof onClose === "function") {
+        onClose();
+    }
+
 }
 
 closeModal.onclick = closeActiveModal;
@@ -425,7 +434,9 @@ function openPickerModal(
 
     source,
 
-    callback
+    callback,
+
+    options = {}
 
 ) {
 
@@ -436,6 +447,8 @@ function openPickerModal(
     modalSource = source || [];
 
     modalOnSelect = callback || null;
+    modalOnClose = options.onClose || null;
+    modalPickerOptions = options;
 
     currentCell = null;
 
@@ -444,7 +457,9 @@ function openPickerModal(
     modalSearch.value = "";
 
     if (modalFilters) {
-        modalFilters.style.display = "none";
+        modalFilters.style.display = options.materialFilters
+            ? "grid"
+            : "none";
     }
 
     if (equipmentFilters) {
@@ -454,6 +469,27 @@ function openPickerModal(
     document.querySelector(
         ".modal-header h2"
     ).textContent = title;
+
+    if (options.materialFilters) {
+        if (typeof resetModalFilters === "function") {
+            resetModalFilters();
+        }
+
+        if (
+            options.category &&
+            typeof setModalCategory === "function"
+        ) {
+            setModalCategory(options.category);
+        }
+
+        if (typeof buildFilterChips === "function") {
+            buildFilterChips(
+                typeof getHardwareModalList === "function"
+                    ? getHardwareModalList(modalSource)
+                    : modalSource
+            );
+        }
+    }
 
     buildModalList();
 
@@ -474,6 +510,8 @@ function openModal(index) {
     modalSource = equipment;
 
     modalOnSelect = null;
+    modalOnClose = null;
+    modalPickerOptions = {};
 
     currentCell = index;
 
@@ -512,6 +550,8 @@ async function openMaterialModal(connection) {
     modalSource = await getMaterials();
 
     modalOnSelect = null;
+    modalOnClose = null;
+    modalPickerOptions = {};
 
     currentConnection = connection;
 
@@ -568,7 +608,10 @@ function buildModalList(searchText = "") {
     if (modalMode === "equipment") {
         list = getEquipmentModalList(list);
     }
-    else if (modalMode === "material") {
+    else if (
+        modalMode === "material" ||
+        (modalMode === "picker" && modalPickerOptions.materialFilters)
+    ) {
 
         list = getHardwareModalList(list);
 

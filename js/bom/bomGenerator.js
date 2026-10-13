@@ -74,6 +74,37 @@ function getFittingBOM() {
 
     });
 
+    //----------------------------------
+    // Free-form material runs
+    //----------------------------------
+
+    const runs = typeof getProjectRuns === "function"
+        ? getProjectRuns()
+        : [];
+
+    runs.forEach(run => {
+
+        const length = Number(run?.length || 0);
+
+        if (!Number.isFinite(length) || length <= 0) return;
+
+        if (run.conduit) {
+            mergeMaterial(map, {
+                ...run.conduit,
+                qty: length
+            });
+        }
+
+        if (run.wire) {
+            mergeMaterial(map, {
+                ...run.wire,
+                // Two feet of service allowance at each end.
+                qty: length + 4
+            });
+        }
+
+    });
+
     return Object.values(map)
 
         .sort((a, b) =>

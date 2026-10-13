@@ -86,6 +86,21 @@ function resetModalFilters() {
 }
 
 //----------------------------------
+// Set Category Programmatically
+//----------------------------------
+
+function setModalCategory(category) {
+
+    selectedCategory = normalizeModalValue(category);
+    selectedFittingType = "All";
+    selectedMaterialType = "All";
+    selectedSize = "All";
+    selectedWirePreset = "SINGLE";
+    selectedAmpacityRow = null;
+
+}
+
+//----------------------------------
 // Normalize Value
 //----------------------------------
 
@@ -1631,6 +1646,7 @@ function getSelectedWirePresetColors() {
 //----------------------------------
 
 window.resetModalFilters = resetModalFilters;
+window.setModalCategory = setModalCategory;
 window.buildFilterChips = buildFilterChips;
 window.applyModalFilters = applyModalFilters;
 window.getSelectedWirePreset =

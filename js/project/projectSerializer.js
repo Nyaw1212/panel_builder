@@ -253,6 +253,33 @@ function serializeLinks() {
 }
 
 //----------------------------------
+// Free-form Material Runs
+//----------------------------------
+function serializeRuns() {
+  const runs = typeof getProjectRuns === "function"
+    ? getProjectRuns()
+    : [];
+
+  return runs
+    .map((run, index) => {
+      const length = Number(run?.length || 0);
+
+      return {
+        id: String(run?.id || ""),
+        name: String(run?.name || `Run ${index + 1}`),
+        length: Number.isFinite(length) && length >= 0 ? length : 0,
+        conduit: run?.conduit
+          ? compactCatalogRecord(run.conduit)
+          : null,
+        wire: run?.wire
+          ? compactCatalogRecord(run.wire)
+          : null
+      };
+    })
+    .filter(run => run.id || run.length || run.conduit || run.wire);
+}
+
+//----------------------------------
 // Material Summary
 //----------------------------------
 function serializeMaterialSummary() {
@@ -376,6 +403,7 @@ function serializeProjectCore() {
     model: project.model || "",
     layout: serializeLayout(),
     links: serializeLinks(),
+    runs: serializeRuns(),
     materialSummary: serializeMaterialSummary()
   };
 }
@@ -407,6 +435,7 @@ window.serializeItem = serializeItem;
 window.serializeLayout = serializeLayout;
 window.serializeLink = serializeLink;
 window.serializeLinks = serializeLinks;
+window.serializeRuns = serializeRuns;
 window.serializeMaterialSummary = serializeMaterialSummary;
 window.serializeProjectCore = serializeProjectCore;
 window.serializeProject = serializeProject;

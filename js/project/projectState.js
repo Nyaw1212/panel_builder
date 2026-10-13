@@ -20,7 +20,9 @@ const projectState = {
 
     modified: null,
 
-    version: 1
+    version: 1,
+
+    runs: []
 
 };
 
@@ -101,6 +103,10 @@ function setProjectState(project) {
     projectState.version =
         project.version || 1;
 
+    projectState.runs = Array.isArray(project.runs)
+        ? structuredClone(project.runs)
+        : [];
+
 }
 
 //----------------------------------
@@ -127,6 +133,28 @@ function clearProjectState() {
 
     projectState.version = 1;
 
+    projectState.runs = [];
+
+}
+
+//----------------------------------
+// Runs
+//----------------------------------
+
+function getProjectRuns() {
+
+    return Array.isArray(projectState.runs)
+        ? projectState.runs
+        : [];
+
+}
+
+function setProjectRuns(runs) {
+
+    projectState.runs = Array.isArray(runs)
+        ? structuredClone(runs)
+        : [];
+
 }
 
 //----------------------------------
@@ -144,3 +172,5 @@ window.setJobName = setJobName;
 window.setAddress = setAddress;
 
 window.clearProjectState = clearProjectState;
+window.getProjectRuns = getProjectRuns;
+window.setProjectRuns = setProjectRuns;

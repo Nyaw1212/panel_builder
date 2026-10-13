@@ -481,6 +481,7 @@ function saveProject(request) {
     model,
     layout: Array.isArray(request.layout) ? request.layout : [],
     links: Array.isArray(request.links) ? request.links : [],
+    runs: Array.isArray(request.runs) ? request.runs : [],
     materialSummary,
     bos,
     van,

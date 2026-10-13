@@ -14,6 +14,26 @@ function deserializeProject(project) {
     clearLinks();
 
     //----------------------------------
+    // Restore free-form material runs
+    //----------------------------------
+
+    if (typeof setProjectRuns === "function") {
+        const runs = (project.runs || []).map((savedRun, index) => ({
+            id: String(savedRun?.id || crypto.randomUUID()),
+            name: String(savedRun?.name || `Run ${index + 1}`),
+            length: Math.max(0, Number(savedRun?.length || 0)),
+            conduit: savedRun?.conduit && typeof hydrateCatalogRecord === "function"
+                ? hydrateCatalogRecord(savedRun.conduit)
+                : (savedRun?.conduit || null),
+            wire: savedRun?.wire && typeof hydrateCatalogRecord === "function"
+                ? hydrateCatalogRecord(savedRun.wire)
+                : (savedRun?.wire || null)
+        }));
+
+        setProjectRuns(runs);
+    }
+
+    //----------------------------------
     // Restore Panels
     //----------------------------------
 

@@ -73,7 +73,12 @@ function buildProject() {
             getLayout(),
 
         links:
-            getLinks()
+            getLinks(),
+
+        runs:
+            typeof serializeRuns === "function"
+                ? serializeRuns()
+                : []
 
     };
 

@@ -576,7 +576,7 @@ function buildModalCard(item) {
 
             }
 
-            modal.style.display = "none";
+            closeActiveModal();
 
             return;
 

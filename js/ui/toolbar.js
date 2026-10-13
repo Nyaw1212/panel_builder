@@ -379,6 +379,9 @@ function initializeToolbar() {
     const bomButton =
         document.getElementById("bomButton");
 
+    const runsButton =
+        document.getElementById("runsButton");
+
     const manualRouteButton =
         document.getElementById("manualRouteButton");
 
@@ -455,6 +458,18 @@ function initializeToolbar() {
     }
     else {
         console.warn("BOM button not found.");
+    }
+
+    //----------------------------------
+    // Free-form Runs
+    //----------------------------------
+
+    if (runsButton) {
+        runsButton.addEventListener("click", () => {
+            if (typeof openRunsModal === "function") {
+                openRunsModal();
+            }
+        });
     }
 
     //----------------------------------
