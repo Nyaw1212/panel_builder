@@ -309,10 +309,21 @@ function serializeGutters() {
         excludedRunIds: (Array.isArray(gutter?.excludedRunIds)
           ? gutter.excludedRunIds
           : []
-        ).map(id => String(id)).filter(Boolean)
+        ).map(id => String(id)).filter(Boolean),
+        fittings: (Array.isArray(gutter?.fittings) ? gutter.fittings : [])
+          .map(fitting => ({
+            material: compactCatalogRecord(fitting),
+            qty: Math.max(0, Number(fitting?.qty ?? fitting?.Qty ?? 0))
+          }))
+          .filter(fitting => fitting.material && fitting.qty > 0)
       };
     })
-    .filter(gutter => gutter.id || gutter.length || gutter.excludedRunIds.length);
+    .filter(gutter =>
+      gutter.id ||
+      gutter.length ||
+      gutter.excludedRunIds.length ||
+      gutter.fittings.length
+    );
 }
 
 //----------------------------------

@@ -5,7 +5,7 @@
 let runsModalElement = null;
 let expandedGutterId = null;
 let fittingModalElement = null;
-let activeFittingRunId = null;
+let activeFittingTarget = null;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -122,6 +122,38 @@ function getEditableGutters() {
 
 }
 
+function getGutterFittings(gutter) {
+
+    if (!Array.isArray(gutter?.fittings)) {
+        gutter.fittings = [];
+    }
+
+    return gutter.fittings;
+
+}
+
+function getGutterFittingSizeOptions(gutter, runs) {
+
+    const options = new Map();
+
+    getIncludedGutterRuns(gutter, runs).forEach((run, index) => {
+        const size = String(run?.conduit?.Size || "").trim();
+        if (!size) return;
+
+        if (!options.has(size)) {
+            options.set(size, []);
+        }
+
+        options.get(size).push(`Run ${index + 1}`);
+    });
+
+    return [...options.entries()].map(([size, sourceRuns]) => ({
+        size,
+        sourceRuns
+    }));
+
+}
+
 function createGutter() {
 
     const gutters = getEditableGutters();
@@ -134,7 +166,8 @@ function createGutter() {
         id: crypto.randomUUID(),
         name,
         length,
-        excludedRunIds: []
+        excludedRunIds: [],
+        fittings: []
     };
 
     gutters.push(gutter);
@@ -555,6 +588,7 @@ function renderRunsModal() {
                 <div class="gutters-grid-header" aria-hidden="true">
                     <span>Gutter</span>
                     <span>Included runs</span>
+                    <span>Fittings</span>
                     <span>Length</span>
                     <span>Calculated BOM</span>
                     <span></span>
@@ -586,6 +620,9 @@ function renderRunsModal() {
                                         <div class="gutter-name">Gutter ${index + 1}</div>
                                         <button class="gutter-runs-button" type="button" data-action="toggle-gutter-runs">
                                             ${runModalEscape(getGutterRunSummary(gutter, runs))}
+                                        </button>
+                                        <button class="run-material-button" type="button" data-action="gutter-fittings" title="Select gutter fittings by included run size">
+                                            ${runModalEscape(getRunFittingsSummary(gutter))}
                                         </button>
                                         <label class="run-length-field">
                                             <input
@@ -753,6 +790,11 @@ function renderRunsModal() {
                     : gutterId;
                 renderRunsModal();
             }
+        );
+
+        entry.querySelector("[data-action='gutter-fittings']")?.addEventListener(
+            "click",
+            () => openGutterFittingModal(gutterId)
         );
 
         entry.querySelector(".gutter-length-input")?.addEventListener(
@@ -959,22 +1001,78 @@ async function openRunFittingModal(runId) {
 
     if (!run) return;
 
-    if (!run.conduit?.Size) {
+    openFittingModalForTarget(run, {
+        title: `${run.name || "Run"} Fittings`,
+        historyLabel: "Run fitting"
+    });
+
+}
+
+async function openGutterFittingModal(gutterId) {
+
+    const gutter = findGutter(gutterId);
+    const options = gutter
+        ? getGutterFittingSizeOptions(gutter, getEditableRuns())
+        : [];
+
+    if (!gutter) return;
+
+    if (options.length === 0) {
+        alert("Include a Run with a selected conduit size before adding gutter fittings.");
+        return;
+    }
+
+    let selected = options[0];
+
+    if (options.length > 1) {
+        const choices = options.map((option, index) =>
+            `${index + 1}. ${option.size} (${option.sourceRuns.join(", ")})`
+        ).join("\n");
+        const answer = window.prompt(
+            `Choose the run conduit size for this gutter fitting:\n${choices}`,
+            "1"
+        );
+        const choice = Number(answer) - 1;
+
+        if (answer === null || !Number.isInteger(choice) || !options[choice]) {
+            return;
+        }
+
+        selected = options[choice];
+    }
+
+    const target = {
+        name: gutter.name || "Gutter",
+        conduit: { Size: selected.size },
+        fittings: getGutterFittings(gutter)
+    };
+
+    openFittingModalForTarget(target, {
+        title: `${gutter.name || "Gutter"} Fittings`,
+        context: selected.sourceRuns.join(", "),
+        historyLabel: "Gutter fitting"
+    });
+
+}
+
+async function openFittingModalForTarget(target, options = {}) {
+
+    if (!target?.conduit?.Size) {
         alert("Select the conduit first so fittings can be filtered by size.");
         return;
     }
 
-    activeFittingRunId = runId;
+    activeFittingTarget = target;
 
     const materials = typeof getMaterials === "function"
         ? await getMaterials()
         : [];
 
-    renderRunFittingModal(run, materials);
+    renderRunFittingModal(target, materials, options);
 
 }
 
-function renderRunFittingModal(run, materials) {
+function renderRunFittingModal(run, materials, options = {}) {
 
     const overlay = ensureFittingModal();
     const catalogLookup = new Map();
@@ -1004,6 +1102,9 @@ function renderRunFittingModal(run, materials) {
             `;
         }).join("")
         : `<p class="fitting-summary-empty">Click a fitting image to add it here.</p>`;
+    const fittingContext = options.context
+        ? `${options.context} · Size`
+        : "Conduit size";
 
     // Put conduit systems on the vertical axis and fitting types across the
     // horizontal axis. This gives each square material tile more room.
@@ -1041,8 +1142,8 @@ function renderRunFittingModal(run, materials) {
         <section class="run-fitting-dialog" role="dialog" aria-modal="true" aria-labelledby="runFittingTitle">
             <header class="run-fitting-header">
                 <div>
-                    <h2 id="runFittingTitle">${runModalEscape(run.name || "Run")} Fittings</h2>
-                    <p>Conduit size: <strong>${runModalEscape(run.conduit.Size)}</strong>. Click an image to add one fitting.</p>
+                    <h2 id="runFittingTitle">${runModalEscape(options.title || `${run.name || "Run"} Fittings`)}</h2>
+                    <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(run.conduit.Size)}</strong>. Click an image to add one fitting.</p>
                 </div>
                 <button class="run-fitting-close" type="button" aria-label="Close fittings">&times;</button>
             </header>
@@ -1090,9 +1191,9 @@ function renderRunFittingModal(run, materials) {
             if (!material) return;
 
             addRunFitting(run, material);
-            captureRunsHistory("Run fitting added");
+            captureRunsHistory(`${options.historyLabel || "Run fitting"} added`);
             refreshRunsBOM();
-            renderRunFittingModal(run, materials);
+            renderRunFittingModal(run, materials, options);
         });
     });
 
@@ -1102,9 +1203,9 @@ function renderRunFittingModal(run, materials) {
             if (!material) return;
 
             removeRunFitting(run, material);
-            captureRunsHistory("Run fitting removed");
+            captureRunsHistory(`${options.historyLabel || "Run fitting"} removed`);
             refreshRunsBOM();
-            renderRunFittingModal(run, materials);
+            renderRunFittingModal(run, materials, options);
         });
     });
 
@@ -1116,7 +1217,7 @@ function closeRunFittingModal() {
 
     if (fittingModalElement) fittingModalElement.style.display = "none";
 
-    activeFittingRunId = null;
+    activeFittingTarget = null;
     renderRunsModal();
 
 }

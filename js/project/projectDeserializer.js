@@ -67,7 +67,24 @@ function deserializeProject(project) {
             excludedRunIds: (Array.isArray(savedGutter?.excludedRunIds)
                 ? savedGutter.excludedRunIds
                 : []
-            ).map(id => String(id)).filter(Boolean)
+            ).map(id => String(id)).filter(Boolean),
+            fittings: (Array.isArray(savedGutter?.fittings)
+                ? savedGutter.fittings
+                : []
+            ).map(savedFitting => {
+                const material = savedFitting?.material ?? savedFitting;
+
+                return {
+                    ...(typeof hydrateCatalogRecord === "function"
+                        ? hydrateCatalogRecord(material)
+                        : structuredClone(material)
+                    ),
+                    qty: Math.max(
+                        0,
+                        Number(savedFitting?.qty ?? savedFitting?.Qty ?? 0)
+                    )
+                };
+            }).filter(fitting => fitting?.CatalogNumber && fitting.qty > 0)
         }));
 
         setProjectGutters(gutters);

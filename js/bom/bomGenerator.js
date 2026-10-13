@@ -129,6 +129,15 @@ function getFittingBOM() {
 
         const length = Number(gutter?.length || 0);
 
+        // Fittings are count-based and must remain on the BOM even when a
+        // gutter length has not been entered yet.
+        (Array.isArray(gutter?.fittings) ? gutter.fittings : []).forEach(fitting => {
+            mergeMaterial(map, {
+                ...fitting,
+                qty: Number(fitting?.qty || fitting?.Qty || 0)
+            });
+        });
+
         if (!Number.isFinite(length) || length <= 0) return;
 
         const excluded = new Set(

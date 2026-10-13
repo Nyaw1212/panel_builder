@@ -109,7 +109,7 @@
 .gutters-grid-header,
 .gutter-row {
     display: grid;
-    grid-template-columns: minmax(72px, .6fr) minmax(180px, 1.6fr) minmax(100px, .7fr) minmax(150px, 1fr) 36px;
+    grid-template-columns: minmax(72px, .55fr) minmax(150px, 1.3fr) minmax(135px, 1.1fr) minmax(95px, .65fr) minmax(130px, .9fr) 36px;
     gap: 12px;
     align-items: center;
 }
