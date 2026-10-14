@@ -525,7 +525,8 @@ function autoAssignRunWires(run) {
             addAutomaticWire(sharedWires, largestSize, "WHITE", Number(rule?.["Neutral Qty"] || 1));
         }
         if (getWireRuleMode(rule, "Ground Mode") === "PER RUN") {
-            addAutomaticWire(sharedWires, largestSize, "GREEN", Number(rule?.["Ground Qty"] || 1));
+            const groundSize = String(rule?.["Ground Size"] || "").trim() || largestSize;
+            addAutomaticWire(sharedWires, groundSize, "GREEN", Number(rule?.["Ground Qty"] || 1));
         }
     });
 
