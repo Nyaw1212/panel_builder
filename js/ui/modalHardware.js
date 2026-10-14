@@ -104,11 +104,20 @@ function buildHardwarePanel() {
 
     </div>
 
-    <div class="assembly-qty">
-
-        Qty: ${hardware.qty ?? 1}
-
-    </div>
+    ${isRunWirePicker
+        ? `
+            <label class="assembly-qty assembly-qty-edit">
+                <span>Qty</span>
+                <input class="assembly-qty-input" type="number" min="1" step="1" inputmode="numeric"
+                    value="${Math.max(1, Number(hardware.qty || 1))}" aria-label="Quantity for ${hardware.CatalogNumber}">
+            </label>
+        `
+        : `
+            <div class="assembly-qty">
+                Qty: ${hardware.qty ?? 1}
+            </div>
+        `
+    }
 
 `;
 
@@ -135,6 +144,23 @@ function buildHardwarePanel() {
                 drawCanvas();
 
             };
+
+            card.querySelector(".assembly-qty-input")?.addEventListener(
+                "change",
+                event => {
+                    const quantity = Number(event.target.value);
+
+                    if (!Number.isInteger(quantity) || quantity < 1) {
+                        event.target.value = String(Math.max(1, Number(hardware.qty || 1)));
+                        alert("Enter a whole number of at least 1.");
+                        return;
+                    }
+
+                    hardware.qty = quantity;
+                    buildModalList(modalSearch?.value || "");
+                    drawCanvas();
+                }
+            );
 
             row.appendChild(card);
 
