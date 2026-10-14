@@ -431,12 +431,12 @@
 }
 
 .run-wire-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 5px;
 }
 
 .run-wire-actions button {
-    flex: 1 1 0;
     min-width: 0;
     border: 1px solid rgba(96, 165, 250, .36);
     border-radius: 5px;
@@ -445,8 +445,9 @@
     cursor: pointer;
     font-size: 10px;
     font-weight: 800;
-    line-height: 22px;
-    padding: 0 4px;
+    min-height: 23px;
+    line-height: 1.15;
+    padding: 3px 5px;
     white-space: nowrap;
 }
 
