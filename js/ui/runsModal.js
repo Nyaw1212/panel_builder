@@ -6,6 +6,7 @@ let runsModalElement = null;
 let expandedGutterId = null;
 let fittingModalElement = null;
 let activeFittingTarget = null;
+let fittingQuantityMode = false;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -1352,8 +1353,7 @@ function renderRunFittingModal(run, materials, options = {}) {
                         </button>
                         <div class="fitting-cell-footer">
                             <small title="${runModalEscape(material.Description || catalog)}">${runModalEscape(catalog)}</small>
-                            <input class="fitting-quantity-input" type="number" min="0" step="1" inputmode="numeric"
-                                value="${quantity}" data-catalog="${runModalEscape(catalog)}" title="Set exact quantity">
+                            <span class="fitting-quantity">${quantity}</span>
                             <button type="button" class="fitting-remove-button" data-catalog="${runModalEscape(catalog)}" ${quantity ? "" : "disabled"} title="Remove 1">−</button>
                         </div>
                     </div>
@@ -1369,9 +1369,14 @@ function renderRunFittingModal(run, materials, options = {}) {
             <header class="run-fitting-header">
                 <div>
                     <h2 id="runFittingTitle">${runModalEscape(options.title || `${run.name || "Run"} Fittings`)}</h2>
-                    <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(run.conduit.Size)}</strong>. Click an image to add one fitting.</p>
+                    <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(run.conduit.Size)}</strong>. ${fittingQuantityMode ? "Qty mode: click an image to set its exact quantity." : "Click an image to add one fitting."}</p>
                     ${sizeFilter}
                 </div>
+                <label class="fitting-qty-mode" title="Off: add one fitting per click. On: enter an exact quantity after clicking.">
+                    <span>Qty mode</span>
+                    <input type="checkbox" ${fittingQuantityMode ? "checked" : ""}>
+                    <i aria-hidden="true"></i>
+                </label>
                 <button class="run-fitting-close" type="button" aria-label="Close fittings">&times;</button>
             </header>
             <div class="run-fitting-content">
@@ -1423,13 +1428,37 @@ function renderRunFittingModal(run, materials, options = {}) {
         renderRunFittingModal(run, materials, options);
     });
 
+    overlay.querySelector(".fitting-qty-mode input")?.addEventListener("change", event => {
+        fittingQuantityMode = event.target.checked;
+        renderRunFittingModal(run, materials, options);
+    });
+
     overlay.querySelectorAll(".fitting-image-button").forEach(button => {
         button.addEventListener("click", () => {
             const material = catalogLookup.get(button.dataset.catalog || "");
             if (!material) return;
 
-            addRunFitting(run, material);
-            captureRunsHistory(`${options.historyLabel || "Run fitting"} added`);
+            if (fittingQuantityMode) {
+                const current = getFittingQuantity(run, material);
+                const input = window.prompt(
+                    `Set quantity for ${material.Description || material.CatalogNumber}`,
+                    String(current || 1)
+                );
+                if (input === null) return;
+
+                const quantity = Number(input);
+                if (!Number.isInteger(quantity) || quantity < 0) {
+                    alert("Enter a whole number that is zero or greater.");
+                    return;
+                }
+
+                setRunFittingQuantity(run, material, quantity);
+                captureRunsHistory(`${options.historyLabel || "Run fitting"} quantity updated`);
+            }
+            else {
+                addRunFitting(run, material);
+                captureRunsHistory(`${options.historyLabel || "Run fitting"} added`);
+            }
             refreshRunsBOM();
             renderRunFittingModal(run, materials, options);
         });
@@ -1442,18 +1471,6 @@ function renderRunFittingModal(run, materials, options = {}) {
 
             removeRunFitting(run, material);
             captureRunsHistory(`${options.historyLabel || "Run fitting"} removed`);
-            refreshRunsBOM();
-            renderRunFittingModal(run, materials, options);
-        });
-    });
-
-    overlay.querySelectorAll(".fitting-quantity-input").forEach(input => {
-        input.addEventListener("change", () => {
-            const material = catalogLookup.get(input.dataset.catalog || "");
-            if (!material) return;
-
-            setRunFittingQuantity(run, material, input.value);
-            captureRunsHistory(`${options.historyLabel || "Run fitting"} quantity updated`);
             refreshRunsBOM();
             renderRunFittingModal(run, materials, options);
         });
