@@ -267,6 +267,7 @@ function serializeRuns() {
       return {
         id: String(run?.id || ""),
         name: String(run?.name || `Run ${index + 1}`),
+        canvasLinkId: String(run?.canvasLinkId || ""),
         fromCanvasItemId: String(run?.fromCanvasItemId || ""),
         toCanvasItemId: String(run?.toCanvasItemId || ""),
         length: Number.isFinite(length) && length >= 0 ? length : 0,

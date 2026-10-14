@@ -10,6 +10,7 @@ let fittingQuantityMode = false;
 let runWireClipboard = null;
 let runCircuitModalElement = null;
 let runWireAssignmentModalElement = null;
+let runCanvasLinkModalElement = null;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -288,6 +289,116 @@ function getCanvasTagLabel(itemId, options) {
         .find(option => option.id === String(itemId || ""))
         ?.label || "";
 
+}
+
+function getRunCanvasLinks() {
+    const options = getCanvasTagOptions();
+
+    return (typeof getLinks === "function" ? getLinks() : [])
+        .map(link => {
+            const fromCanvasItemId = String(link?.start?.panelId || "");
+            const toCanvasItemId = String(link?.end?.panelId || "");
+            const fromLabel = getCanvasTagLabel(fromCanvasItemId, options);
+            const toLabel = getCanvasTagLabel(toCanvasItemId, options);
+
+            return {
+                id: String(link?.id || ""),
+                fromCanvasItemId,
+                toCanvasItemId,
+                label: [fromLabel, toLabel].filter(Boolean).join(" → ")
+            };
+        })
+        .filter(link => link.id && link.fromCanvasItemId && link.toCanvasItemId && link.label);
+}
+
+function createRunFromCanvasLink(link) {
+    const length = promptRunLength(link.label);
+    if (length === null) return null;
+
+    const run = {
+        id: crypto.randomUUID(),
+        name: link.label,
+        canvasLinkId: link.id,
+        length,
+        fromCanvasItemId: link.fromCanvasItemId,
+        toCanvasItemId: link.toCanvasItemId,
+        conduit: null,
+        wires: [],
+        fittings: []
+    };
+
+    const circuits = getRunPanelCircuits(run);
+    run.panelBreakerSources = circuits.map(circuit => ({
+        panelId: circuit.panelId,
+        breakerId: circuit.breakerId,
+        panelPreset: circuit.panelPreset,
+        catalogNumber: circuit.catalogNumber,
+        rating: circuit.rating,
+        poles: circuit.poles
+    }));
+    run.panelBreakerSourcesConfigured = true;
+    autoAssignRunWires(run);
+
+    getEditableRuns().push(run);
+    return run;
+}
+
+function ensureRunCanvasLinkModal() {
+    if (runCanvasLinkModalElement) return runCanvasLinkModalElement;
+
+    const overlay = document.createElement("div");
+    overlay.className = "run-circuit-modal";
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) overlay.style.display = "none";
+    });
+    document.body.appendChild(overlay);
+    runCanvasLinkModalElement = overlay;
+    return overlay;
+}
+
+function openRunFromCanvasLinkModal() {
+    const links = getRunCanvasLinks();
+    if (!links.length) {
+        alert("Create a visual canvas link first, then it will appear here.");
+        return;
+    }
+
+    const overlay = ensureRunCanvasLinkModal();
+    overlay.innerHTML = `
+        <section class="run-circuit-dialog run-wire-assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="runCanvasLinkTitle">
+            <header>
+                <div>
+                    <h2 id="runCanvasLinkTitle">Create Run from Canvas Link</h2>
+                    <p>Choose a visual canvas link. It maps the run endpoints, selects the panel breakers, and applies automatic wiring.</p>
+                </div>
+                <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
+            </header>
+            <div class="run-circuit-list">
+                ${links.map(link => `
+                    <div class="run-wire-assignment-row">
+                        <span><strong>${runModalEscape(link.label)}</strong><small>Canvas link</small></span>
+                        <button type="button" data-canvas-link-id="${runModalEscape(link.id)}">Create run</button>
+                    </div>`).join("")}
+            </div>
+            <footer><button type="button" class="run-circuit-close">Cancel</button></footer>
+        </section>`;
+
+    const close = () => { overlay.style.display = "none"; };
+    overlay.querySelectorAll(".run-circuit-close").forEach(button => button.addEventListener("click", close));
+    overlay.querySelectorAll("[data-canvas-link-id]").forEach(button => button.addEventListener("click", () => {
+        const link = links.find(item => item.id === button.dataset.canvasLinkId);
+        if (!link) return;
+
+        const run = createRunFromCanvasLink(link);
+        if (!run) return;
+
+        captureRunsHistory("Run created from canvas link");
+        refreshRunsBOM();
+        close();
+        renderRunsModal();
+    }));
+
+    overlay.style.display = "flex";
 }
 
 function getCanvasItem(itemId) {
@@ -1316,6 +1427,7 @@ function renderRunsModal() {
 
             <footer class="runs-footer">
                 <button id="addRunButton" class="runs-add" type="button">+ Add Run</button>
+                <button id="addLinkRunButton" class="runs-add" type="button">+ Run from Link</button>
                 <button id="addGutterButton" class="runs-add" type="button">+ Add Gutter</button>
                 <div class="runs-rule">Wire BOM = run length + 4 ft</div>
                 <button id="doneRunsButton" class="runs-done" type="button">Done</button>
@@ -1342,6 +1454,11 @@ function renderRunsModal() {
             captureRunsHistory("Run added");
             renderRunsModal();
         }
+    );
+
+    overlay.querySelector("#addLinkRunButton")?.addEventListener(
+        "click",
+        openRunFromCanvasLinkModal
     );
 
     overlay.querySelector("#addGutterButton")?.addEventListener(
