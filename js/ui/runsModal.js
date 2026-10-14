@@ -195,6 +195,22 @@ function findRun(runId) {
 
 }
 
+function getDuplicateRunName(run, runs) {
+
+    const base = String(run?.name || "Run").trim();
+    const names = new Set((runs || []).map(item => String(item?.name || "").trim()));
+    let suffix = 2;
+    let candidate = `${base} copy`;
+
+    while (names.has(candidate)) {
+        candidate = `${base} copy ${suffix}`;
+        suffix += 1;
+    }
+
+    return candidate;
+
+}
+
 function findGutter(gutterId) {
 
     return getEditableGutters().find(
@@ -656,7 +672,10 @@ function renderRunsModal() {
                                     <span>Conduit: <strong>${conduitQty}</strong></span>
                                     <span>Wire: <strong>${wireQty}</strong></span>
                                 </div>
-                                <button class="run-delete" type="button" title="Remove Run ${index + 1}" aria-label="Remove Run ${index + 1}">✕</button>
+                                <div class="run-actions">
+                                    <button class="run-duplicate" type="button" data-action="duplicate-run" title="Duplicate Run ${index + 1}" aria-label="Duplicate Run ${index + 1}">⧉</button>
+                                    <button class="run-delete" type="button" title="Remove Run ${index + 1}" aria-label="Remove Run ${index + 1}">✕</button>
+                                </div>
                             </article>
                         `;
                     }).join("")
@@ -907,6 +926,24 @@ function renderRunsModal() {
 
                 runs.splice(index, 1);
                 captureRunsHistory("Run removed");
+                refreshRunsBOM();
+                renderRunsModal();
+            }
+        );
+
+        row.querySelector("[data-action='duplicate-run']")?.addEventListener(
+            "click",
+            () => {
+                const runs = getEditableRuns();
+                const index = runs.findIndex(run => run.id === runId);
+                if (index < 0) return;
+
+                const copy = structuredClone(runs[index]);
+                copy.id = crypto.randomUUID();
+                copy.name = getDuplicateRunName(runs[index], runs);
+                runs.splice(index + 1, 0, copy);
+
+                captureRunsHistory("Run duplicated");
                 refreshRunsBOM();
                 renderRunsModal();
             }
