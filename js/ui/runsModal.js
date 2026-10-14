@@ -482,6 +482,12 @@ function getWireRuleMode(rule, key) {
     return String(rule?.[key] || "None").trim().toUpperCase().replace(/\s+/g, " ");
 }
 
+function getRunWireListLabel(wires) {
+    return (Array.isArray(wires) ? wires : [])
+        .map(wire => `${wire.qty || 1}× ${wire.CatalogNumber || "wire"}`)
+        .join(", ") || "No wire assigned";
+}
+
 function autoAssignRunWires(run) {
     const sources = getRunCircuitSources(run);
     const mainSources = getRunMainConductorSources(run);
@@ -692,22 +698,44 @@ function openRunWireAssignmentModal(runId) {
     }
 
     const assignments = getRunBreakerWireAssignments(run);
+    const mainSources = getRunMainConductorSources(run);
+    const autoMainWires = getRunAutoMainWires(run);
+    const groundWires = getRunAutoWires(run)
+        .filter(wire => normalizeWireToken(wire?.Color) === "GREEN");
     const overlay = ensureRunWireAssignmentModal();
     overlay.innerHTML = `
         <section class="run-circuit-dialog run-wire-assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="runWireAssignmentTitle">
             <header>
                 <div>
                     <h2 id="runWireAssignmentTitle">${runModalEscape(run.name || "Run")} · Wire assignments</h2>
-                    <p>Assign a wire group to each selected breaker. Assigned wires are added to this run and use the run length + 4 ft.</p>
+                    <p>Breaker wires can be edited below. Main and ground wires are generated from the run endpoints and WireAss.</p>
                 </div>
                 <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
             </header>
             <div class="run-circuit-list">
+                ${mainSources.map(source => {
+                    const size = normalizeWireSize(getAutomaticWireSize(source.rating));
+                    const wires = autoMainWires.filter(wire => normalizeWireSize(wire?.Size) === size);
+                    return `
+                        <div class="run-wire-assignment-row run-wire-generated-row">
+                            <span>
+                                <strong>${runModalEscape(`Main · ${source.rating}A · ${source.catalogNumber}`)}</strong>
+                                <small>${runModalEscape(getRunWireListLabel(wires))}</small>
+                            </span>
+                            <em>Auto</em>
+                        </div>`;
+                }).join("")}
+                ${groundWires.length ? `
+                    <div class="run-wire-assignment-row run-wire-generated-row">
+                        <span>
+                            <strong>Ground · Run level</strong>
+                            <small>${runModalEscape(getRunWireListLabel(groundWires))}</small>
+                        </span>
+                        <em>Auto</em>
+                    </div>` : ""}
                 ${sources.map(source => {
                     const assignment = assignments.find(item => getRunCircuitSourceKey(item) === getRunCircuitSourceKey(source));
-                    const label = assignment?.wires?.length
-                        ? assignment.wires.map(wire => `${wire.qty || 1}× ${wire.CatalogNumber || "wire"}`).join(", ")
-                        : "No wire assigned";
+                    const label = getRunWireListLabel(assignment?.wires);
                     return `
                         <div class="run-wire-assignment-row">
                             <span>

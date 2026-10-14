@@ -180,6 +180,24 @@
     font-weight: 800;
 }
 
+.run-wire-generated-row {
+    border-color: rgba(34, 211, 238, .38);
+    background: rgba(8, 47, 73, .24);
+}
+
+.run-wire-generated-row em {
+    flex: 0 0 auto;
+    padding: 4px 7px;
+    border-radius: 5px;
+    color: #a5f3fc;
+    background: rgba(8, 145, 178, .22);
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 900;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
 .runs-close {
     width: 36px;
     height: 36px;
