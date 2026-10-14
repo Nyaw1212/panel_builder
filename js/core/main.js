@@ -10,6 +10,8 @@ let materials = [];
 
 let presets = [];
 
+let wireAssignments = [];
+
 //----------------------------------
 // Main
 //----------------------------------
@@ -39,6 +41,14 @@ async function init() {
     PERF.end("Load Presets");
 
     //----------------------------------
+    // Load Wire Assignment Rules
+    //----------------------------------
+
+    wireAssignments = typeof API.getWireAssignments === "function"
+      ? await API.getWireAssignments()
+      : [];
+
+    //----------------------------------
     // Split MML
     //----------------------------------
 
@@ -57,6 +67,7 @@ async function init() {
     window.equipment = equipment;
     window.materials = materials;
     window.presets = presets;
+    window.wireAssignments = wireAssignments;
 
     //----------------------------------
     // Initialization Summary

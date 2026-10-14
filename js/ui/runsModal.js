@@ -38,6 +38,15 @@ const FITTING_MATRIX_ROWS = [
     { key: "GROUND_CLAMP", label: "Ground clamp", match: (node, desc) => /GROUND CLAMP/.test(desc) }
 ];
 
+// Project defaults for automatic wire sizing. WireAss controls colors and
+// per-run/per-breaker behavior; this map converts a breaker rating to size.
+const BREAKER_WIRE_SIZE_RULES = [
+    [15, "#14"], [20, "#12"], [30, "#10"], [40, "#8"],
+    [60, "#6"], [70, "#4"], [85, "#3"], [100, "#2"],
+    [125, "#1"], [150, "1/0"], [175, "2/0"], [200, "3/0"],
+    [225, "4/0"]
+];
+
 function runModalEscape(value) {
 
     return String(value ?? "")
@@ -306,6 +315,7 @@ function getRunPanelCircuits(run) {
         if (!isPanelCanvasItem(panel)) return [];
 
         const panelLabel = String(panel?.preset || panel?.data?.CatalogNumber || "Panel").trim();
+        const panelPreset = String(panel?.preset || panel?.data?.PRESET || "").trim().toUpperCase();
         return (Array.isArray(panel.materials) ? panel.materials : [])
             .filter(component => component?.panelSlot?.section === "branch")
             .map(component => {
@@ -322,6 +332,7 @@ function getRunPanelCircuits(run) {
                     panelId,
                     breakerId: String(component?.id || ""),
                     panelLabel,
+                    panelPreset,
                     catalogNumber,
                     rating,
                     poles: Math.max(1, poles || 1)
@@ -351,6 +362,10 @@ function getRunManualWires(run) {
         : (Array.isArray(run?.wires) ? run.wires : (run?.wire ? [run.wire] : []));
 }
 
+function getRunAutoWires(run) {
+    return Array.isArray(run?.autoRunWires) ? run.autoRunWires : [];
+}
+
 function rebuildRunWiresFromAssignments(run) {
     if (!Array.isArray(run.manualWires)) {
         run.manualWires = structuredClone(
@@ -364,7 +379,8 @@ function rebuildRunWiresFromAssignments(run) {
     run.breakerWireAssignments = assignments;
     run.wires = [
         ...structuredClone(getRunManualWires(run)),
-        ...assignments.flatMap(assignment => structuredClone(Array.isArray(assignment.wires) ? assignment.wires : []))
+        ...assignments.flatMap(assignment => structuredClone(Array.isArray(assignment.wires) ? assignment.wires : [])),
+        ...structuredClone(getRunAutoWires(run))
     ];
     delete run.wire;
 }
@@ -375,6 +391,102 @@ function getRunWireAssignmentSummary(run) {
         .length;
     const total = getRunCircuitSources(run).length;
     return total ? `Wire assignments ${assigned}/${total}` : "Wire assignments";
+}
+
+function normalizeWireToken(value) {
+    const token = String(value || "").trim().toUpperCase().replace(/[^A-Z0-9/]/g, "");
+    return ({ RED: "RED", RD: "RED", BLACK: "BLACK", BLK: "BLACK", BK: "BLACK", WHITE: "WHITE", WHT: "WHITE", WH: "WHITE", GREEN: "GREEN", GRN: "GREEN", GN: "GREEN" })[token] || token;
+}
+
+function normalizeWireSize(value) {
+    return String(value || "").trim().toUpperCase().replace(/^#/, "").replace(/\s+/g, "");
+}
+
+function getRunPanelPreset(source) {
+    return String(
+        source?.panelPreset ||
+        getCanvasItem(source?.panelId)?.preset ||
+        getCanvasItem(source?.panelId)?.data?.PRESET ||
+        ""
+    ).trim().toUpperCase();
+}
+
+function getWireAssignmentRule(panelPreset) {
+    const target = String(panelPreset || "").trim().toUpperCase();
+    return (Array.isArray(window.wireAssignments) ? window.wireAssignments : [])
+        .find(rule => String(rule?.["Panel Preset"] || "").trim().toUpperCase() === target) || null;
+}
+
+function getAutomaticWireSize(rating) {
+    const amps = Math.max(0, Number(rating || 0));
+    return BREAKER_WIRE_SIZE_RULES.find(([maximum]) => amps <= maximum)?.[1] || "";
+}
+
+function findAutomaticWireMaterial(size, color) {
+    const targetSize = normalizeWireSize(size);
+    const targetColor = normalizeWireToken(color);
+
+    return (typeof getMaterials === "function" ? getMaterials() : [])
+        .find(material => String(material?.NodeType || "").toUpperCase() === "WIRE" &&
+            normalizeWireSize(material?.Size) === targetSize &&
+            normalizeWireToken(material?.Color) === targetColor) || null;
+}
+
+function addAutomaticWire(target, size, color, qty) {
+    const material = findAutomaticWireMaterial(size, color);
+    if (!material || qty < 1) return false;
+    target.push({ ...structuredClone(material), qty: Math.max(1, Number(qty || 1)) });
+    return true;
+}
+
+function getWireRuleMode(rule, key) {
+    return String(rule?.[key] || "None").trim().toUpperCase().replace(/\s+/g, " ");
+}
+
+function autoAssignRunWires(run) {
+    const sources = getRunCircuitSources(run);
+    const assignments = [];
+    const sharedWires = [];
+    const missing = [];
+
+    sources.forEach(source => {
+        const rule = getWireAssignmentRule(getRunPanelPreset(source));
+        const size = getAutomaticWireSize(source.rating);
+        const hotPreset = String(rule?.["Hot Preset"] || "").trim().toUpperCase();
+        const hotColors = window.WIRE_PRESETS?.[hotPreset] || [];
+
+        if (!rule || !size || !hotColors.length) {
+            missing.push(`${getRunPanelPreset(source) || "panel"} ${source.rating || "?"}A`);
+            return;
+        }
+
+        const wires = [];
+        hotColors.forEach(color => addAutomaticWire(wires, size, color, 1));
+
+        if (getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
+            addAutomaticWire(wires, size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
+        }
+
+        assignments.push({ ...source, wires });
+    });
+
+    const allRules = [...new Set(sources.map(source => getWireAssignmentRule(getRunPanelPreset(source))).filter(Boolean))];
+    const largestSize = getAutomaticWireSize(Math.max(0, ...sources.map(source => Number(source.rating || 0))));
+
+    allRules.forEach(rule => {
+        if (getWireRuleMode(rule, "Neutral Mode") === "PER RUN") {
+            addAutomaticWire(sharedWires, largestSize, "WHITE", Number(rule?.["Neutral Qty"] || 1));
+        }
+        if (getWireRuleMode(rule, "Ground Mode") === "PER RUN") {
+            addAutomaticWire(sharedWires, largestSize, "GREEN", Number(rule?.["Ground Qty"] || 1));
+        }
+    });
+
+    run.breakerWireAssignments = assignments;
+    run.autoRunWires = sharedWires;
+    rebuildRunWiresFromAssignments(run);
+
+    return { assigned: assignments.length, missing };
 }
 
 function getRunCircuitSummary(run) {
@@ -452,15 +564,16 @@ function openRunCircuitModal(runId) {
             .map(circuit => ({
                 panelId: circuit.panelId,
                 breakerId: circuit.breakerId,
+                panelPreset: circuit.panelPreset,
                 catalogNumber: circuit.catalogNumber,
                 rating: circuit.rating,
                 poles: circuit.poles
             }));
         run.panelBreakerSourcesConfigured = true;
 
-        rebuildRunWiresFromAssignments(run);
+        const autoResult = autoAssignRunWires(run);
 
-        captureRunsHistory("Run panel breakers selected");
+        captureRunsHistory(autoResult.assigned ? "Run panel breakers and wires selected" : "Run panel breakers selected");
         saveRunsDraft();
         renderRunsModal();
         close();
@@ -981,6 +1094,7 @@ function renderRunsModal() {
                                     </button>
                                     <div class="run-wire-actions">
                                         <button type="button" class="run-circuit-button" data-action="panel-breakers" title="Choose breakers from the connected panel">${runModalEscape(getRunCircuitSummary(run))}</button>
+                                        <button type="button" class="run-circuit-button" data-action="auto-wire" title="Automatically assign wires from WireAss">Auto wire</button>
                                         <button type="button" class="run-circuit-button" data-action="wire-assignments" title="Assign wire groups to selected breakers">${runModalEscape(getRunWireAssignmentSummary(run))}</button>
                                         <button type="button" data-action="copy-wire" ${wires.length ? "" : "disabled"}>Copy wire</button>
                                         <button type="button" data-action="paste-wire" ${runWireClipboard?.length ? "" : "disabled"}>Paste wire</button>
@@ -1185,6 +1299,24 @@ function renderRunsModal() {
         row.querySelector("[data-action='wire-assignments']")?.addEventListener(
             "click",
             () => openRunWireAssignmentModal(runId)
+        );
+
+        row.querySelector("[data-action='auto-wire']")?.addEventListener(
+            "click",
+            () => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                const result = autoAssignRunWires(run);
+                if (!result.assigned) {
+                    alert("No WireAss rule matched the selected panel breakers.");
+                    return;
+                }
+
+                captureRunsHistory("Run wires auto-assigned");
+                refreshRunsBOM();
+                renderRunsModal();
+            }
         );
 
         row.querySelector("[data-action='copy-wire']")?.addEventListener(

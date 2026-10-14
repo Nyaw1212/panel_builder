@@ -170,6 +170,22 @@ function doPost(e) {
         });
 
       //----------------------------------
+      // Get wire assignment rules
+      //----------------------------------
+
+      case "getWireAssignments":
+
+        return jsonOutput({
+
+          success: true,
+
+          wireAssignments: getWireAssignments(),
+
+          version: getWireAssignmentsVersion()
+
+        });
+
+      //----------------------------------
       // Save Project
       //----------------------------------
 
@@ -563,13 +579,16 @@ function saveProject(request) {
     materials
   );
 
-  const usedMaterials = saveProjectUsedMaterialsSafe_(
-    usedMaterialsSpreadsheetId,
-    jobName,
-    address,
-    model,
-    materials
-  );
+  const usedMaterials =
+    String(request.usedMaterialsOutput || "").trim().toLowerCase() === "xlsx"
+      ? null
+      : saveProjectUsedMaterialsSafe_(
+          usedMaterialsSpreadsheetId,
+          jobName,
+          address,
+          model,
+          materials
+        );
 
   if (usedMaterials?.success) {
     project.usedMaterialsSpreadsheetId = usedMaterials.spreadsheetId;

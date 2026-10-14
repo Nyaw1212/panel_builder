@@ -42,12 +42,16 @@ function deserializeProject(project) {
             manualWires: typeof hydrateCatalogList === "function"
                 ? hydrateCatalogList(Array.isArray(savedRun?.manualWires) ? savedRun.manualWires : [])
                 : structuredClone(Array.isArray(savedRun?.manualWires) ? savedRun.manualWires : []),
+            autoRunWires: typeof hydrateCatalogList === "function"
+                ? hydrateCatalogList(Array.isArray(savedRun?.autoRunWires) ? savedRun.autoRunWires : [])
+                : structuredClone(Array.isArray(savedRun?.autoRunWires) ? savedRun.autoRunWires : []),
             breakerWireAssignments: (Array.isArray(savedRun?.breakerWireAssignments)
                 ? savedRun.breakerWireAssignments
                 : []
             ).map(assignment => ({
                 panelId: String(assignment?.panelId || ""),
                 breakerId: String(assignment?.breakerId || ""),
+                panelPreset: String(assignment?.panelPreset || ""),
                 catalogNumber: String(assignment?.catalogNumber || ""),
                 rating: Math.max(0, Number(assignment?.rating || 0)),
                 poles: Math.max(1, Number(assignment?.poles || 1)),
@@ -61,6 +65,7 @@ function deserializeProject(project) {
             ).map(source => ({
                 panelId: String(source?.panelId || ""),
                 breakerId: String(source?.breakerId || ""),
+                panelPreset: String(source?.panelPreset || ""),
                 catalogNumber: String(source?.catalogNumber || ""),
                 rating: Math.max(0, Number(source?.rating || 0)),
                 poles: Math.max(1, Number(source?.poles || 1))

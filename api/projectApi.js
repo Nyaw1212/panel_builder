@@ -460,6 +460,29 @@ async function getPresets() {
 }
 
 //----------------------------------
+// Wire assignment rules
+//----------------------------------
+
+async function getWireAssignments() {
+    if (LOCAL_MODE) {
+        return [];
+    }
+
+    const result = await apiRequest({
+        action: "getWireAssignments"
+    });
+
+    if (!result.success) {
+        console.warn("WireAss unavailable:", result.message);
+        return [];
+    }
+
+    return Array.isArray(result.wireAssignments)
+        ? result.wireAssignments
+        : [];
+}
+
+//----------------------------------
 // Save Project
 //----------------------------------
 
@@ -539,6 +562,7 @@ window.API = {
     getMMLVersion,
     getPresets,
     getPresetsVersion,
+    getWireAssignments,
     saveProject,
     loadProject,
     getProjects,
@@ -556,4 +580,5 @@ window.loadProject = loadProject;
 window.getProjects = getProjects;
 window.deleteProject = deleteProject;
 window.getPresets = getPresets;
+window.getWireAssignments = getWireAssignments;
 window.getPresetMaterials = getPresetMaterials;

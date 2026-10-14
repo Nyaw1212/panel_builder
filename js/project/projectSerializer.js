@@ -283,12 +283,18 @@ function serializeRuns() {
             ? run.manualWires
             : []
         ),
+        autoRunWires: compactCatalogList(
+          Array.isArray(run?.autoRunWires)
+            ? run.autoRunWires
+            : []
+        ),
         breakerWireAssignments: (Array.isArray(run?.breakerWireAssignments)
           ? run.breakerWireAssignments
           : []
         ).map(assignment => ({
           panelId: String(assignment?.panelId || ""),
           breakerId: String(assignment?.breakerId || ""),
+          panelPreset: String(assignment?.panelPreset || ""),
           catalogNumber: String(assignment?.catalogNumber || ""),
           rating: Math.max(0, Number(assignment?.rating || 0)),
           poles: Math.max(1, Number(assignment?.poles || 1)),
@@ -300,6 +306,7 @@ function serializeRuns() {
         ).map(source => ({
           panelId: String(source?.panelId || ""),
           breakerId: String(source?.breakerId || ""),
+          panelPreset: String(source?.panelPreset || ""),
           catalogNumber: String(source?.catalogNumber || ""),
           rating: Math.max(0, Number(source?.rating || 0)),
           poles: Math.max(1, Number(source?.poles || 1))
