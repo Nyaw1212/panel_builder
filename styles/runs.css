@@ -12,7 +12,7 @@
 }
 
 .runs-dialog {
-    width: min(1120px, 100%);
+    width: min(1500px, 100%);
     max-height: min(720px, 92vh);
     overflow: auto;
     color: var(--v2-text, #f8fafc);
@@ -66,7 +66,7 @@
 .runs-grid-header,
 .run-row {
     display: grid;
-    grid-template-columns: minmax(62px, .5fr) minmax(135px, 1.3fr) minmax(135px, 1.3fr) minmax(135px, 1.25fr) minmax(92px, .65fr) minmax(130px, .9fr) 36px;
+    grid-template-columns: minmax(280px, 2fr) minmax(135px, 1.2fr) minmax(135px, 1.2fr) minmax(135px, 1.15fr) minmax(92px, .6fr) minmax(130px, .8fr) 36px;
     gap: 12px;
     align-items: center;
 }
@@ -109,7 +109,7 @@
 .gutters-grid-header,
 .gutter-row {
     display: grid;
-    grid-template-columns: minmax(72px, .55fr) minmax(150px, 1.3fr) minmax(135px, 1.1fr) minmax(95px, .65fr) minmax(130px, .9fr) 36px;
+    grid-template-columns: minmax(280px, 1.8fr) minmax(150px, 1.1fr) minmax(135px, 1fr) minmax(95px, .55fr) minmax(130px, .75fr) 36px;
     gap: 12px;
     align-items: center;
 }
@@ -205,8 +205,7 @@
 }
 
 .run-name {
-    color: var(--v2-text-soft, #cbd5e1);
-    font-weight: 800;
+    min-width: 0;
 }
 
 .run-name-input {
@@ -225,6 +224,57 @@
 .run-name-input:hover,
 .run-name-input:focus {
     border-color: var(--v2-blue-light, #60a5fa);
+    background: var(--v2-bg-deep, #080f1c);
+}
+
+.canvas-tag-selects {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 5px;
+    align-items: center;
+    margin-top: 5px;
+    color: var(--v2-text-muted, #7f91aa);
+    font-size: 12px;
+}
+
+.canvas-tag-selects select,
+.gutter-tag-select {
+    min-width: 0;
+    height: 28px;
+    overflow: hidden;
+    border: 1px solid var(--v2-border, #2b3b54);
+    border-radius: 6px;
+    outline: 0;
+    color: var(--v2-text-soft, #cbd5e1);
+    background: var(--v2-bg-deep, #080f1c);
+    padding: 0 6px;
+    font: inherit;
+    text-overflow: ellipsis;
+}
+
+.gutter-name {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.gutter-name-input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    outline: 0;
+    color: #a5f3fc;
+    background: transparent;
+    font: inherit;
+    font-weight: 800;
+    padding: 8px;
+}
+
+.gutter-name-input:hover,
+.gutter-name-input:focus {
+    border-color: #22d3ee;
     background: var(--v2-bg-deep, #080f1c);
 }
 

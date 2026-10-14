@@ -21,6 +21,8 @@ function deserializeProject(project) {
         const runs = (project.runs || []).map((savedRun, index) => ({
             id: String(savedRun?.id || crypto.randomUUID()),
             name: String(savedRun?.name || `Run ${index + 1}`),
+            fromCanvasItemId: String(savedRun?.fromCanvasItemId || ""),
+            toCanvasItemId: String(savedRun?.toCanvasItemId || ""),
             length: Math.max(0, Number(savedRun?.length || 0)),
             conduit: savedRun?.conduit && typeof hydrateCatalogRecord === "function"
                 ? hydrateCatalogRecord(savedRun.conduit)
@@ -63,6 +65,7 @@ function deserializeProject(project) {
         const gutters = (project.gutters || []).map((savedGutter, index) => ({
             id: String(savedGutter?.id || crypto.randomUUID()),
             name: String(savedGutter?.name || `Gutter ${index + 1}`),
+            canvasItemId: String(savedGutter?.canvasItemId || ""),
             length: Math.max(0, Number(savedGutter?.length || 0)),
             excludedRunIds: (Array.isArray(savedGutter?.excludedRunIds)
                 ? savedGutter.excludedRunIds

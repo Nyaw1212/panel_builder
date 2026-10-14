@@ -267,6 +267,8 @@ function serializeRuns() {
       return {
         id: String(run?.id || ""),
         name: String(run?.name || `Run ${index + 1}`),
+        fromCanvasItemId: String(run?.fromCanvasItemId || ""),
+        toCanvasItemId: String(run?.toCanvasItemId || ""),
         length: Number.isFinite(length) && length >= 0 ? length : 0,
         conduit: run?.conduit
           ? compactCatalogRecord(run.conduit)
@@ -305,6 +307,7 @@ function serializeGutters() {
       return {
         id: String(gutter?.id || ""),
         name: String(gutter?.name || `Gutter ${index + 1}`),
+        canvasItemId: String(gutter?.canvasItemId || ""),
         length: Number.isFinite(length) && length >= 0 ? length : 0,
         excludedRunIds: (Array.isArray(gutter?.excludedRunIds)
           ? gutter.excludedRunIds
@@ -453,6 +456,7 @@ function serializeProjectCore() {
     model: project.model || "",
     usedMaterialsSpreadsheetId: project.usedMaterialsSpreadsheetId || "",
     usedMaterialsSpreadsheetUrl: project.usedMaterialsSpreadsheetUrl || "",
+    usedMaterialsOutput: "xlsx",
     layout: serializeLayout(),
     links: serializeLinks(),
     runs: serializeRuns(),

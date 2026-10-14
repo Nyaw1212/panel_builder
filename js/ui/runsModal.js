@@ -93,6 +93,8 @@ function createRun() {
         id: crypto.randomUUID(),
         name,
         length,
+        fromCanvasItemId: "",
+        toCanvasItemId: "",
         conduit: null,
         wires: [],
         fittings: []
@@ -173,6 +175,7 @@ function createGutter() {
         id: crypto.randomUUID(),
         name,
         length,
+        canvasItemId: "",
         excludedRunIds: [],
         fittings: []
     };
@@ -211,8 +214,69 @@ function normalizeRunNames() {
 function normalizeGutterNames() {
 
     getEditableGutters().forEach((gutter, index) => {
-        gutter.name = `Gutter ${index + 1}`;
+        if (!String(gutter.name || "").trim()) {
+            gutter.name = `Gutter ${index + 1}`;
+        }
     });
+
+}
+
+function getCanvasTagOptions() {
+
+    const layout = typeof getLayout === "function" ? getLayout() : [];
+    const seen = new Set();
+    const counts = new Map();
+
+    return (Array.isArray(layout) ? layout : []).reduce((options, item) => {
+        if (!item?.id || seen.has(item.id)) return options;
+        seen.add(item.id);
+
+        const code = String(item?.data?.CatalogNumber || item?.data?.Description || "Canvas item").trim();
+        const number = (counts.get(code) || 0) + 1;
+        counts.set(code, number);
+        const detail = [item?.data?.Size, item?.data?.Type].filter(Boolean).join(" ");
+
+        options.push({
+            id: String(item.id),
+            label: `${code}${number > 1 ? ` #${number}` : ""}${detail ? ` — ${detail}` : ""}`
+        });
+        return options;
+    }, []);
+
+}
+
+function getCanvasTagLabel(itemId, options) {
+
+    return (options || getCanvasTagOptions())
+        .find(option => option.id === String(itemId || ""))
+        ?.label || "";
+
+}
+
+function renderCanvasTagOptions(options, currentId, emptyLabel) {
+
+    return [
+        `<option value="">${runModalEscape(emptyLabel)}</option>`,
+        ...(options || []).map(option => `
+            <option value="${runModalEscape(option.id)}" ${option.id === String(currentId || "") ? "selected" : ""}>
+                ${runModalEscape(option.label)}
+            </option>
+        `)
+    ].join("");
+
+}
+
+function updateRunCanvasName(run, index, options) {
+
+    const from = getCanvasTagLabel(run.fromCanvasItemId, options);
+    const to = getCanvasTagLabel(run.toCanvasItemId, options);
+
+    if (from || to) {
+        run.name = from && to ? `${from} → ${to}` : (from || to);
+    }
+    else if (!String(run.name || "").trim()) {
+        run.name = `Run ${index + 1}`;
+    }
 
 }
 
@@ -507,6 +571,7 @@ function renderRunsModal() {
     const overlay = ensureRunsModal();
     const runs = getEditableRuns();
     const gutters = getEditableGutters();
+    const canvasTags = getCanvasTagOptions();
 
     overlay.innerHTML = `
         <section class="runs-dialog" role="dialog" aria-modal="true" aria-labelledby="runsModalTitle">
@@ -521,7 +586,7 @@ function renderRunsModal() {
             </header>
 
             <div class="runs-grid-header" aria-hidden="true">
-                <span>Run</span>
+                <span>Run / canvas tag</span>
                 <span>Conduit</span>
                 <span>Wire</span>
                 <span>Fittings</span>
@@ -544,9 +609,11 @@ function renderRunsModal() {
                             ? `${formatRunFeet(length + 4)} ft`
                             : "—";
 
+                        const fromTag = run.fromCanvasItemId || "";
+                        const toTag = run.toCanvasItemId || "";
                         return `
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
-                                <label class="run-name">
+                                <div class="run-name">
                                     <input
                                         class="run-name-input"
                                         type="text"
@@ -554,7 +621,16 @@ function renderRunsModal() {
                                         value="${runModalEscape(run.name || `Run ${index + 1}`)}"
                                         aria-label="Run ${index + 1} name"
                                     >
-                                </label>
+                                    <div class="canvas-tag-selects">
+                                        <select data-action="run-from" aria-label="Run ${index + 1} from canvas item">
+                                            ${renderCanvasTagOptions(canvasTags, fromTag, "From canvas item")}
+                                        </select>
+                                        <span>→</span>
+                                        <select data-action="run-to" aria-label="Run ${index + 1} to canvas item">
+                                            ${renderCanvasTagOptions(canvasTags, toTag, "To canvas item")}
+                                        </select>
+                                    </div>
+                                </div>
                                 <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
                                     ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
                                 </button>
@@ -601,7 +677,7 @@ function renderRunsModal() {
                 </div>
 
                 <div class="gutters-grid-header" aria-hidden="true">
-                    <span>Gutter</span>
+                    <span>Gutter / canvas tag</span>
                     <span>Included runs</span>
                     <span>Fittings</span>
                     <span>Length</span>
@@ -632,7 +708,14 @@ function renderRunsModal() {
                             return `
                                 <article class="gutter-entry" data-gutter-id="${runModalEscape(gutter.id)}">
                                     <div class="gutter-row">
-                                        <div class="gutter-name">Gutter ${index + 1}</div>
+                                        <div class="gutter-name">
+                                            <input class="gutter-name-input" type="text" maxlength="120"
+                                                value="${runModalEscape(gutter.name || `Gutter ${index + 1}`)}"
+                                                aria-label="Gutter ${index + 1} name">
+                                            <select class="gutter-tag-select" aria-label="Gutter ${index + 1} canvas item">
+                                                ${renderCanvasTagOptions(canvasTags, gutter.canvasItemId, "Map to canvas item")}
+                                            </select>
+                                        </div>
                                         <button class="gutter-runs-button" type="button" data-action="toggle-gutter-runs">
                                             ${runModalEscape(getGutterRunSummary(gutter, runs))}
                                         </button>
@@ -758,6 +841,19 @@ function renderRunsModal() {
             }
         );
 
+        ["run-from", "run-to"].forEach(action => {
+            row.querySelector(`[data-action='${action}']`)?.addEventListener("change", event => {
+                const run = findRun(runId);
+                if (!run) return;
+                if (action === "run-from") run.fromCanvasItemId = String(event.target.value || "");
+                else run.toCanvasItemId = String(event.target.value || "");
+                updateRunCanvasName(run, getEditableRuns().indexOf(run), getCanvasTagOptions());
+                captureRunsHistory("Run mapped to canvas");
+                saveRunsDraft();
+                renderRunsModal();
+            });
+        });
+
         row.querySelector(".run-name-input")?.addEventListener(
             "change",
             event => {
@@ -834,6 +930,33 @@ function renderRunsModal() {
             "click",
             () => openGutterFittingModal(gutterId)
         );
+
+        entry.querySelector(".gutter-name-input")?.addEventListener("input", event => {
+            const gutter = findGutter(gutterId);
+            if (!gutter) return;
+            gutter.name = String(event.target.value || "").trim() || "Gutter";
+            saveRunsDraft();
+        });
+
+        entry.querySelector(".gutter-name-input")?.addEventListener("change", event => {
+            const gutter = findGutter(gutterId);
+            if (!gutter) return;
+            gutter.name = String(event.target.value || "").trim() || "Gutter";
+            event.target.value = gutter.name;
+            captureRunsHistory("Gutter renamed");
+            saveRunsDraft();
+        });
+
+        entry.querySelector(".gutter-tag-select")?.addEventListener("change", event => {
+            const gutter = findGutter(gutterId);
+            if (!gutter) return;
+            gutter.canvasItemId = String(event.target.value || "");
+            const tag = getCanvasTagLabel(gutter.canvasItemId);
+            if (tag) gutter.name = tag;
+            captureRunsHistory("Gutter mapped to canvas");
+            saveRunsDraft();
+            renderRunsModal();
+        });
 
         entry.querySelector(".gutter-length-input")?.addEventListener(
             "input",
