@@ -249,7 +249,15 @@ function getCanvasTagOptions() {
         if (!item?.id || seen.has(item.id)) return options;
         seen.add(item.id);
 
-        const code = String(item?.data?.CatalogNumber || item?.data?.Description || "Canvas item").trim();
+        // A placed preset already has a short, project-friendly identifier
+        // (GEN, D60, F60, etc.). Use it in connection pickers instead of
+        // making the user identify equipment from long catalog numbers.
+        const code = String(
+            item?.preset ||
+            item?.data?.CatalogNumber ||
+            item?.data?.Description ||
+            "Canvas item"
+        ).trim();
         const number = (counts.get(code) || 0) + 1;
         counts.set(code, number);
         const detail = [item?.data?.Size, item?.data?.Type].filter(Boolean).join(" ");
