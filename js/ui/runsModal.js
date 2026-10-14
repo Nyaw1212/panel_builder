@@ -467,9 +467,11 @@ function getFittingColumn(material) {
 
 }
 
-function getFittingCandidates(materials, run, row, column) {
+function getFittingCandidates(materials, run, row, column, selectedSizes = []) {
 
-    const selectedSize = run?.conduit?.Size || "";
+    const sizes = Array.isArray(selectedSizes) && selectedSizes.length
+        ? selectedSizes
+        : [run?.conduit?.Size || ""];
 
     return (Array.isArray(materials) ? materials : [])
         .filter(item => !item?.Placeable)
@@ -479,7 +481,7 @@ function getFittingCandidates(materials, run, row, column) {
 
             return row.match(node, description);
         })
-        .filter(item => isSameFittingSize(item, selectedSize))
+        .filter(item => sizes.some(size => isSameFittingSize(item, size)))
         .filter(item => {
             const itemColumn = getFittingColumn(item);
 
@@ -1291,7 +1293,8 @@ async function openGutterFittingModal(gutterId) {
         title: `${gutter.name || "Gutter"} Fittings`,
         context: selected.sourceRuns.join(", "),
         historyLabel: "Gutter fitting",
-        sizeOptions: options
+        sizeOptions: options,
+        selectedSizes: options.map(option => option.size)
     });
 
 }
@@ -1350,21 +1353,34 @@ function renderRunFittingModal(run, materials, options = {}) {
             `;
         }).join("")
         : `<p class="fitting-summary-empty">Click a fitting image to add it here.</p>`;
+    const availableSizeOptions = Array.isArray(options.sizeOptions)
+        ? options.sizeOptions
+        : [];
+    const selectedSizes = availableSizeOptions.length
+        ? (Array.isArray(options.selectedSizes) && options.selectedSizes.length
+            ? options.selectedSizes.filter(size => availableSizeOptions.some(option => option.size === size))
+            : availableSizeOptions.map(option => option.size))
+        : [run.conduit.Size];
+    options.selectedSizes = selectedSizes;
+    const displayedSizes = selectedSizes.join(", ") || "None";
     const fittingContext = options.context
-        ? `${options.context} · Size`
+        ? `${options.context} · Sizes`
         : "Conduit size";
-    const sizeFilter = Array.isArray(options.sizeOptions) && options.sizeOptions.length > 1
+    const sizeFilter = availableSizeOptions.length > 1
         ? `
-            <label class="fitting-size-filter">
+            <fieldset class="fitting-size-filter">
+                <legend>Size filter</legend>
                 <span>Size filter</span>
-                <select>
-                    ${options.sizeOptions.map(option => `
-                        <option value="${runModalEscape(option.size)}" ${option.size === run.conduit.Size ? "selected" : ""}>
-                            ${runModalEscape(option.size)} (${runModalEscape(option.sourceRuns.join(", "))})
-                        </option>
+                <div class="fitting-size-options">
+                    ${availableSizeOptions.map(option => `
+                        <label title="${runModalEscape(option.sourceRuns.join(", "))}">
+                            <input type="checkbox" value="${runModalEscape(option.size)}" ${selectedSizes.includes(option.size) ? "checked" : ""}>
+                            <b>${runModalEscape(option.size)}</b>
+                            <small>${runModalEscape(option.sourceRuns.join(", "))}</small>
+                        </label>
                     `).join("")}
-                </select>
-            </label>
+                </div>
+            </fieldset>
         `
         : "";
 
@@ -1372,7 +1388,7 @@ function renderRunFittingModal(run, materials, options = {}) {
     // horizontal axis. This gives each square material tile more room.
     const rows = FITTING_MATRIX_COLUMNS.map(column => {
         const cells = FITTING_MATRIX_ROWS.map(row => {
-            const material = getFittingCandidates(materials, run, row, column)[0] || null;
+            const material = getFittingCandidates(materials, run, row, column, selectedSizes)[0] || null;
 
             if (!material) return `<td class="fitting-matrix-empty">—</td>`;
 
@@ -1405,7 +1421,7 @@ function renderRunFittingModal(run, materials, options = {}) {
             <header class="run-fitting-header">
                 <div>
                     <h2 id="runFittingTitle">${runModalEscape(options.title || `${run.name || "Run"} Fittings`)}</h2>
-                    <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(run.conduit.Size)}</strong>. ${fittingQuantityMode ? "Qty mode: click an image to set its exact quantity." : "Click an image to add one fitting."}</p>
+                    <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(displayedSizes)}</strong>. ${fittingQuantityMode ? "Qty mode: click an image to set its exact quantity." : "Click an image to add one fitting."}</p>
                     ${sizeFilter}
                 </div>
                 <label class="fitting-qty-mode" title="Off: add one fitting per click. On: enter an exact quantity after clicking.">
@@ -1453,15 +1469,17 @@ function renderRunFittingModal(run, materials, options = {}) {
         });
     });
 
-    overlay.querySelector(".fitting-size-filter select")?.addEventListener("change", event => {
-        const selected = options.sizeOptions.find(option =>
-            option.size === event.target.value
-        );
-        if (!selected) return;
-
-        run.conduit.Size = selected.size;
-        options.context = selected.sourceRuns.join(", ");
-        renderRunFittingModal(run, materials, options);
+    overlay.querySelectorAll(".fitting-size-filter input[type='checkbox']").forEach(input => {
+        input.addEventListener("change", () => {
+            const nextSizes = [...overlay.querySelectorAll(".fitting-size-filter input[type='checkbox']:checked")]
+                .map(box => box.value);
+            if (!nextSizes.length) {
+                input.checked = true;
+                return;
+            }
+            options.selectedSizes = nextSizes;
+            renderRunFittingModal(run, materials, options);
+        });
     });
 
     overlay.querySelector(".fitting-qty-mode input")?.addEventListener("change", event => {
