@@ -560,6 +560,28 @@ function removeRunFitting(run, material) {
 
 }
 
+function setRunFittingQuantity(run, material, quantity) {
+
+    const fittings = getRunFittings(run);
+    const catalog = String(material?.CatalogNumber || "");
+    const index = fittings.findIndex(fitting =>
+        String(fitting?.CatalogNumber || "") === catalog
+    );
+    const qty = Math.max(0, Math.floor(Number(quantity) || 0));
+
+    if (index >= 0) {
+        if (qty > 0) fittings[index].qty = qty;
+        else fittings.splice(index, 1);
+    }
+    else if (qty > 0) {
+        fittings.push({
+            ...structuredClone(material),
+            qty
+        });
+    }
+
+}
+
 function ensureRunsModal() {
 
     if (runsModalElement) return runsModalElement;
@@ -1330,7 +1352,8 @@ function renderRunFittingModal(run, materials, options = {}) {
                         </button>
                         <div class="fitting-cell-footer">
                             <small title="${runModalEscape(material.Description || catalog)}">${runModalEscape(catalog)}</small>
-                            <span class="fitting-quantity">${quantity}</span>
+                            <input class="fitting-quantity-input" type="number" min="0" step="1" inputmode="numeric"
+                                value="${quantity}" data-catalog="${runModalEscape(catalog)}" title="Set exact quantity">
                             <button type="button" class="fitting-remove-button" data-catalog="${runModalEscape(catalog)}" ${quantity ? "" : "disabled"} title="Remove 1">−</button>
                         </div>
                     </div>
@@ -1419,6 +1442,18 @@ function renderRunFittingModal(run, materials, options = {}) {
 
             removeRunFitting(run, material);
             captureRunsHistory(`${options.historyLabel || "Run fitting"} removed`);
+            refreshRunsBOM();
+            renderRunFittingModal(run, materials, options);
+        });
+    });
+
+    overlay.querySelectorAll(".fitting-quantity-input").forEach(input => {
+        input.addEventListener("change", () => {
+            const material = catalogLookup.get(input.dataset.catalog || "");
+            if (!material) return;
+
+            setRunFittingQuantity(run, material, input.value);
+            captureRunsHistory(`${options.historyLabel || "Run fitting"} quantity updated`);
             refreshRunsBOM();
             renderRunFittingModal(run, materials, options);
         });
