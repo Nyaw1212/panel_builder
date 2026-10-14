@@ -75,6 +75,73 @@
     background: #17354a;
 }
 
+.run-circuit-button {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #285f86;
+    border-radius: 6px;
+    color: #a5e5ff;
+    background: #102b40;
+    cursor: pointer;
+    font: inherit;
+    font-size: 10px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.run-circuit-button:hover {
+    border-color: #22d3ee;
+}
+
+.run-circuit-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 960;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+    background: rgba(2, 6, 23, .76);
+}
+
+.run-circuit-dialog {
+    width: min(560px, 100%);
+    max-height: min(620px, 92vh);
+    overflow: auto;
+    color: var(--v2-text, #f8fafc);
+    background: var(--v2-bg, #0f172a);
+    border: 1px solid var(--v2-border, #2b3b54);
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .58);
+}
+
+.run-circuit-dialog header,
+.run-circuit-dialog footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 20px;
+}
+
+.run-circuit-dialog header {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--v2-border, #2b3b54);
+}
+
+.run-circuit-dialog h2 { margin: 0; font-size: 18px; }
+.run-circuit-dialog p { margin: 5px 0 0; color: var(--v2-text-soft, #cbd5e1); font-size: 12px; }
+.run-circuit-close { border: 0; color: #fff; background: transparent; cursor: pointer; font-size: 28px; }
+.run-circuit-list { display: grid; gap: 8px; padding: 16px 20px; }
+.run-circuit-choice { display: flex; align-items: center; gap: 10px; padding: 11px; border: 1px solid var(--v2-border, #2b3b54); border-radius: 8px; cursor: pointer; }
+.run-circuit-choice input { accent-color: #22d3ee; }
+.run-circuit-choice span { display: grid; gap: 3px; }
+.run-circuit-choice small { color: var(--v2-text-soft, #cbd5e1); }
+.run-circuit-dialog footer { justify-content: flex-end; border-top: 1px solid var(--v2-border, #2b3b54); }
+.run-circuit-dialog footer button { min-height: 34px; padding: 0 12px; border: 1px solid var(--v2-border, #2b3b54); border-radius: 7px; color: var(--v2-text, #f8fafc); background: #172337; cursor: pointer; }
+.run-circuit-dialog .run-circuit-save { border-color: #0891b2; background: #0e7490; }
+
 .runs-close {
     width: 36px;
     height: 36px;

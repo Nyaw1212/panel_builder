@@ -8,6 +8,7 @@ let fittingModalElement = null;
 let activeFittingTarget = null;
 let fittingQuantityMode = false;
 let runWireClipboard = null;
+let runCircuitModalElement = null;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -277,6 +278,148 @@ function getCanvasTagLabel(itemId, options) {
         .find(option => option.id === String(itemId || ""))
         ?.label || "";
 
+}
+
+function getCanvasItem(itemId) {
+    const id = String(itemId || "");
+    return (typeof getLayout === "function" ? getLayout() : [])
+        .find(item => String(item?.id || "") === id) || null;
+}
+
+function isPanelCanvasItem(item) {
+    return String(item?.data?.Type || "").toUpperCase().includes("PANEL");
+}
+
+function findRunCircuitMaterial(catalogNumber) {
+    const target = String(catalogNumber || "").trim();
+    return (typeof getMaterials === "function" ? getMaterials() : [])
+        .find(item => String(item?.CatalogNumber || "").trim() === target) || null;
+}
+
+function getRunPanelCircuits(run) {
+    const panelIds = [...new Set([run?.fromCanvasItemId, run?.toCanvasItemId]
+        .map(id => String(id || "")).filter(Boolean))];
+
+    return panelIds.flatMap(panelId => {
+        const panel = getCanvasItem(panelId);
+        if (!isPanelCanvasItem(panel)) return [];
+
+        const panelLabel = String(panel?.preset || panel?.data?.CatalogNumber || "Panel").trim();
+        return (Array.isArray(panel.materials) ? panel.materials : [])
+            .filter(component => component?.panelSlot?.section === "branch")
+            .map(component => {
+                const catalogNumber = String(component?.catalogNumber || component?.CatalogNumber || "").trim();
+                const material = findRunCircuitMaterial(catalogNumber) || component;
+                const rating = Number(material?.RATING ?? material?.Rating ?? material?.rating ?? 0) ||
+                    (typeof getBreakerAmperage === "function" ? Number(getBreakerAmperage(material) || 0) : 0);
+                const poles = typeof getBreakerPoleCount === "function"
+                    ? Number(getBreakerPoleCount(material) || 1)
+                    : Number(material?.Pole || 1);
+
+                return {
+                    id: `${panelId}:${String(component?.id || catalogNumber)}`,
+                    panelId,
+                    breakerId: String(component?.id || ""),
+                    panelLabel,
+                    catalogNumber,
+                    rating,
+                    poles: Math.max(1, poles || 1)
+                };
+            })
+            .filter(circuit => circuit.catalogNumber);
+    });
+}
+
+function getRunCircuitSources(run) {
+    return Array.isArray(run?.panelBreakerSources) ? run.panelBreakerSources : [];
+}
+
+function getRunCircuitSummary(run) {
+    const sources = getRunCircuitSources(run);
+    return sources.length
+        ? sources.map(source => `${source.rating || "?"}A ${source.catalogNumber || "breaker"}`).join(" + ")
+        : "Panel breakers";
+}
+
+function ensureRunCircuitModal() {
+    if (runCircuitModalElement) return runCircuitModalElement;
+
+    const overlay = document.createElement("div");
+    overlay.className = "run-circuit-modal";
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) overlay.style.display = "none";
+    });
+    document.body.appendChild(overlay);
+    runCircuitModalElement = overlay;
+    return overlay;
+}
+
+function openRunCircuitModal(runId) {
+    const run = findRun(runId);
+    if (!run) return;
+
+    const circuits = getRunPanelCircuits(run);
+    if (!circuits.length) {
+        alert("Map this Run to a Panel with installed branch breakers first.");
+        return;
+    }
+
+    const selected = new Set(getRunCircuitSources(run).map(source =>
+        `${source.panelId}:${source.breakerId || source.catalogNumber}`
+    ));
+    const overlay = ensureRunCircuitModal();
+
+    overlay.innerHTML = `
+        <section class="run-circuit-dialog" role="dialog" aria-modal="true" aria-labelledby="runCircuitTitle">
+            <header>
+                <div>
+                    <h2 id="runCircuitTitle">${runModalEscape(run.name || "Run")} · Panel breakers</h2>
+                    <p>Choose the panel circuits carried by this run. Their MML ratings are saved with the run for wire selection.</p>
+                </div>
+                <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
+            </header>
+            <div class="run-circuit-list">
+                ${circuits.map(circuit => `
+                    <label class="run-circuit-choice">
+                        <input type="checkbox" value="${runModalEscape(circuit.id)}" ${selected.has(circuit.id) ? "checked" : ""}>
+                        <span>
+                            <strong>${runModalEscape(circuit.panelLabel)} · ${runModalEscape(circuit.catalogNumber)}</strong>
+                            <small>${runModalEscape(`${circuit.rating || "?"}A · ${circuit.poles}P`)}</small>
+                        </span>
+                    </label>
+                `).join("")}
+            </div>
+            <footer>
+                <button type="button" class="run-circuit-cancel">Cancel</button>
+                <button type="button" class="run-circuit-save">Use selected breakers</button>
+            </footer>
+        </section>
+    `;
+
+    const close = () => { overlay.style.display = "none"; };
+    overlay.querySelector(".run-circuit-close")?.addEventListener("click", close);
+    overlay.querySelector(".run-circuit-cancel")?.addEventListener("click", close);
+    overlay.querySelector(".run-circuit-save")?.addEventListener("click", () => {
+        const ids = new Set([...overlay.querySelectorAll("input[type='checkbox']:checked")]
+            .map(input => input.value));
+
+        run.panelBreakerSources = circuits
+            .filter(circuit => ids.has(circuit.id))
+            .map(circuit => ({
+                panelId: circuit.panelId,
+                breakerId: circuit.breakerId,
+                catalogNumber: circuit.catalogNumber,
+                rating: circuit.rating,
+                poles: circuit.poles
+            }));
+
+        captureRunsHistory("Run panel breakers selected");
+        saveRunsDraft();
+        renderRunsModal();
+        close();
+    });
+
+    overlay.style.display = "flex";
 }
 
 function renderCanvasTagOptions(options, currentId, emptyLabel) {
@@ -689,6 +832,7 @@ function renderRunsModal() {
                                         ${runModalEscape(getRunWireLabel(wires))}
                                     </button>
                                     <div class="run-wire-actions">
+                                        <button type="button" class="run-circuit-button" data-action="panel-breakers" title="Choose breakers from the connected panel">${runModalEscape(getRunCircuitSummary(run))}</button>
                                         <button type="button" data-action="copy-wire" ${wires.length ? "" : "disabled"}>Copy wire</button>
                                         <button type="button" data-action="paste-wire" ${runWireClipboard?.length ? "" : "disabled"}>Paste wire</button>
                                     </div>
@@ -882,6 +1026,11 @@ function renderRunsModal() {
         row.querySelector("[data-action='wire']")?.addEventListener(
             "click",
             () => openRunMaterialPicker(runId, "wire")
+        );
+
+        row.querySelector("[data-action='panel-breakers']")?.addEventListener(
+            "click",
+            () => openRunCircuitModal(runId)
         );
 
         row.querySelector("[data-action='copy-wire']")?.addEventListener(

@@ -39,6 +39,16 @@ function deserializeProject(project) {
                         : (savedRun?.wire ? [savedRun.wire] : [])
                 )
             ,
+            panelBreakerSources: (Array.isArray(savedRun?.panelBreakerSources)
+                ? savedRun.panelBreakerSources
+                : []
+            ).map(source => ({
+                panelId: String(source?.panelId || ""),
+                breakerId: String(source?.breakerId || ""),
+                catalogNumber: String(source?.catalogNumber || ""),
+                rating: Math.max(0, Number(source?.rating || 0)),
+                poles: Math.max(1, Number(source?.poles || 1))
+            })).filter(source => source.panelId && source.catalogNumber),
             fittings: (Array.isArray(savedRun?.fittings)
                 ? savedRun.fittings
                 : []
