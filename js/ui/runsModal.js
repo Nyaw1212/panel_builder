@@ -7,6 +7,7 @@ let expandedGutterId = null;
 let fittingModalElement = null;
 let activeFittingTarget = null;
 let fittingQuantityMode = false;
+let runWireClipboard = null;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -673,9 +674,15 @@ function renderRunsModal() {
                                 <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
                                     ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
                                 </button>
-                                <button class="run-material-button" type="button" data-action="wire" title="Select wire using ampacity filters">
-                                    ${runModalEscape(getRunWireLabel(wires))}
-                                </button>
+                                <div class="run-wire-field">
+                                    <button class="run-material-button" type="button" data-action="wire" title="Select wire using ampacity filters">
+                                        ${runModalEscape(getRunWireLabel(wires))}
+                                    </button>
+                                    <div class="run-wire-actions">
+                                        <button type="button" data-action="copy-wire" ${wires.length ? "" : "disabled"}>Copy wire</button>
+                                        <button type="button" data-action="paste-wire" ${runWireClipboard?.length ? "" : "disabled"}>Paste wire</button>
+                                    </div>
+                                </div>
                                 <button class="run-material-button" type="button" data-action="fittings" title="Select run fittings">
                                     ${runModalEscape(getRunFittingsSummary(run))}
                                 </button>
@@ -865,6 +872,35 @@ function renderRunsModal() {
         row.querySelector("[data-action='wire']")?.addEventListener(
             "click",
             () => openRunMaterialPicker(runId, "wire")
+        );
+
+        row.querySelector("[data-action='copy-wire']")?.addEventListener(
+            "click",
+            () => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                runWireClipboard = structuredClone(
+                    Array.isArray(run.wires)
+                        ? run.wires
+                        : (run.wire ? [run.wire] : [])
+                );
+                renderRunsModal();
+            }
+        );
+
+        row.querySelector("[data-action='paste-wire']")?.addEventListener(
+            "click",
+            () => {
+                const run = findRun(runId);
+                if (!run || !runWireClipboard?.length) return;
+
+                run.wires = structuredClone(runWireClipboard);
+                delete run.wire;
+                captureRunsHistory("Run wire pasted");
+                refreshRunsBOM();
+                renderRunsModal();
+            }
         );
 
         row.querySelector("[data-action='fittings']")?.addEventListener(

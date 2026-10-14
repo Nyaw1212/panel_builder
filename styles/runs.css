@@ -319,6 +319,42 @@
     background: #172338;
 }
 
+.run-wire-field {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.run-wire-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.run-wire-actions button {
+    flex: 1 1 0;
+    min-width: 0;
+    border: 1px solid rgba(96, 165, 250, .36);
+    border-radius: 5px;
+    color: #bfdbfe;
+    background: rgba(30, 58, 138, .24);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 22px;
+    padding: 0 4px;
+    white-space: nowrap;
+}
+
+.run-wire-actions button:hover:not(:disabled) {
+    border-color: #60a5fa;
+    background: rgba(30, 64, 175, .42);
+}
+
+.run-wire-actions button:disabled {
+    cursor: default;
+    opacity: .35;
+}
+
 .run-length-field {
     display: flex;
     align-items: center;
