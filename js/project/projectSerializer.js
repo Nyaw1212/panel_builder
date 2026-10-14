@@ -288,6 +288,11 @@ function serializeRuns() {
             ? run.autoRunWires
             : []
         ),
+        autoMainWires: compactCatalogList(
+          Array.isArray(run?.autoMainWires)
+            ? run.autoMainWires
+            : []
+        ),
         breakerWireAssignments: (Array.isArray(run?.breakerWireAssignments)
           ? run.breakerWireAssignments
           : []

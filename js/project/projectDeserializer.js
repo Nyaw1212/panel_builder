@@ -45,6 +45,9 @@ function deserializeProject(project) {
             autoRunWires: typeof hydrateCatalogList === "function"
                 ? hydrateCatalogList(Array.isArray(savedRun?.autoRunWires) ? savedRun.autoRunWires : [])
                 : structuredClone(Array.isArray(savedRun?.autoRunWires) ? savedRun.autoRunWires : []),
+            autoMainWires: typeof hydrateCatalogList === "function"
+                ? hydrateCatalogList(Array.isArray(savedRun?.autoMainWires) ? savedRun.autoMainWires : [])
+                : structuredClone(Array.isArray(savedRun?.autoMainWires) ? savedRun.autoMainWires : []),
             breakerWireAssignments: (Array.isArray(savedRun?.breakerWireAssignments)
                 ? savedRun.breakerWireAssignments
                 : []

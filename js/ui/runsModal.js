@@ -300,6 +300,11 @@ function isPanelCanvasItem(item) {
     return String(item?.data?.Type || "").toUpperCase().includes("PANEL");
 }
 
+function isDisconnectCanvasItem(item) {
+    const type = String(item?.data?.Type || item?.data?.NodeType || "").toUpperCase();
+    return type.includes("DISCONNECT");
+}
+
 function findRunCircuitMaterial(catalogNumber) {
     const target = String(catalogNumber || "").trim();
     return (typeof getMaterials === "function" ? getMaterials() : [])
@@ -342,6 +347,35 @@ function getRunPanelCircuits(run) {
     });
 }
 
+function getRunMainConductorSources(run) {
+    const endpoints = [run?.fromCanvasItemId, run?.toCanvasItemId]
+        .map(getCanvasItem)
+        .filter(Boolean);
+    const panel = endpoints.find(isPanelCanvasItem);
+
+    if (!panel) return [];
+
+    const panelPreset = String(panel?.preset || panel?.data?.PRESET || "").trim().toUpperCase();
+
+    return endpoints
+        .filter(isDisconnectCanvasItem)
+        .map(disconnect => {
+            const rating = Number(disconnect?.data?.RATING ?? disconnect?.data?.Rating ?? 0);
+            const label = String(disconnect?.preset || disconnect?.data?.CatalogNumber || "Disconnect").trim();
+
+            return {
+                id: `main:${String(panel.id)}:${String(disconnect.id)}`,
+                panelId: String(panel.id),
+                panelPreset,
+                disconnectId: String(disconnect.id),
+                catalogNumber: label,
+                rating,
+                sourceType: "main"
+            };
+        })
+        .filter(source => source.rating > 0);
+}
+
 function getRunCircuitSources(run) {
     return Array.isArray(run?.panelBreakerSources) ? run.panelBreakerSources : [];
 }
@@ -366,6 +400,10 @@ function getRunAutoWires(run) {
     return Array.isArray(run?.autoRunWires) ? run.autoRunWires : [];
 }
 
+function getRunAutoMainWires(run) {
+    return Array.isArray(run?.autoMainWires) ? run.autoMainWires : [];
+}
+
 function rebuildRunWiresFromAssignments(run) {
     if (!Array.isArray(run.manualWires)) {
         run.manualWires = structuredClone(
@@ -380,6 +418,7 @@ function rebuildRunWiresFromAssignments(run) {
     run.wires = [
         ...structuredClone(getRunManualWires(run)),
         ...assignments.flatMap(assignment => structuredClone(Array.isArray(assignment.wires) ? assignment.wires : [])),
+        ...structuredClone(getRunAutoMainWires(run)),
         ...structuredClone(getRunAutoWires(run))
     ];
     delete run.wire;
@@ -445,11 +484,14 @@ function getWireRuleMode(rule, key) {
 
 function autoAssignRunWires(run) {
     const sources = getRunCircuitSources(run);
+    const mainSources = getRunMainConductorSources(run);
+    const wireSources = [...sources, ...mainSources];
     const assignments = [];
+    const mainWires = [];
     const sharedWires = [];
     const missing = [];
 
-    sources.forEach(source => {
+    wireSources.forEach(source => {
         const rule = getWireAssignmentRule(getRunPanelPreset(source));
         const size = getAutomaticWireSize(source.rating);
         const hotPreset = String(rule?.["Hot Preset"] || "").trim().toUpperCase();
@@ -467,11 +509,16 @@ function autoAssignRunWires(run) {
             addAutomaticWire(wires, size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
         }
 
-        assignments.push({ ...source, wires });
+        if (source.sourceType === "main") {
+            mainWires.push(...wires);
+        }
+        else {
+            assignments.push({ ...source, wires });
+        }
     });
 
-    const allRules = [...new Set(sources.map(source => getWireAssignmentRule(getRunPanelPreset(source))).filter(Boolean))];
-    const largestSize = getAutomaticWireSize(Math.max(0, ...sources.map(source => Number(source.rating || 0))));
+    const allRules = [...new Set(wireSources.map(source => getWireAssignmentRule(getRunPanelPreset(source))).filter(Boolean))];
+    const largestSize = getAutomaticWireSize(Math.max(0, ...wireSources.map(source => Number(source.rating || 0))));
 
     allRules.forEach(rule => {
         if (getWireRuleMode(rule, "Neutral Mode") === "PER RUN") {
@@ -483,10 +530,11 @@ function autoAssignRunWires(run) {
     });
 
     run.breakerWireAssignments = assignments;
+    run.autoMainWires = mainWires;
     run.autoRunWires = sharedWires;
     rebuildRunWiresFromAssignments(run);
 
-    return { assigned: assignments.length, missing };
+    return { assigned: assignments.length + (mainWires.length ? 1 : 0), missing };
 }
 
 function getRunCircuitSummary(run) {
