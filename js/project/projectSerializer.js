@@ -278,6 +278,22 @@ function serializeRuns() {
             ? run.wires
             : (run?.wire ? [run.wire] : [])
         ),
+        manualWires: compactCatalogList(
+          Array.isArray(run?.manualWires)
+            ? run.manualWires
+            : []
+        ),
+        breakerWireAssignments: (Array.isArray(run?.breakerWireAssignments)
+          ? run.breakerWireAssignments
+          : []
+        ).map(assignment => ({
+          panelId: String(assignment?.panelId || ""),
+          breakerId: String(assignment?.breakerId || ""),
+          catalogNumber: String(assignment?.catalogNumber || ""),
+          rating: Math.max(0, Number(assignment?.rating || 0)),
+          poles: Math.max(1, Number(assignment?.poles || 1)),
+          wires: compactCatalogList(Array.isArray(assignment?.wires) ? assignment.wires : [])
+        })).filter(assignment => assignment.panelId && assignment.catalogNumber && assignment.wires.length),
         panelBreakerSources: (Array.isArray(run?.panelBreakerSources)
           ? run.panelBreakerSources
           : []
@@ -288,6 +304,7 @@ function serializeRuns() {
           rating: Math.max(0, Number(source?.rating || 0)),
           poles: Math.max(1, Number(source?.poles || 1))
         })).filter(source => source.panelId && source.catalogNumber),
+        panelBreakerSourcesConfigured: run?.panelBreakerSourcesConfigured === true,
         fittings: (Array.isArray(run?.fittings) ? run.fittings : [])
           .map(fitting => ({
             material: compactCatalogRecord(fitting),

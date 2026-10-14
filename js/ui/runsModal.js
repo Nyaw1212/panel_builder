@@ -9,6 +9,7 @@ let activeFittingTarget = null;
 let fittingQuantityMode = false;
 let runWireClipboard = null;
 let runCircuitModalElement = null;
+let runWireAssignmentModalElement = null;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -334,6 +335,48 @@ function getRunCircuitSources(run) {
     return Array.isArray(run?.panelBreakerSources) ? run.panelBreakerSources : [];
 }
 
+function getRunCircuitSourceKey(source) {
+    return `${String(source?.panelId || "")}:${String(source?.breakerId || source?.catalogNumber || "")}`;
+}
+
+function getRunBreakerWireAssignments(run) {
+    return Array.isArray(run?.breakerWireAssignments)
+        ? run.breakerWireAssignments
+        : [];
+}
+
+function getRunManualWires(run) {
+    return Array.isArray(run?.manualWires)
+        ? run.manualWires
+        : (Array.isArray(run?.wires) ? run.wires : (run?.wire ? [run.wire] : []));
+}
+
+function rebuildRunWiresFromAssignments(run) {
+    if (!Array.isArray(run.manualWires)) {
+        run.manualWires = structuredClone(
+            Array.isArray(run?.wires) ? run.wires : (run?.wire ? [run.wire] : [])
+        );
+    }
+    const selectedKeys = new Set(getRunCircuitSources(run).map(getRunCircuitSourceKey));
+    const assignments = getRunBreakerWireAssignments(run)
+        .filter(assignment => selectedKeys.has(getRunCircuitSourceKey(assignment)));
+
+    run.breakerWireAssignments = assignments;
+    run.wires = [
+        ...structuredClone(getRunManualWires(run)),
+        ...assignments.flatMap(assignment => structuredClone(Array.isArray(assignment.wires) ? assignment.wires : []))
+    ];
+    delete run.wire;
+}
+
+function getRunWireAssignmentSummary(run) {
+    const assigned = getRunBreakerWireAssignments(run)
+        .filter(assignment => Array.isArray(assignment.wires) && assignment.wires.length)
+        .length;
+    const total = getRunCircuitSources(run).length;
+    return total ? `Wire assignments ${assigned}/${total}` : "Wire assignments";
+}
+
 function getRunCircuitSummary(run) {
     const sources = getRunCircuitSources(run);
     return sources.length
@@ -364,9 +407,10 @@ function openRunCircuitModal(runId) {
         return;
     }
 
-    const selected = new Set(getRunCircuitSources(run).map(source =>
-        `${source.panelId}:${source.breakerId || source.catalogNumber}`
-    ));
+    const savedSources = getRunCircuitSources(run);
+    const selected = new Set(run.panelBreakerSourcesConfigured === true
+        ? savedSources.map(getRunCircuitSourceKey)
+        : circuits.map(circuit => circuit.id));
     const overlay = ensureRunCircuitModal();
 
     overlay.innerHTML = `
@@ -412,6 +456,9 @@ function openRunCircuitModal(runId) {
                 rating: circuit.rating,
                 poles: circuit.poles
             }));
+        run.panelBreakerSourcesConfigured = true;
+
+        rebuildRunWiresFromAssignments(run);
 
         captureRunsHistory("Run panel breakers selected");
         saveRunsDraft();
@@ -419,6 +466,107 @@ function openRunCircuitModal(runId) {
         close();
     });
 
+    overlay.style.display = "flex";
+}
+
+function ensureRunWireAssignmentModal() {
+    if (runWireAssignmentModalElement) return runWireAssignmentModalElement;
+
+    const overlay = document.createElement("div");
+    overlay.className = "run-circuit-modal";
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) overlay.style.display = "none";
+    });
+    document.body.appendChild(overlay);
+    runWireAssignmentModalElement = overlay;
+    return overlay;
+}
+
+function openRunBreakerWirePicker(runId, source) {
+    const run = findRun(runId);
+    if (!run) return;
+
+    const key = getRunCircuitSourceKey(source);
+    const existing = getRunBreakerWireAssignments(run)
+        .find(assignment => getRunCircuitSourceKey(assignment) === key);
+    const draftConnection = {
+        hardware: structuredClone(existing?.wires || []),
+        runWirePicker: true
+    };
+
+    ensureRunWireAssignmentModal().style.display = "none";
+    ensureRunsModal().style.display = "none";
+
+    openMaterialModal(draftConnection, {
+        title: `${source.rating || "?"}A ${source.catalogNumber} · Wire assignment`,
+        category: "WIRE",
+        onClose: () => {
+            const currentRun = findRun(runId);
+            if (currentRun) {
+                const assignments = getRunBreakerWireAssignments(currentRun)
+                    .filter(assignment => getRunCircuitSourceKey(assignment) !== key);
+                if (draftConnection.hardware.length) {
+                    assignments.push({ ...source, wires: structuredClone(draftConnection.hardware) });
+                }
+                currentRun.breakerWireAssignments = assignments;
+                rebuildRunWiresFromAssignments(currentRun);
+                captureRunsHistory("Breaker wire assignment updated");
+                refreshRunsBOM();
+            }
+            openRunsModal();
+            openRunWireAssignmentModal(runId);
+        }
+    });
+}
+
+function openRunWireAssignmentModal(runId) {
+    const run = findRun(runId);
+    if (!run) return;
+
+    const sources = getRunCircuitSources(run);
+    if (!sources.length) {
+        alert("Choose panel breakers for this run first.");
+        return;
+    }
+
+    const assignments = getRunBreakerWireAssignments(run);
+    const overlay = ensureRunWireAssignmentModal();
+    overlay.innerHTML = `
+        <section class="run-circuit-dialog run-wire-assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="runWireAssignmentTitle">
+            <header>
+                <div>
+                    <h2 id="runWireAssignmentTitle">${runModalEscape(run.name || "Run")} · Wire assignments</h2>
+                    <p>Assign a wire group to each selected breaker. Assigned wires are added to this run and use the run length + 4 ft.</p>
+                </div>
+                <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
+            </header>
+            <div class="run-circuit-list">
+                ${sources.map(source => {
+                    const assignment = assignments.find(item => getRunCircuitSourceKey(item) === getRunCircuitSourceKey(source));
+                    const label = assignment?.wires?.length
+                        ? assignment.wires.map(wire => `${wire.qty || 1}× ${wire.CatalogNumber || "wire"}`).join(", ")
+                        : "No wire assigned";
+                    return `
+                        <div class="run-wire-assignment-row">
+                            <span>
+                                <strong>${runModalEscape(`${source.rating || "?"}A · ${source.catalogNumber}`)}</strong>
+                                <small>${runModalEscape(label)}</small>
+                            </span>
+                            <button type="button" data-source-key="${runModalEscape(getRunCircuitSourceKey(source))}">${assignment?.wires?.length ? "Edit wires" : "Assign wires"}</button>
+                        </div>`;
+                }).join("")}
+            </div>
+            <footer>
+                <button type="button" class="run-circuit-close">Done</button>
+            </footer>
+        </section>`;
+
+    const close = () => { overlay.style.display = "none"; };
+    overlay.querySelectorAll(".run-circuit-close").forEach(button => button.addEventListener("click", close));
+    overlay.querySelectorAll("[data-source-key]").forEach(button => button.addEventListener("click", () => {
+        const source = sources.find(item => getRunCircuitSourceKey(item) === button.dataset.sourceKey);
+        if (source) openRunBreakerWirePicker(runId, source);
+    }));
     overlay.style.display = "flex";
 }
 
@@ -833,6 +981,7 @@ function renderRunsModal() {
                                     </button>
                                     <div class="run-wire-actions">
                                         <button type="button" class="run-circuit-button" data-action="panel-breakers" title="Choose breakers from the connected panel">${runModalEscape(getRunCircuitSummary(run))}</button>
+                                        <button type="button" class="run-circuit-button" data-action="wire-assignments" title="Assign wire groups to selected breakers">${runModalEscape(getRunWireAssignmentSummary(run))}</button>
                                         <button type="button" data-action="copy-wire" ${wires.length ? "" : "disabled"}>Copy wire</button>
                                         <button type="button" data-action="paste-wire" ${runWireClipboard?.length ? "" : "disabled"}>Paste wire</button>
                                     </div>
@@ -1031,6 +1180,11 @@ function renderRunsModal() {
         row.querySelector("[data-action='panel-breakers']")?.addEventListener(
             "click",
             () => openRunCircuitModal(runId)
+        );
+
+        row.querySelector("[data-action='wire-assignments']")?.addEventListener(
+            "click",
+            () => openRunWireAssignmentModal(runId)
         );
 
         row.querySelector("[data-action='copy-wire']")?.addEventListener(
@@ -1346,11 +1500,7 @@ function openRunWireModal(runId) {
     if (!run) return;
 
     const draftConnection = {
-        hardware: structuredClone(
-            Array.isArray(run.wires)
-                ? run.wires
-                : (run.wire ? [run.wire] : [])
-        ),
+        hardware: structuredClone(getRunManualWires(run)),
         runWirePicker: true
     };
 
@@ -1363,10 +1513,10 @@ function openRunWireModal(runId) {
             const currentRun = findRun(runId);
 
             if (currentRun) {
-                currentRun.wires = structuredClone(
+                currentRun.manualWires = structuredClone(
                     draftConnection.hardware
                 );
-                delete currentRun.wire;
+                rebuildRunWiresFromAssignments(currentRun);
 
                 captureRunsHistory("Run wire selection updated");
                 refreshRunsBOM();

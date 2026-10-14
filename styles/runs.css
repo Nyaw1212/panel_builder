@@ -142,6 +142,44 @@
 .run-circuit-dialog footer button { min-height: 34px; padding: 0 12px; border: 1px solid var(--v2-border, #2b3b54); border-radius: 7px; color: var(--v2-text, #f8fafc); background: #172337; cursor: pointer; }
 .run-circuit-dialog .run-circuit-save { border-color: #0891b2; background: #0e7490; }
 
+.run-wire-assignment-dialog {
+    width: min(620px, 94vw);
+}
+
+.run-wire-assignment-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px;
+    border: 1px solid var(--v2-border, #2b3b54);
+    border-radius: 8px;
+}
+
+.run-wire-assignment-row span {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.run-wire-assignment-row small {
+    overflow: hidden;
+    color: var(--v2-text-soft, #cbd5e1);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.run-wire-assignment-row button {
+    flex: 0 0 auto;
+    min-height: 32px;
+    border: 1px solid #0891b2;
+    border-radius: 7px;
+    color: #ecfeff;
+    background: #0e7490;
+    cursor: pointer;
+    font-weight: 800;
+}
+
 .runs-close {
     width: 36px;
     height: 36px;

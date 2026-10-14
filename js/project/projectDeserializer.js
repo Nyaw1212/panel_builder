@@ -39,6 +39,22 @@ function deserializeProject(project) {
                         : (savedRun?.wire ? [savedRun.wire] : [])
                 )
             ,
+            manualWires: typeof hydrateCatalogList === "function"
+                ? hydrateCatalogList(Array.isArray(savedRun?.manualWires) ? savedRun.manualWires : [])
+                : structuredClone(Array.isArray(savedRun?.manualWires) ? savedRun.manualWires : []),
+            breakerWireAssignments: (Array.isArray(savedRun?.breakerWireAssignments)
+                ? savedRun.breakerWireAssignments
+                : []
+            ).map(assignment => ({
+                panelId: String(assignment?.panelId || ""),
+                breakerId: String(assignment?.breakerId || ""),
+                catalogNumber: String(assignment?.catalogNumber || ""),
+                rating: Math.max(0, Number(assignment?.rating || 0)),
+                poles: Math.max(1, Number(assignment?.poles || 1)),
+                wires: typeof hydrateCatalogList === "function"
+                    ? hydrateCatalogList(Array.isArray(assignment?.wires) ? assignment.wires : [])
+                    : structuredClone(Array.isArray(assignment?.wires) ? assignment.wires : [])
+            })).filter(assignment => assignment.panelId && assignment.catalogNumber && assignment.wires.length),
             panelBreakerSources: (Array.isArray(savedRun?.panelBreakerSources)
                 ? savedRun.panelBreakerSources
                 : []
@@ -49,6 +65,7 @@ function deserializeProject(project) {
                 rating: Math.max(0, Number(source?.rating || 0)),
                 poles: Math.max(1, Number(source?.poles || 1))
             })).filter(source => source.panelId && source.catalogNumber),
+            panelBreakerSourcesConfigured: savedRun?.panelBreakerSourcesConfigured === true,
             fittings: (Array.isArray(savedRun?.fittings)
                 ? savedRun.fittings
                 : []
