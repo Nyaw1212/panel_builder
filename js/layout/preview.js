@@ -12,6 +12,17 @@ const previewLayer =
 let previewCard = null;
 let previewItem = null;
 let previewCell = null;
+let pendingPreviewCell = null;
+let previewMoveFrame = null;
+
+function placePreviewAtCell(index) {
+    if (!previewCard) return;
+
+    const cellWidth = SETTINGS.cellSize + SETTINGS.gap;
+    const column = index % SETTINGS.columns;
+    const row = Math.floor(index / SETTINGS.columns);
+    previewCard.style.transform = `translate3d(${column * cellWidth}px, ${row * cellWidth}px, 0)`;
+}
 
 //----------------------------------
 // Show Preview
@@ -57,8 +68,8 @@ function showPlacementPreview(item) {
     previewCard.style.padding = "24px";
     previewCard.style.boxSizing = "border-box";
 
-    previewCard.style.transition =
-        "left .05s linear, top .05s linear";
+    previewCard.style.willChange = "transform";
+    previewCard.style.transition = "transform .05s linear";
 
     previewCard.style.width =
         `${item.GridWidth * (SETTINGS.cellSize + SETTINGS.gap) - SETTINGS.gap}px`;
@@ -132,23 +143,18 @@ function movePlacementPreview(index) {
 
     previewCell = index;
 
-    const cell = grid.querySelector(
+    // Cell hover can happen hundreds of times while moving across the grid.
+    // Avoid a DOM lookup and offset/layout read for each cell; one GPU-backed
+    // transform per animation frame is enough for a smooth preview.
+    pendingPreviewCell = index;
+    if (previewMoveFrame !== null) return;
 
-        `[data-index="${index}"]`
-
-    );
-
-    if (!cell) {
-
-        return;
-
-    }
-
-    previewCard.style.left =
-        `${cell.offsetLeft}px`;
-
-    previewCard.style.top =
-        `${cell.offsetTop}px`;
+    previewMoveFrame = requestAnimationFrame(() => {
+        previewMoveFrame = null;
+        if (pendingPreviewCell === null) return;
+        placePreviewAtCell(pendingPreviewCell);
+        pendingPreviewCell = null;
+    });
 
 }
 
@@ -157,6 +163,12 @@ function movePlacementPreview(index) {
 //----------------------------------
 
 function hidePlacementPreview() {
+
+    if (previewMoveFrame !== null) {
+        cancelAnimationFrame(previewMoveFrame);
+        previewMoveFrame = null;
+    }
+    pendingPreviewCell = null;
 
     if (
 

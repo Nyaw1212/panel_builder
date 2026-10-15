@@ -772,6 +772,26 @@ function getWireAssignmentRule(panelPreset) {
         }) || null;
 }
 
+function getRunWireAssignmentRule(run, source) {
+    const directRule = getWireAssignmentRule(getRunPanelPreset(source));
+    if (directRule) return directRule;
+
+    // Some canvas panels carry a generic catalog/type label instead of their
+    // WireAss family. Their branch breakers still belong to the feeder, so
+    // use the connected main source's WireAss rule as a fallback.
+    const fallbackPresets = [
+        ...getRunAllMainConductorSources(run).map(getRunPanelPreset),
+        ...[run?.fromCanvasItemId, run?.toCanvasItemId]
+            .map(getCanvasItem)
+            .filter(Boolean)
+            .map(getCanvasWireAssignmentPreset)
+    ];
+
+    return fallbackPresets
+        .map(getWireAssignmentRule)
+        .find(Boolean) || null;
+}
+
 function getAutomaticWireSize(rating) {
     const amps = Math.max(0, Number(rating || 0));
     return BREAKER_WIRE_SIZE_RULES.find(([maximum]) => amps <= maximum)?.[1] || "";
@@ -833,7 +853,7 @@ function autoAssignRunWires(run) {
     const missing = [];
 
     wireSources.forEach(source => {
-        const rule = getWireAssignmentRule(getRunPanelPreset(source));
+        const rule = getRunWireAssignmentRule(run, source);
         // WireAss can explicitly override the ampacity-table size.  This is
         // needed for panel families such as SON+/SON11 where the approved
         // conductor size is defined in the assignment table.
@@ -1103,7 +1123,7 @@ function openRunWireAssignmentModal(runId) {
             </header>
             <div class="run-circuit-list">
                 ${mainSources.map(source => {
-                    const rule = getWireAssignmentRule(getRunPanelPreset(source));
+                    const rule = getRunWireAssignmentRule(run, source);
                     const size = normalizeWireSize(
                         String(rule?.["WIRE SIZE"] || "").trim() ||
                         getAutomaticWireSize(source.rating)
