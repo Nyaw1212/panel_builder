@@ -756,6 +756,13 @@ function getWirePresetColors(value) {
     return colors.length && colors.every(Boolean) ? colors : [];
 }
 
+function getRedWireFallbackPreset(rule) {
+    const fallbackEntry = Object.entries(rule || {}).find(([header]) =>
+        String(header || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "") === "IFNOAVAILRED"
+    );
+    return String(fallbackEntry?.[1] || "").trim().toUpperCase();
+}
+
 function getWireAssignmentRule(panelPreset) {
     const target = String(panelPreset || "").trim().toUpperCase();
     const compactTarget = target.replace(/[^A-Z0-9]/g, "");
@@ -862,12 +869,28 @@ function autoAssignRunWires(run) {
         const presetColumn = source.sourceType === "main"
             ? "Hot Preset"
             : "Breaker Preset";
-        const hotPreset = String(
+        let hotPreset = String(
             rule?.[presetColumn] ||
             (source.sourceType === "main" ? "" : rule?.["Hot Preset"]) ||
             ""
         ).trim().toUpperCase();
-        const hotColors = getWirePresetColors(hotPreset);
+        let hotColors = getWirePresetColors(hotPreset);
+
+        // WireAss can provide a fallback (for example BB) when the preferred
+        // preset includes RED but that color/size is not present in the MML.
+        const redIsUnavailable = hotColors.includes("RED") &&
+            !findAutomaticWireMaterial(
+                String(rule?.["WIRE SIZE"] || "").trim() || getAutomaticWireSize(source.rating),
+                "RED"
+            );
+        if (redIsUnavailable) {
+            const fallbackPreset = getRedWireFallbackPreset(rule);
+            const fallbackColors = getWirePresetColors(fallbackPreset);
+            if (fallbackColors.length) {
+                hotPreset = fallbackPreset;
+                hotColors = fallbackColors;
+            }
+        }
 
         if (!rule || !size || !hotColors.length) {
             missing.push(`${getRunPanelPreset(source) || "panel"} ${source.rating || "?"}A`);
