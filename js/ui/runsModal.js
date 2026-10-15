@@ -547,6 +547,32 @@ function getRunMainConductorSources(run) {
         .filter(source => source.rating > 0);
 }
 
+function getRunPanelMainConductorSources(run) {
+    return getRunPanelMainBreakers(run)
+        .map(breaker => {
+            const panel = getCanvasItem(breaker.panelId);
+            const panelPreset = String(panel?.preset || panel?.data?.PRESET || "").trim().toUpperCase();
+
+            return {
+                id: `panel-main:${String(breaker.panelId)}:${breaker.catalogNumber}`,
+                panelId: String(breaker.panelId),
+                panelPreset,
+                wirePreset: getCanvasWireAssignmentPreset(panel) || panelPreset,
+                catalogNumber: breaker.catalogNumber,
+                rating: breaker.rating,
+                sourceType: "main"
+            };
+        })
+        .filter(source => source.rating > 0);
+}
+
+function getRunAllMainConductorSources(run) {
+    return [
+        ...getRunMainConductorSources(run),
+        ...getRunPanelMainConductorSources(run)
+    ];
+}
+
 function getRunCircuitSources(run) {
     return Array.isArray(run?.panelBreakerSources) ? run.panelBreakerSources : [];
 }
@@ -601,7 +627,7 @@ function getRunWireAssignmentSummary(run) {
         .length;
     const total = getRunCircuitSources(run).length;
     if (total) return `Wire assignments ${assigned}/${total}`;
-    return getRunMainConductorSources(run).length
+    return getRunAllMainConductorSources(run).length
         ? "Main feeder wires"
         : "Wire assignments";
 }
@@ -682,7 +708,7 @@ function getRunWireListLabel(wires) {
 
 function autoAssignRunWires(run) {
     const sources = getRunCircuitSources(run);
-    const mainSources = getRunMainConductorSources(run);
+    const mainSources = getRunAllMainConductorSources(run);
     const wireSources = [...sources, ...mainSources];
     const assignments = [];
     const mainWires = [];
@@ -692,7 +718,14 @@ function autoAssignRunWires(run) {
     wireSources.forEach(source => {
         const rule = getWireAssignmentRule(getRunPanelPreset(source));
         const size = getAutomaticWireSize(source.rating);
-        const hotPreset = String(rule?.["Hot Preset"] || "").trim().toUpperCase();
+        const presetColumn = source.sourceType === "main"
+            ? "Hot Preset"
+            : "Breaker Preset";
+        const hotPreset = String(
+            rule?.[presetColumn] ||
+            (source.sourceType === "main" ? "" : rule?.["Hot Preset"]) ||
+            ""
+        ).trim().toUpperCase();
         const hotColors = getWirePresetColors(hotPreset);
 
         if (!rule || !size || !hotColors.length) {
@@ -740,7 +773,7 @@ function getRunCircuitSummary(run) {
     const sources = getRunCircuitSources(run);
     return sources.length
         ? sources.map(source => `${source.rating || "?"}A ${source.catalogNumber || "breaker"}`).join(" + ")
-        : (getRunMainConductorSources(run).length ? "Main feeder (no breakers)" : "Panel breakers");
+        : (getRunAllMainConductorSources(run).length ? "Main feeder (no breakers)" : "Panel breakers");
 }
 
 function ensureRunCircuitModal() {
@@ -767,7 +800,7 @@ function openRunCircuitModal(runId) {
             alert(`${mainBreakers.map(breaker => breaker.catalogNumber).join(", ")} is the preset main breaker. This panel has no installed branch breakers to select.`);
         }
         else {
-            alert(getRunMainConductorSources(run).length
+            alert(getRunAllMainConductorSources(run).length
                 ? "This is a main-feeder run. It has no branch breakers to select. Use Auto wire or Wire assignments to review the feeder wires."
                 : "Map this Run to a Panel with installed branch breakers first.");
         }
@@ -901,7 +934,7 @@ function openRunWireAssignmentModal(runId) {
     if (!run) return;
 
     const sources = getRunCircuitSources(run);
-    const mainSources = getRunMainConductorSources(run);
+    const mainSources = getRunAllMainConductorSources(run);
     if (!sources.length && !mainSources.length) {
         alert("Choose panel breakers for this run first.");
         return;
