@@ -879,19 +879,25 @@ function autoAssignRunWires(run) {
         // 1× Red, 1× Black, 1× Red, 1× Black in the Main list.
         const hotSetCount = Math.max(1, Number(rule?.SET || 1) || 1);
         const wires = [];
+        const missingMaterials = [];
+        const addWire = (wireSize, color, qty = 1) => {
+            if (!addAutomaticWire(wires, wireSize, color, qty)) {
+                missingMaterials.push(`${qty}× THHN ${wireSize} ${color}`);
+            }
+        };
         for (let setIndex = 0; setIndex < hotSetCount; setIndex += 1) {
-            hotColors.forEach(color => addAutomaticWire(wires, size, color, 1));
+            hotColors.forEach(color => addWire(size, color, 1));
         }
 
         if (getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
-            addAutomaticWire(wires, size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
+            addWire(size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
         }
 
         if (source.sourceType === "main") {
             mainWires.push(...wires);
         }
         else {
-            assignments.push({ ...source, wires });
+            assignments.push({ ...source, wires, missingMaterials });
         }
     });
 
@@ -1168,11 +1174,14 @@ function openRunWireAssignmentModal(runId) {
                 ${sources.map(source => {
                     const assignment = assignments.find(item => getRunCircuitSourceKey(item) === getRunCircuitSourceKey(source));
                     const label = getRunWireListLabel(assignment?.wires);
+                    const missing = Array.isArray(assignment?.missingMaterials) && assignment.missingMaterials.length
+                        ? ` · Missing in MML: ${assignment.missingMaterials.join(", ")}`
+                        : "";
                     return `
                         <div class="run-wire-assignment-row">
                             <span>
                                 <strong>${runModalEscape(`${source.rating || "?"}A · ${source.catalogNumber}`)}</strong>
-                                <small>${runModalEscape(label)}</small>
+                                <small>${runModalEscape(`${label}${missing}`)}</small>
                             </span>
                             <button type="button" data-source-key="${runModalEscape(getRunCircuitSourceKey(source))}">${assignment?.wires?.length ? "Edit wires" : "Assign wires"}</button>
                         </div>`;
