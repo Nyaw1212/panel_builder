@@ -31,10 +31,14 @@ let catalogUpdateNoticeShown = false;
 //----------------------------------
 
 async function apiRequest(data) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
+
     try {
         const response = await fetch(PROJECT_API_URL, {
             method: "POST",
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            signal: controller.signal
         });
 
         if (!response.ok) {
@@ -50,6 +54,9 @@ async function apiRequest(data) {
             success: false,
             message: err.message
         };
+    }
+    finally {
+        window.clearTimeout(timeout);
     }
 }
 
@@ -410,13 +417,12 @@ async function getMML() {
     if (cache) {
         console.log("Catalog Source: Cache", cache.version);
 
-        // Refresh before the catalog is used so a changed MML sheet is
-        // reflected immediately instead of only after a later reload.
-        await revalidateMMLCache(cache);
-
-        const refreshedCache = loadMMLCache();
+        // Never hold the whole app hostage while a background version check
+        // waits on Apps Script. The Reload MML button is available whenever a
+        // user needs an immediate, fresh catalog.
+        void revalidateMMLCache(cache);
         startCatalogWatcher();
-        return refreshedCache?.data || cache.data;
+        return cache.data;
     }
 
     const mml = (
@@ -426,6 +432,28 @@ async function getMML() {
     if (mml.length) {
         startCatalogWatcher();
     }
+
+    return mml;
+}
+
+//----------------------------------
+// Force MML Reload
+//----------------------------------
+
+async function reloadMML() {
+    if (LOCAL_MODE) {
+        return await loadLocalJSON("./Mock/MML.json");
+    }
+
+    clearMMLCache();
+
+    const mml = await fetchMMLFromApi();
+
+    if (!Array.isArray(mml) || !mml.length) {
+        throw new Error("MML reload returned no materials. The existing catalog was not replaced.");
+    }
+
+    startCatalogWatcher();
 
     return mml;
 }
@@ -559,6 +587,7 @@ function getPresetMaterials(preset) {
 
 window.API = {
     getMML,
+    reloadMML,
     getMMLVersion,
     getPresets,
     getPresetsVersion,
@@ -574,6 +603,7 @@ window.API = {
 //----------------------------------
 
 window.getMMLVersion = getMMLVersion;
+window.reloadMML = reloadMML;
 window.getPresetsVersion = getPresetsVersion;
 window.saveProject = saveProject;
 window.loadProject = loadProject;

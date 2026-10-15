@@ -13,6 +13,54 @@ let presets = [];
 let wireAssignments = [];
 
 //----------------------------------
+// Reload MML Catalog
+//----------------------------------
+
+async function reloadMMLCatalog() {
+  const button = document.getElementById("reloadMMLButton");
+  const originalLabel = button?.textContent || "🔄 Reload MML";
+
+  if (!window.API?.reloadMML) {
+    alert("MML reload is not available yet. Refresh the app and try again.");
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "⏳ Loading MML...";
+  }
+
+  try {
+    const mml = await window.API.reloadMML();
+
+    equipment = mml.filter(item => item.Placeable);
+    materials = mml.filter(item => !item.Placeable);
+    window.equipment = equipment;
+    window.materials = materials;
+
+    if (typeof buildEquipmentLibrary === "function") {
+      const search = document.getElementById("searchBox")?.value || "";
+      buildEquipmentLibrary(search);
+    }
+
+    if (typeof renderBOM === "function") renderBOM();
+    if (typeof drawCanvas === "function") drawCanvas();
+
+    alert(`MML reloaded: ${mml.length} catalog items.`);
+  }
+  catch (err) {
+    console.error("MML reload failed:", err);
+    alert(`MML reload failed: ${err.message || "Unable to reach Apps Script."}`);
+  }
+  finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+}
+
+//----------------------------------
 // Main
 //----------------------------------
 
@@ -336,6 +384,7 @@ window.getPresetList = getPresetList;
 window.handleConnectionClick = handleConnectionClick;
 
 window.init = init;
+window.reloadMMLCatalog = reloadMMLCatalog;
 
 //----------------------------------
 // Start Application

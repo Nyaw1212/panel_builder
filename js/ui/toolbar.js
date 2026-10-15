@@ -382,6 +382,9 @@ function initializeToolbar() {
     const runsButton =
         document.getElementById("runsButton");
 
+    const reloadMMLButton =
+        document.getElementById("reloadMMLButton");
+
     const manualRouteButton =
         document.getElementById("manualRouteButton");
 
@@ -468,6 +471,18 @@ function initializeToolbar() {
         runsButton.addEventListener("click", () => {
             if (typeof openRunsModal === "function") {
                 openRunsModal();
+            }
+        });
+    }
+
+    //----------------------------------
+    // Reload MML
+    //----------------------------------
+
+    if (reloadMMLButton) {
+        reloadMMLButton.addEventListener("click", () => {
+            if (typeof reloadMMLCatalog === "function") {
+                void reloadMMLCatalog();
             }
         });
     }
