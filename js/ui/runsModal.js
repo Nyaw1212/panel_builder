@@ -312,6 +312,11 @@ function getRunCanvasLinks() {
 }
 
 function createRunFromCanvasLink(link) {
+    const existing = getEditableRuns().find(run =>
+        String(run?.canvasLinkId || "") === String(link?.id || "")
+    );
+    if (existing) return null;
+
     const length = promptRunLength(link.label);
     if (length === null) return null;
 
@@ -340,6 +345,20 @@ function createRunFromCanvasLink(link) {
     autoAssignRunWires(run);
 
     getEditableRuns().push(run);
+    return run;
+}
+
+function autoCreateRunFromCanvasLink(canvasLink) {
+    const link = getRunCanvasLinks().find(item =>
+        item.id === String(canvasLink?.id || "")
+    );
+    if (!link) return null;
+
+    const run = createRunFromCanvasLink(link);
+    if (!run) return null;
+
+    captureRunsHistory("Run created from canvas link");
+    refreshRunsBOM();
     return run;
 }
 
@@ -390,7 +409,10 @@ function openRunFromCanvasLinkModal() {
         if (!link) return;
 
         const run = createRunFromCanvasLink(link);
-        if (!run) return;
+        if (!run) {
+            alert("This canvas link already has a Run.");
+            return;
+        }
 
         captureRunsHistory("Run created from canvas link");
         refreshRunsBOM();
@@ -2350,3 +2372,4 @@ function closeRunsModal() {
 
 window.openRunsModal = openRunsModal;
 window.closeRunsModal = closeRunsModal;
+window.autoCreateRunFromCanvasLink = autoCreateRunFromCanvasLink;

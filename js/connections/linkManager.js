@@ -183,6 +183,17 @@ function createLink(
     );
 
     //----------------------------------
+    // Create matching material run
+    //----------------------------------
+
+    if (
+        options.createMaterialRun !== false &&
+        typeof window.autoCreateRunFromCanvasLink === "function"
+    ) {
+        window.autoCreateRunFromCanvasLink(link);
+    }
+
+    //----------------------------------
     // Capture History
     //----------------------------------
 
