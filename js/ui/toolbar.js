@@ -460,8 +460,13 @@ function initializeToolbar() {
 
     if (runsButton) {
         runsButton.addEventListener("click", () => {
-            if (typeof openRunsModal === "function") {
-                openRunsModal();
+            const openRuns = window.openRunsModal;
+            if (typeof openRuns === "function") {
+                openRuns();
+            }
+            else {
+                console.error("Runs modal was not loaded.");
+                alert("Runs is still loading. Please refresh the page, then try again.");
             }
         });
     }
