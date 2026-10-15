@@ -119,9 +119,11 @@ function doPost(e) {
 
           success: true,
 
-          mml: getMML(),
-
-          version: getMMLVersion()
+          // Do not calculate the complete-sheet hash here. Reading the
+          // catalog is already the expensive operation, and the hash can add
+          // enough time to make a manual reload appear to hang. Version
+          // checks continue through the dedicated getMMLVersion action.
+          mml: getMML()
 
         });
 
