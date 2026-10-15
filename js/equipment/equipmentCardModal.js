@@ -11,6 +11,25 @@ let currentEquipment = null;
 function openEquipmentCardModal(item) {
 
     //----------------------------------
+    // L-DISC Material Picker
+    //
+    // L-DISC is a preset assembly, not a panel component.  Opening the
+    // component editor here used to show the unrelated breaker library.
+    //----------------------------------
+
+    if (
+        typeof isLDiscMaterialCard === "function" &&
+        isLDiscMaterialCard(item) &&
+        typeof openLDiscMaterialPicker === "function"
+    ) {
+
+        openLDiscMaterialPicker(item);
+
+        return;
+
+    }
+
+    //----------------------------------
     // Store
     //----------------------------------
 

@@ -339,6 +339,176 @@ function removeDisconnectFuse(slotIndex) {
   return true;
 }
 
+//----------------------------------
+// L-DISC Material Picker
+//----------------------------------
+
+function getItemPresetCode(item) {
+  return String(
+    item?.preset ||
+    item?.data?.PRESET ||
+    item?.data?.Preset ||
+    ""
+  ).trim();
+}
+
+function isLDiscMaterialCard(item) {
+  return getItemPresetCode(item)
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase() === "LDISC";
+}
+
+function isDisconnectMaterial(item) {
+  return String(
+    item?.NodeType ||
+    item?.Type ||
+    item?.Category ||
+    ""
+  ).toUpperCase().includes("DISCONNECT");
+}
+
+function getLDiscMaterialLibrary() {
+  const presetCatalogs = new Set(
+    (typeof getApiPresetRows === "function"
+      ? getApiPresetRows("L-DISC")
+      : []
+    )
+      .map(row => String(
+        typeof getRowCatalogNumber === "function"
+          ? getRowCatalogNumber(row)
+          : row?.CatalogNumber
+      ).trim().toUpperCase())
+      .filter(Boolean)
+  );
+
+  const catalog = [
+    ...(typeof getMaterials === "function"
+      ? getMaterials()
+      : []),
+    ...(typeof getEquipment === "function"
+      ? getEquipment()
+      : [])
+  ];
+
+  const unique = new Map();
+
+  catalog.forEach(material => {
+    const catalogNumber = String(
+      material?.CatalogNumber || ""
+    ).trim().toUpperCase();
+
+    if (catalogNumber && !unique.has(catalogNumber)) {
+      unique.set(catalogNumber, material);
+    }
+  });
+
+  return Array.from(unique.values())
+    .filter(isDisconnectMaterial)
+    .filter(material => {
+      // The PRESETS table is the L-DISC filter.  If it has not yet been
+      // configured with alternatives, keep the disconnect library usable.
+      return !presetCatalogs.size || presetCatalogs.has(
+        String(material.CatalogNumber || "")
+          .trim()
+          .toUpperCase()
+      );
+    })
+    .sort((first, second) => {
+      const favoriteDifference =
+        Number(second.Favorite || 0) -
+        Number(first.Favorite || 0);
+
+      if (favoriteDifference !== 0) {
+        return favoriteDifference;
+      }
+
+      return String(first.CatalogNumber || "").localeCompare(
+        String(second.CatalogNumber || "")
+      );
+    });
+}
+
+function replaceLDiscMaterial(equipment, material) {
+  if (!equipment || !material || !isDisconnectMaterial(material)) {
+    return false;
+  }
+
+  if (
+    typeof canPlace === "function" &&
+    !canPlace(material, equipment.startCell, equipment)
+  ) {
+    alert(
+      "The selected L-DISC material does not fit in its current canvas position."
+    );
+
+    return false;
+  }
+
+  const layout = getLayout();
+  const previousCatalog = String(
+    equipment.data?.CatalogNumber || ""
+  ).trim().toUpperCase();
+
+  (equipment.occupied || []).forEach(index => {
+    if (layout[index] === equipment) {
+      layout[index] = null;
+    }
+  });
+
+  equipment.data = structuredClone(material);
+  equipment.width = Number(material.GridWidth || 1);
+  equipment.height = Number(material.GridHeight || 1);
+  equipment.preset = "L-DISC";
+
+  const mainMaterial = {
+    id: crypto.randomUUID(),
+    catalogNumber: material.CatalogNumber,
+    description: material.Description || "",
+    inventoryCategory: material.InventoryCategory || "",
+    qty: 1
+  };
+
+  equipment.materials = [
+    mainMaterial,
+    ...(equipment.materials || []).filter(entry => {
+      return String(
+        entry?.catalogNumber || entry?.CatalogNumber || ""
+      ).trim().toUpperCase() !== previousCatalog;
+    })
+  ];
+
+  updateOccupiedCells(equipment);
+
+  equipment.occupied.forEach(index => {
+    layout[index] = equipment;
+  });
+
+  if (
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture === "function"
+  ) {
+    window.HistoryManagerV2.capture("L-DISC material changed");
+  }
+
+  if (typeof drawCanvas === "function") {
+    drawCanvas();
+  }
+
+  return true;
+}
+
+function openLDiscMaterialPicker(equipment) {
+  if (!equipment || typeof openPickerModal !== "function") {
+    return;
+  }
+
+  openPickerModal(
+    "L-DISC Material Picker",
+    getLDiscMaterialLibrary(),
+    material => replaceLDiscMaterial(equipment, material)
+  );
+}
+
 function renderDisconnectPresetEditor(
   modal,
   equipment
@@ -671,6 +841,12 @@ window.installDisconnectFuse =
 
 window.removeDisconnectFuse =
   removeDisconnectFuse;
+
+window.isLDiscMaterialCard =
+  isLDiscMaterialCard;
+
+window.openLDiscMaterialPicker =
+  openLDiscMaterialPicker;
 
 window.renderDisconnectPresetEditor =
   renderDisconnectPresetEditor;
