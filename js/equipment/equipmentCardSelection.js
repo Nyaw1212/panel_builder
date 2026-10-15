@@ -21,7 +21,36 @@ function getPanelSideCapacity(equipment, side) {
   return 12;
 }
 
+function ensurePresetMainBreakerSlot(equipment) {
+  if (!Array.isArray(equipment?.materials)) return;
+
+  const hasMainBreaker = equipment.materials.some(
+    entry => entry?.panelSlot?.section === "main"
+  );
+  if (hasMainBreaker) return;
+
+  const presetMainBreaker = equipment.materials.find(entry =>
+    /^CSR/i.test(String(entry?.catalogNumber || entry?.CatalogNumber || ""))
+  );
+  if (!presetMainBreaker) return;
+
+  const material = findPanelMaterial(
+    presetMainBreaker.catalogNumber || presetMainBreaker.CatalogNumber
+  ) || presetMainBreaker;
+
+  presetMainBreaker.id ||= crypto.randomUUID();
+  presetMainBreaker.qty = 1;
+  presetMainBreaker.panelSlot = {
+    section: "main",
+    family: "CSR",
+    span: typeof getBreakerPoleCount === "function"
+      ? Math.max(1, Number(getBreakerPoleCount(material) || 1))
+      : 1
+  };
+}
+
 function getPanelPlacedComponents(equipment) {
+  ensurePresetMainBreakerSlot(equipment);
   return (equipment?.materials || []).filter(
     entry => entry?.panelSlot
   );
@@ -298,6 +327,7 @@ function resetPanelCircuitSelection() {
 }
 
 window.getPanelSideCapacity = getPanelSideCapacity;
+window.ensurePresetMainBreakerSlot = ensurePresetMainBreakerSlot;
 window.getPanelPlacedComponents = getPanelPlacedComponents;
 window.findPanelMaterial = findPanelMaterial;
 window.getPanelSlotOccupant = getPanelSlotOccupant;

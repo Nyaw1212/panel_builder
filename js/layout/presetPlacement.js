@@ -590,24 +590,46 @@ function placePreset(
   // Store Complete Preset BOM
   //----------------------------------
 
-  placedItem.materials =
-    presetMaterials.map(
-      material => ({
-        catalogNumber:
-          material.catalogNumber,
+  const equipmentType = [
+    equipment?.Type,
+    equipment?.NodeType,
+    equipment?.Category
+  ].filter(Boolean).join(" ").toUpperCase();
+  const isPanelEquipment =
+    equipmentType.includes("PANEL") ||
+    equipmentType.includes("FSU");
+  let hasPresetMainBreaker = false;
 
-        description:
-          material.description,
+  placedItem.materials = presetMaterials.map(material => {
+    const catalogNumber = material.catalogNumber;
+    const isCsrMainBreaker = isPanelEquipment &&
+      !hasPresetMainBreaker && /^CSR/i.test(String(catalogNumber || ""));
 
-        inventoryCategory:
-          material.inventoryCategory,
+    if (isCsrMainBreaker) hasPresetMainBreaker = true;
 
-        qty:
-          Number(
-            material.qty
-          ) || 0
-      })
-    );
+    const placedMaterial = {
+      catalogNumber,
+      description: material.description,
+      inventoryCategory: material.inventoryCategory,
+      qty: Number(material.qty) || 0
+    };
+
+    if (isCsrMainBreaker) {
+      const breakerMaterial = (typeof getMaterials === "function" ? getMaterials() : [])
+        .find(item => String(item?.CatalogNumber || "") === String(catalogNumber || "")) || material;
+      placedMaterial.id = crypto.randomUUID();
+      placedMaterial.qty = 1;
+      placedMaterial.panelSlot = {
+        section: "main",
+        family: "CSR",
+        span: typeof getBreakerPoleCount === "function"
+          ? Math.max(1, Number(getBreakerPoleCount(breakerMaterial) || 1))
+          : 1
+      };
+    }
+
+    return placedMaterial;
+  });
 
   console.log(
     "Placed Item Materials:",

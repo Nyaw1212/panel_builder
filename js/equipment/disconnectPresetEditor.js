@@ -12,7 +12,7 @@ function getEquipmentEditorType(equipment) {
   ].filter(Boolean).join(" ").trim().toUpperCase();
 
   if (type.includes("DISCONNECT")) return "DISCONNECT";
-  if (type.includes("PANEL")) return "PANEL";
+  if (type.includes("PANEL") || type.includes("FSU")) return "PANEL";
 
   return "GENERIC";
 }

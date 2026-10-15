@@ -408,7 +408,10 @@ function getCanvasItem(itemId) {
 }
 
 function isPanelCanvasItem(item) {
-    return String(item?.data?.Type || "").toUpperCase().includes("PANEL");
+    const type = [item?.data?.Type, item?.data?.NodeType, item?.data?.Category]
+        .map(value => String(value || "").toUpperCase())
+        .join(" ");
+    return type.includes("PANEL") || type.includes("FSU");
 }
 
 function isDisconnectCanvasItem(item) {
