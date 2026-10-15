@@ -705,6 +705,12 @@ function getRunPanelPreset(source) {
     ).trim().toUpperCase();
 }
 
+function runStartsFromPreset(run, preset) {
+    const start = getCanvasItem(run?.fromCanvasItemId);
+    return normalizeWireAssignmentPreset(getCanvasWireAssignmentPreset(start)) ===
+        normalizeWireAssignmentPreset(preset);
+}
+
 function getWirePresetColors(value) {
     const preset = String(value || "").trim().toUpperCase();
     const configured = window.WIRE_PRESETS?.[preset];
@@ -784,6 +790,9 @@ function autoAssignRunWires(run) {
         String(source?.id || "").startsWith("preset-main:")
     );
     const sources = usesPresetMainWire ? [] : getRunCircuitSources(run);
+    // SD supplies no neutral when it is the source/start of the run. The
+    // direction matters, so an SD at the destination does not suppress it.
+    const suppressNeutral = runStartsFromPreset(run, "SD");
     const wireSources = [...sources, ...mainSources];
     const assignments = [];
     const mainWires = [];
@@ -821,7 +830,7 @@ function autoAssignRunWires(run) {
             hotColors.forEach(color => addAutomaticWire(wires, size, color, 1));
         }
 
-        if (getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
+        if (!suppressNeutral && getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
             addAutomaticWire(wires, size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
         }
 
@@ -842,7 +851,7 @@ function autoAssignRunWires(run) {
         ? getWireAssignmentRule(getRunPanelPreset(sharedWireSource))
         : null;
 
-    if (getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
+    if (!suppressNeutral && getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
         const neutralSize = String(sharedRule?.["NEUTRAL SIZE"] || "").trim() || largestSize;
         addAutomaticWire(sharedWires, neutralSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
     }
