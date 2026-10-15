@@ -855,6 +855,8 @@ function openRunWireAssignmentModal(runId) {
 
     const assignments = getRunBreakerWireAssignments(run);
     const autoMainWires = getRunAutoMainWires(run);
+    const neutralWires = getRunAutoWires(run)
+        .filter(wire => normalizeWireToken(wire?.Color) === "WHITE");
     const groundWires = getRunAutoWires(run)
         .filter(wire => normalizeWireToken(wire?.Color) === "GREEN");
     const overlay = ensureRunWireAssignmentModal();
@@ -863,7 +865,7 @@ function openRunWireAssignmentModal(runId) {
             <header>
                 <div>
                     <h2 id="runWireAssignmentTitle">${runModalEscape(run.name || "Run")} · Wire assignments</h2>
-                    <p>Breaker wires can be edited below. Main and ground wires are generated from the run endpoints and WireAss.</p>
+                    <p>Breaker wires can be edited below. Main, neutral, and ground wires are generated from the run endpoints and WireAss.</p>
                 </div>
                 <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
             </header>
@@ -880,6 +882,14 @@ function openRunWireAssignmentModal(runId) {
                             <em>Auto</em>
                         </div>`;
                 }).join("")}
+                ${neutralWires.length ? `
+                    <div class="run-wire-assignment-row run-wire-generated-row">
+                        <span>
+                            <strong>Neutral · Run level</strong>
+                            <small>${runModalEscape(getRunWireListLabel(neutralWires))}</small>
+                        </span>
+                        <em>Auto</em>
+                    </div>` : ""}
                 ${groundWires.length ? `
                     <div class="run-wire-assignment-row run-wire-generated-row">
                         <span>
