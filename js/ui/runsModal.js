@@ -868,6 +868,12 @@ function getRunWireListLabel(wires) {
 function autoAssignRunWires(run) {
     const mainSources = getRunAllMainConductorSources(run);
     const isContactorRun = runConnectsToContactor(run);
+    // A contactor is a dedicated two/three-hot control path. Its colors must
+    // come solely from the CONTACTOR WireAss row (for example RB or BBC),
+    // never from the connected panel or feeder preset.
+    const contactorRule = isContactorRun
+        ? getWireAssignmentRule("CONTACTOR")
+        : null;
     // SON+/SON11-style rows define a complete feeder in WireAss. Do not add
     // branch-breaker conductors for those runs, even if the connected canvas
     // panel happens to contain installed breakers.
@@ -880,7 +886,9 @@ function autoAssignRunWires(run) {
     const missing = [];
 
     wireSources.forEach(source => {
-        const rule = getRunWireAssignmentRule(run, source);
+        const rule = isContactorRun
+            ? contactorRule
+            : getRunWireAssignmentRule(run, source);
         // WireAss can explicitly override the ampacity-table size.  This is
         // needed for panel families such as SON+/SON11 where the approved
         // conductor size is defined in the assignment table.
@@ -949,7 +957,9 @@ function autoAssignRunWires(run) {
     // feeder rule when there is one (for example L-DISC), otherwise the first
     // circuit's panel rule.  They must not be added once for every source rule.
     const sharedWireSource = mainSources[0] || sources[0] || null;
-    const sharedRule = sharedWireSource
+    const sharedRule = isContactorRun
+        ? contactorRule
+        : sharedWireSource
         ? getRunWireAssignmentRule(run, sharedWireSource)
         : null;
 
@@ -967,7 +977,7 @@ function autoAssignRunWires(run) {
     }
     // COM accepts one or more catalog numbers separated by commas, semicolons,
     // or new lines. For example, SON11/SON+ uses COM = CAT6BLUE.
-    String(sharedRule?.COM || "")
+    String(isContactorRun ? "" : sharedRule?.COM || "")
         .split(/[;,\n]+/)
         .map(value => value.trim())
         .filter(Boolean)
