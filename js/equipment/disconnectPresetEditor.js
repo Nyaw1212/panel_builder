@@ -502,10 +502,58 @@ function openLDiscMaterialPicker(equipment) {
     return;
   }
 
+  const presetRows = typeof getApiPresetRows === "function"
+    ? getApiPresetRows("L-DISC")
+    : [];
+
+  const materials = getLDiscMaterialLibrary();
+
+  console.group("[L-DISC Picker] Target and filter");
+  console.log("Clicked canvas card:", {
+    id: equipment.id,
+    preset: getItemPresetCode(equipment),
+    catalogNumber: equipment.data?.CatalogNumber || "",
+    description: equipment.data?.Description || "",
+    startCell: equipment.startCell
+  });
+  console.table(presetRows.map(row => ({
+    preset: typeof getRowPresetCode === "function"
+      ? getRowPresetCode(row)
+      : row?.PRESET,
+    catalogNumber: typeof getRowCatalogNumber === "function"
+      ? getRowCatalogNumber(row)
+      : row?.CatalogNumber,
+    qty: typeof getRowQuantity === "function"
+      ? getRowQuantity(row)
+      : row?.Qty
+  })));
+  console.table(materials.map(material => ({
+    catalogNumber: material.CatalogNumber,
+    description: material.Description || "",
+    nodeType: material.NodeType || "",
+    gridWidth: material.GridWidth || "",
+    gridHeight: material.GridHeight || ""
+  })));
+
+  if (!materials.length) {
+    console.warn(
+      "No L-DISC disconnect materials were found. Check PRESETS for L-DISC catalog numbers."
+    );
+  }
+
+  console.groupEnd();
+
   openPickerModal(
     "L-DISC Material Picker",
-    getLDiscMaterialLibrary(),
-    material => replaceLDiscMaterial(equipment, material)
+    materials,
+    material => {
+      console.info("[L-DISC Picker] Selected replacement:", {
+        from: equipment.data?.CatalogNumber || "",
+        to: material.CatalogNumber || ""
+      });
+
+      return replaceLDiscMaterial(equipment, material);
+    }
   );
 }
 
