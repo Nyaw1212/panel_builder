@@ -919,13 +919,11 @@ function autoAssignRunWires(run) {
             ""
         ).trim().toUpperCase();
         let hotColors = getWirePresetColors(hotPreset);
-        // A 3P breaker feeding SON+/SON11 contributes one red conductor.
-        // The total therefore matches the number of selected 3P breakers:
-        // 3 breakers = R R R; 2 breakers = R R.
-        const forceSingleRedHot = isThreePoleBreakerToSonSystemRun(run, source);
-        if (forceSingleRedHot) {
-            hotPreset = "R";
-            hotColors = ["RED"];
+        // A 3P breaker feeding SON+/SON11 always uses three red hots.
+        const forceThreeRedHots = isThreePoleBreakerToSonSystemRun(run, source);
+        if (forceThreeRedHots) {
+            hotPreset = "RRR";
+            hotColors = ["RED", "RED", "RED"];
         }
 
         // WireAss can provide a fallback (for example BB) when the preferred
@@ -935,7 +933,7 @@ function autoAssignRunWires(run) {
                 String(rule?.["WIRE SIZE"] || "").trim() || getAutomaticWireSize(source.rating),
                 "RED"
             );
-        if (!forceSingleRedHot && redIsUnavailable) {
+        if (!forceThreeRedHots && redIsUnavailable) {
             const fallbackPreset = getRedWireFallbackPreset(rule);
             const fallbackColors = getWirePresetColors(fallbackPreset);
             if (fallbackColors.length) {
