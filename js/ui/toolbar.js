@@ -130,15 +130,6 @@ function installThemeStyles() {
             -webkit-backdrop-filter: blur(8px) saturate(108%);
         }
 
-        body.theme-smoke #grid .cell:hover {
-            background:
-                linear-gradient(145deg, rgba(50, 86, 121, .34), rgba(15, 29, 43, .42)) !important;
-            border-color: rgba(96, 165, 250, .72) !important;
-            box-shadow:
-                inset 0 1px 0 rgba(255,255,255,.06),
-                0 0 18px rgba(37, 99, 235, .18) !important;
-        }
-
         body.theme-smoke #grid .cell:has(.panel-card),
         body.theme-smoke #grid .cell.occupied,
         body.theme-smoke #grid .cell:has(.panel-card):hover,
