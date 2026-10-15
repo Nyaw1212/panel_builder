@@ -1026,12 +1026,19 @@ function openRunWireAssignmentModal(runId) {
             </header>
             <div class="run-circuit-list">
                 ${mainSources.map(source => {
-                    const size = normalizeWireSize(getAutomaticWireSize(source.rating));
+                    const rule = getWireAssignmentRule(getRunPanelPreset(source));
+                    const size = normalizeWireSize(
+                        String(rule?.["WIRE SIZE"] || "").trim() ||
+                        getAutomaticWireSize(source.rating)
+                    );
                     const wires = autoMainWires.filter(wire => normalizeWireSize(wire?.Size) === size);
+                    const mainLabel = source.rating
+                        ? `Main · ${source.rating}A · ${source.catalogNumber}`
+                        : `Main · ${source.catalogNumber}`;
                     return `
                         <div class="run-wire-assignment-row run-wire-generated-row">
                             <span>
-                                <strong>${runModalEscape(`Main · ${source.rating}A · ${source.catalogNumber}`)}</strong>
+                                <strong>${runModalEscape(mainLabel)}</strong>
                                 <small>${runModalEscape(getRunWireListLabel(wires))}</small>
                             </span>
                             <em>Auto</em>
