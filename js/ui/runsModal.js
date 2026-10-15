@@ -455,6 +455,25 @@ function isDisconnectCanvasItem(item) {
     return type.includes("DISCONNECT") || type.includes("DISC") || type.includes("FUSE");
 }
 
+function runConnectsToContactor(run) {
+    // Contactor control runs (for example, C96 — contactor) only carry the
+    // selected hot conductors. Do not add neutral or equipment ground from
+    // WireAss, regardless of whether those are configured per breaker or run.
+    return [run?.fromCanvasItemId, run?.toCanvasItemId]
+        .map(getCanvasItem)
+        .filter(Boolean)
+        .some(item => [
+            item?.preset,
+            item?.name,
+            item?.label,
+            item?.data?.CatalogNumber,
+            item?.data?.Description,
+            item?.data?.Type,
+            item?.data?.NodeType,
+            item?.data?.Category
+        ].some(value => String(value || "").toUpperCase().includes("CONTACTOR")));
+}
+
 function normalizeWireAssignmentPreset(value) {
     const preset = String(value || "").trim().toUpperCase();
     const compact = preset.replace(/[^A-Z0-9]/g, "");
@@ -848,6 +867,7 @@ function getRunWireListLabel(wires) {
 
 function autoAssignRunWires(run) {
     const mainSources = getRunAllMainConductorSources(run);
+    const isContactorRun = runConnectsToContactor(run);
     // SON+/SON11-style rows define a complete feeder in WireAss. Do not add
     // branch-breaker conductors for those runs, even if the connected canvas
     // panel happens to contain installed breakers.
@@ -912,7 +932,7 @@ function autoAssignRunWires(run) {
             hotColors.forEach(color => addWire(size, color, 1));
         }
 
-        if (getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
+        if (!isContactorRun && getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
             addWire(size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
         }
 
@@ -930,14 +950,18 @@ function autoAssignRunWires(run) {
     // circuit's panel rule.  They must not be added once for every source rule.
     const sharedWireSource = mainSources[0] || sources[0] || null;
     const sharedRule = sharedWireSource
-        ? getWireAssignmentRule(getRunPanelPreset(sharedWireSource))
+        ? getRunWireAssignmentRule(run, sharedWireSource)
         : null;
 
-    if (getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
+    if (!isContactorRun && getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
         const neutralSize = String(sharedRule?.["NEUTRAL SIZE"] || "").trim() || largestSize;
         addAutomaticWire(sharedWires, neutralSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
     }
-    if (getWireRuleMode(sharedRule, "Ground Mode") === "PER RUN") {
+    if (!isContactorRun && getWireRuleMode(sharedRule, "Ground Mode") === "PER RUN") {
+        // Some existing WireAss rows intentionally leave Ground Size blank.
+        // Do not try to use the (often very large) feeder conductor as ground:
+        // it may not exist in green in the MML.  #10 is the company fallback;
+        // an entered Ground Size always takes precedence.
         const groundSize = String(sharedRule?.["Ground Size"] || "").trim() || "#10";
         addAutomaticWire(sharedWires, groundSize, "GREEN", Number(sharedRule?.["Ground Qty"] || 1));
     }
@@ -2577,6 +2601,7 @@ function closeRunsModal() {
 
 }
 
+// Expose the toolbar entry point only after this module has fully evaluated.
 window.openRunsModal = openRunsModal;
 window.closeRunsModal = closeRunsModal;
 window.autoCreateRunFromCanvasLink = autoCreateRunFromCanvasLink;
