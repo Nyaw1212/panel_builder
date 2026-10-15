@@ -29,9 +29,26 @@ function ensurePresetMainBreakerSlot(equipment) {
   );
   if (hasMainBreaker) return;
 
-  const presetMainBreaker = equipment.materials.find(entry =>
+  let presetMainBreaker = equipment.materials.find(entry =>
     /^CSR/i.test(String(entry?.catalogNumber || entry?.CatalogNumber || ""))
   );
+
+  if (!presetMainBreaker && typeof getApiPresetMaterials === "function") {
+    const presetMaterial = getApiPresetMaterials(equipment?.preset)
+      .find(entry => /^CSR/i.test(String(entry?.catalogNumber || "")));
+
+    if (presetMaterial) {
+      presetMainBreaker = {
+        id: crypto.randomUUID(),
+        catalogNumber: presetMaterial.catalogNumber,
+        description: presetMaterial.description,
+        inventoryCategory: presetMaterial.inventoryCategory,
+        qty: 1
+      };
+      equipment.materials.push(presetMainBreaker);
+    }
+  }
+
   if (!presetMainBreaker) return;
 
   const material = findPanelMaterial(

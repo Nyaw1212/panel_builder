@@ -70,6 +70,16 @@ function normalizePresetCode(value) {
     .toUpperCase();
 }
 
+function getPresetCodeAliases(value) {
+  const code = normalizePresetCode(value);
+  if (!code) return [];
+
+  // FSU is the panel category used in MML; PRESETS stores its panel
+  // assemblies with the corresponding FS code (for example FSU40/200 -> FS40/200).
+  const fsAlias = code.replace(/^FSU(?=\d)/, "FS");
+  return [...new Set([code, fsAlias])];
+}
+
 //----------------------------------
 // Get Row Preset Code
 //----------------------------------
@@ -199,10 +209,9 @@ function findEquipmentByCatalogNumber(
 //----------------------------------
 
 function getApiPresetRows(preset) {
-  const targetPreset =
-    normalizePresetCode(preset);
+  const targetPresets = getPresetCodeAliases(preset);
 
-  if (!targetPreset) {
+  if (!targetPresets.length) {
     return [];
   }
 
@@ -212,9 +221,11 @@ function getApiPresetRows(preset) {
       : []
   ).filter(row => {
     return (
-      normalizePresetCode(
-        getRowPresetCode(row)
-      ) === targetPreset
+      targetPresets.includes(
+        normalizePresetCode(
+          getRowPresetCode(row)
+        )
+      )
     );
   });
 }

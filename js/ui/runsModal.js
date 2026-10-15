@@ -458,6 +458,9 @@ function getRunPanelCircuits(run) {
     return panelIds.flatMap(panelId => {
         const panel = getCanvasItem(panelId);
         if (!isPanelCanvasItem(panel)) return [];
+        if (typeof ensurePresetMainBreakerSlot === "function") {
+            ensurePresetMainBreakerSlot(panel);
+        }
 
         const panelLabel = String(panel?.preset || panel?.data?.CatalogNumber || "Panel").trim();
         const panelPreset = String(panel?.preset || panel?.data?.PRESET || "").trim().toUpperCase();
@@ -484,6 +487,32 @@ function getRunPanelCircuits(run) {
                 };
             })
             .filter(circuit => circuit.catalogNumber);
+    });
+}
+
+function getRunPanelMainBreakers(run) {
+    const panelIds = [...new Set([run?.fromCanvasItemId, run?.toCanvasItemId]
+        .map(id => String(id || "")).filter(Boolean))];
+
+    return panelIds.flatMap(panelId => {
+        const panel = getCanvasItem(panelId);
+        if (!isPanelCanvasItem(panel)) return [];
+        if (typeof ensurePresetMainBreakerSlot === "function") {
+            ensurePresetMainBreakerSlot(panel);
+        }
+
+        const panelLabel = String(panel?.preset || panel?.data?.CatalogNumber || "Panel").trim();
+        return (Array.isArray(panel.materials) ? panel.materials : [])
+            .filter(component => component?.panelSlot?.section === "main")
+            .map(component => {
+                const catalogNumber = String(component?.catalogNumber || component?.CatalogNumber || "").trim();
+                const material = findRunCircuitMaterial(catalogNumber) || component;
+                const rating = Number(material?.RATING ?? material?.Rating ?? material?.rating ?? 0) ||
+                    (typeof getBreakerAmperage === "function" ? Number(getBreakerAmperage(material) || 0) : 0);
+
+                return { panelId, panelLabel, catalogNumber, rating };
+            })
+            .filter(breaker => breaker.catalogNumber);
     });
 }
 
@@ -725,10 +754,16 @@ function openRunCircuitModal(runId) {
     if (!run) return;
 
     const circuits = getRunPanelCircuits(run);
+    const mainBreakers = getRunPanelMainBreakers(run);
     if (!circuits.length) {
-        alert(getRunMainConductorSources(run).length
-            ? "This is a main-feeder run. It has no branch breakers to select. Use Auto wire or Wire assignments to review the feeder wires."
-            : "Map this Run to a Panel with installed branch breakers first.");
+        if (mainBreakers.length) {
+            alert(`${mainBreakers.map(breaker => breaker.catalogNumber).join(", ")} is the preset main breaker. This panel has no installed branch breakers to select.`);
+        }
+        else {
+            alert(getRunMainConductorSources(run).length
+                ? "This is a main-feeder run. It has no branch breakers to select. Use Auto wire or Wire assignments to review the feeder wires."
+                : "Map this Run to a Panel with installed branch breakers first.");
+        }
         return;
     }
 
@@ -743,11 +778,20 @@ function openRunCircuitModal(runId) {
             <header>
                 <div>
                     <h2 id="runCircuitTitle">${runModalEscape(run.name || "Run")} · Panel breakers</h2>
-                    <p>Choose the panel circuits carried by this run. Their MML ratings are saved with the run for wire selection.</p>
+                    <p>Choose the branch circuits carried by this run. Main breakers are shown for reference and are not run circuits.</p>
                 </div>
                 <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
             </header>
             <div class="run-circuit-list">
+                ${mainBreakers.map(breaker => `
+                    <div class="run-wire-assignment-row run-wire-generated-row">
+                        <span>
+                            <strong>${runModalEscape(`Main breaker · ${breaker.panelLabel} · ${breaker.catalogNumber}`)}</strong>
+                            <small>${runModalEscape(`${breaker.rating || "?"}A · preset component`)}</small>
+                        </span>
+                        <em>Main</em>
+                    </div>
+                `).join("")}
                 ${circuits.map(circuit => `
                     <label class="run-circuit-choice">
                         <input type="checkbox" value="${runModalEscape(circuit.id)}" ${selected.has(circuit.id) ? "checked" : ""}>
