@@ -637,8 +637,15 @@ function getWirePresetColors(value) {
 
 function getWireAssignmentRule(panelPreset) {
     const target = String(panelPreset || "").trim().toUpperCase();
+    const acceptedPresets = new Set([target]);
+
+    // Panel catalog presets such as FSU40/200 use the generic FSU WireAss row.
+    if (/^FSU\d/.test(target)) acceptedPresets.add("FSU");
+
     return (Array.isArray(window.wireAssignments) ? window.wireAssignments : [])
-        .find(rule => String(rule?.["Panel Preset"] || "").trim().toUpperCase() === target) || null;
+        .find(rule => acceptedPresets.has(
+            String(rule?.["Panel Preset"] || "").trim().toUpperCase()
+        )) || null;
 }
 
 function getAutomaticWireSize(rating) {
