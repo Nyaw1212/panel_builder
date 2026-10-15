@@ -182,11 +182,7 @@ function getModalDriveImage(item) {
 
     }
 
-    return (
-        "https://drive.google.com/thumbnail?id=" +
-        encodeURIComponent(driveFileId) +
-        "&sz=w400"
-    );
+    return getDriveImageUrl(driveFileId, 400);
 
 }
 

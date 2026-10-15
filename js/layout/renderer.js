@@ -12,9 +12,7 @@ function buildItemCards({
 
     items.forEach(item => {
 
-        const image = item.DriveFileID
-            ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
-            : "";
+        const image = getDriveImageUrl(item.DriveFileID, 300);
 
         const card = document.createElement("div");
 

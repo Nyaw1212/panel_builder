@@ -89,7 +89,7 @@ function showConnectionPreview(
             card.innerHTML = `
 
                 <img
-                    src="https://drive.google.com/thumbnail?id=${hardware.DriveFileID}&sz=w120"
+                    src="${getDriveImageUrl(hardware.DriveFileID, 120)}"
                 >
 
                 <div class="preview-code">

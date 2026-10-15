@@ -870,9 +870,7 @@ function drawPlacedItems() {
 
     if (!cell) return;
 
-    const image = item.data.DriveFileID
-      ? `https://drive.google.com/thumbnail?id=${item.data.DriveFileID}&sz=w300`
-      : "";
+    const image = getDriveImageUrl(item.data.DriveFileID, 300);
 
     const isSelected = SelectionManager.isSelected(item);
 

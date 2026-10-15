@@ -52,9 +52,7 @@ function renderInspectorAssembly(link) {
 
                 ${fittings.map((item, i) => {
 
-                    const image = item.material?.DriveFileID
-                        ? `https://drive.google.com/thumbnail?id=${item.material.DriveFileID}&sz=w200`
-                        : "";
+                    const image = getDriveImageUrl(item.material?.DriveFileID, 200);
 
                     return `
 

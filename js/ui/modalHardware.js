@@ -73,9 +73,7 @@ function buildHardwarePanel() {
             // Image
             //----------------------------------
 
-            const image = hardware.DriveFileID
-                ? `https://drive.google.com/thumbnail?id=${hardware.DriveFileID}&sz=w200`
-                : "";
+            const image = getDriveImageUrl(hardware.DriveFileID, 200);
 
             //----------------------------------
             // Card

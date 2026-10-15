@@ -41,9 +41,7 @@ function getEquipmentImage(item) {
 
             src: `./images/equipment/${String(item.CatalogNumber).trim()}.png`,
 
-            fallback: item.DriveFileID
-                ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
-                : ""
+            fallback: getDriveImageUrl(item.DriveFileID, 300)
 
         };
 
@@ -55,11 +53,9 @@ function getEquipmentImage(item) {
 
     return {
 
-        src: item.DriveFileID
-            ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
-            : "",
+        src: getDriveImageUrl(item.DriveFileID, 300),
 
-        fallback: ""
+        fallback: getDriveImageFallbackUrl(item.DriveFileID)
 
     };
 

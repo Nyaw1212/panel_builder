@@ -74,9 +74,7 @@ function showPlacementPreview(item) {
 
     img.className = "canvas-image";
 
-    img.src = item.DriveFileID
-        ? `https://drive.google.com/thumbnail?id=${item.DriveFileID}&sz=w300`
-        : "";
+    img.src = getDriveImageUrl(item.DriveFileID, 300);
 
     img.style.maxWidth = "60px";
     img.style.maxHeight = "60px";

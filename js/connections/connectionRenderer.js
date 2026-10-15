@@ -169,8 +169,7 @@ node.dataset.side = side;
                     img.className =
                         "connection-image";
 
-                    img.src =
-                        `https://drive.google.com/thumbnail?id=${first.DriveFileID}&sz=w64`;
+                    img.src = getDriveImageUrl(first.DriveFileID, 64);
 
                     node.appendChild(img);
 

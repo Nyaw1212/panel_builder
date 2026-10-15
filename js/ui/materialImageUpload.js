@@ -169,11 +169,7 @@ function updateUploadedMaterialCard(
 
     }
 
-    const driveImage =
-        "https://drive.google.com/thumbnail?id=" +
-        encodeURIComponent(item.DriveFileID) +
-        "&sz=w400&v=" +
-        Date.now();
+    const driveImage = getDriveImageUrl(item.DriveFileID, 400);
 
     image.dataset.fallbackStage = "1";
     image.dataset.driveImage = driveImage;

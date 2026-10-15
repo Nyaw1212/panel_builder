@@ -17,9 +17,7 @@ function getPanelBreakerImage(material) {
     return getEquipmentImage(material)?.src || "";
   }
 
-  return material.DriveFileID
-    ? `https://drive.google.com/thumbnail?id=${material.DriveFileID}&sz=w300`
-    : "";
+  return getDriveImageUrl(material.DriveFileID, 300);
 }
 
 function setPanelBreakerDragData(event, payload) {

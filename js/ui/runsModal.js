@@ -2045,7 +2045,7 @@ function getFittingImage(material) {
     const driveId = String(material?.DriveFileID || "").trim();
 
     if (driveId) {
-        return `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveId)}&sz=w200`;
+        return getDriveImageUrl(driveId, 200);
     }
 
     return `images/materials/${encodeURIComponent(
