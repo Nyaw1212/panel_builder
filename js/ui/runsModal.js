@@ -790,11 +790,14 @@ function autoAssignRunWires(run) {
             return;
         }
 
-        // SET is the number of complete hot-conductor groups.  For example,
-        // RB + #8 + SET 2 produces #8 Red ×2 and #8 Black ×2.
+        // SET is the number of complete hot-conductor groups. Keep every
+        // conductor as its own entry so RB + #8 + SET 2 reads as
+        // 1× Red, 1× Black, 1× Red, 1× Black in the Main list.
         const hotSetCount = Math.max(1, Number(rule?.SET || 1) || 1);
         const wires = [];
-        hotColors.forEach(color => addAutomaticWire(wires, size, color, hotSetCount));
+        for (let setIndex = 0; setIndex < hotSetCount; setIndex += 1) {
+            hotColors.forEach(color => addAutomaticWire(wires, size, color, 1));
+        }
 
         if (getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
             addAutomaticWire(wires, size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
