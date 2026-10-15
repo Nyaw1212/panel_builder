@@ -21,7 +21,6 @@ function deserializeProject(project) {
         const runs = (project.runs || []).map((savedRun, index) => ({
             id: String(savedRun?.id || crypto.randomUUID()),
             name: String(savedRun?.name || `Run ${index + 1}`),
-            wireAssPreset: String(savedRun?.wireAssPreset || ""),
             canvasLinkId: String(savedRun?.canvasLinkId || ""),
             fromCanvasItemId: String(savedRun?.fromCanvasItemId || ""),
             toCanvasItemId: String(savedRun?.toCanvasItemId || ""),
