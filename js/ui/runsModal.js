@@ -568,7 +568,10 @@ function getRunWireAssignmentSummary(run) {
         .filter(assignment => Array.isArray(assignment.wires) && assignment.wires.length)
         .length;
     const total = getRunCircuitSources(run).length;
-    return total ? `Wire assignments ${assigned}/${total}` : "Wire assignments";
+    if (total) return `Wire assignments ${assigned}/${total}`;
+    return getRunMainConductorSources(run).length
+        ? "Main feeder wires"
+        : "Wire assignments";
 }
 
 function normalizeWireToken(value) {
@@ -698,7 +701,7 @@ function getRunCircuitSummary(run) {
     const sources = getRunCircuitSources(run);
     return sources.length
         ? sources.map(source => `${source.rating || "?"}A ${source.catalogNumber || "breaker"}`).join(" + ")
-        : "Panel breakers";
+        : (getRunMainConductorSources(run).length ? "Main feeder (no breakers)" : "Panel breakers");
 }
 
 function ensureRunCircuitModal() {
@@ -720,7 +723,9 @@ function openRunCircuitModal(runId) {
 
     const circuits = getRunPanelCircuits(run);
     if (!circuits.length) {
-        alert("Map this Run to a Panel with installed branch breakers first.");
+        alert(getRunMainConductorSources(run).length
+            ? "This is a main-feeder run. It has no branch breakers to select. Use Auto wire or Wire assignments to review the feeder wires."
+            : "Map this Run to a Panel with installed branch breakers first.");
         return;
     }
 
@@ -842,13 +847,13 @@ function openRunWireAssignmentModal(runId) {
     if (!run) return;
 
     const sources = getRunCircuitSources(run);
-    if (!sources.length) {
+    const mainSources = getRunMainConductorSources(run);
+    if (!sources.length && !mainSources.length) {
         alert("Choose panel breakers for this run first.");
         return;
     }
 
     const assignments = getRunBreakerWireAssignments(run);
-    const mainSources = getRunMainConductorSources(run);
     const autoMainWires = getRunAutoMainWires(run);
     const groundWires = getRunAutoWires(run)
         .filter(wire => normalizeWireToken(wire?.Color) === "GREEN");
