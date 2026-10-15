@@ -96,6 +96,21 @@ function buildProject() {
 async function saveCurrentProject(options = {}) {
 
     const saveAsNew = options.saveAsNew === true;
+    const previousProjectState = saveAsNew
+        ? structuredClone(getProjectState())
+        : null;
+
+    // Clear the identity before serializing. This makes Save as New work
+    // safely with the currently deployed API as well as with the forceNew
+    // backend flag: the saved copy can never update the opened project ID.
+    if (saveAsNew) {
+        setProjectState({
+            ...previousProjectState,
+            id: "",
+            usedMaterialsSpreadsheetId: "",
+            usedMaterialsSpreadsheetUrl: ""
+        });
+    }
 
     // Open the tab while the Save click still has browser user activation.
     // Navigating a tab after the async request alone can be blocked as a popup.
@@ -143,6 +158,10 @@ async function saveCurrentProject(options = {}) {
         "Project Saved",
         result
     );
+
+    if (!result?.success && previousProjectState) {
+        setProjectState(previousProjectState);
+    }
 
     if (
         result?.success &&
