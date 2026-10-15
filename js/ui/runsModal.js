@@ -40,12 +40,13 @@ const FITTING_MATRIX_ROWS = [
 ];
 
 // Project defaults for automatic wire sizing. WireAss controls colors and
-// per-run/per-breaker behavior; this map converts a breaker rating to size.
+// per-run/per-breaker behavior; this map selects the largest company-standard
+// conductor that does not step above the breaker/disconnect rating.
 const BREAKER_WIRE_SIZE_RULES = [
-    [15, "#14"], [20, "#12"], [30, "#10"], [40, "#8"],
-    [60, "#6"], [70, "#4"], [85, "#3"], [100, "#2"],
-    [125, "#1"], [150, "1/0"], [175, "2/0"], [200, "3/0"],
-    [225, "4/0"]
+    [20, "#14"], [30, "#12"], [40, "#10"], [60, "#8"],
+    [70, "#6"], [85, "#4"], [100, "#3"], [125, "#2"],
+    [150, "#1"], [175, "1/0"], [200, "2/0"], [225, "3/0"],
+    [260, "4/0"]
 ];
 
 function runModalEscape(value) {
