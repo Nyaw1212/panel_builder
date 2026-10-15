@@ -412,8 +412,34 @@ function isPanelCanvasItem(item) {
 }
 
 function isDisconnectCanvasItem(item) {
-    const type = String(item?.data?.Type || item?.data?.NodeType || "").toUpperCase();
-    return type.includes("DISCONNECT");
+    const type = [item?.data?.Type, item?.data?.NodeType]
+        .map(value => String(value || "").toUpperCase())
+        .join(" ");
+    return type.includes("DISCONNECT") || type.includes("DISC") || type.includes("FUSE");
+}
+
+function normalizeWireAssignmentPreset(value) {
+    const preset = String(value || "").trim().toUpperCase();
+    const compact = preset.replace(/[^A-Z0-9]/g, "");
+
+    if (compact === "LDISC") return "L-DISC";
+    if (compact === "HDISC") return "H-DISC";
+    return preset;
+}
+
+function getCanvasWireAssignmentPreset(item) {
+    const candidates = [
+        item?.data?.["Wire Preset"],
+        item?.data?.WirePreset,
+        item?.data?.PRESET,
+        item?.preset,
+        item?.data?.Type,
+        item?.data?.NodeType
+    ];
+
+    return candidates
+        .map(normalizeWireAssignmentPreset)
+        .find(preset => getWireAssignmentRule(preset)) || "";
 }
 
 function findRunCircuitMaterial(catalogNumber) {
@@ -473,11 +499,13 @@ function getRunMainConductorSources(run) {
         .map(disconnect => {
             const rating = Number(disconnect?.data?.RATING ?? disconnect?.data?.Rating ?? 0);
             const label = String(disconnect?.preset || disconnect?.data?.CatalogNumber || "Disconnect").trim();
+            const wirePreset = getCanvasWireAssignmentPreset(disconnect) || panelPreset;
 
             return {
                 id: `main:${String(panel.id)}:${String(disconnect.id)}`,
                 panelId: String(panel.id),
                 panelPreset,
+                wirePreset,
                 disconnectId: String(disconnect.id),
                 catalogNumber: label,
                 rating,
@@ -554,11 +582,22 @@ function normalizeWireSize(value) {
 
 function getRunPanelPreset(source) {
     return String(
+        source?.wirePreset ||
         source?.panelPreset ||
         getCanvasItem(source?.panelId)?.preset ||
         getCanvasItem(source?.panelId)?.data?.PRESET ||
         ""
     ).trim().toUpperCase();
+}
+
+function getWirePresetColors(value) {
+    const preset = String(value || "").trim().toUpperCase();
+    const configured = window.WIRE_PRESETS?.[preset];
+    if (Array.isArray(configured)) return [...configured];
+
+    const colorByLetter = { R: "RED", B: "BLACK", W: "WHITE", G: "GREEN" };
+    const colors = [...preset].map(letter => colorByLetter[letter]);
+    return colors.length && colors.every(Boolean) ? colors : [];
 }
 
 function getWireAssignmentRule(panelPreset) {
@@ -612,7 +651,7 @@ function autoAssignRunWires(run) {
         const rule = getWireAssignmentRule(getRunPanelPreset(source));
         const size = getAutomaticWireSize(source.rating);
         const hotPreset = String(rule?.["Hot Preset"] || "").trim().toUpperCase();
-        const hotColors = window.WIRE_PRESETS?.[hotPreset] || [];
+        const hotColors = getWirePresetColors(hotPreset);
 
         if (!rule || !size || !hotColors.length) {
             missing.push(`${getRunPanelPreset(source) || "panel"} ${source.rating || "?"}A`);

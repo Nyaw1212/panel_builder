@@ -20,6 +20,8 @@ const WIRE_PRESETS = {
 
     SINGLE: null,
     RB: ["RED", "BLACK"],
+    BB: ["BLACK", "BLACK"],
+    BBB: ["BLACK", "BLACK", "BLACK"],
     RBG: ["RED", "BLACK", "GREEN"],
     RWB: ["RED", "WHITE", "BLACK"],
     RGWB: ["RED", "GREEN", "WHITE", "BLACK"]
