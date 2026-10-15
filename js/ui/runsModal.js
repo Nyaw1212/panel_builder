@@ -761,8 +761,14 @@ function getRunWireListLabel(wires) {
 }
 
 function autoAssignRunWires(run) {
-    const sources = getRunCircuitSources(run);
     const mainSources = getRunAllMainConductorSources(run);
+    // SON+/SON11-style rows define a complete feeder in WireAss. Do not add
+    // branch-breaker conductors for those runs, even if the connected canvas
+    // panel happens to contain installed breakers.
+    const usesPresetMainWire = mainSources.some(source =>
+        String(source?.id || "").startsWith("preset-main:")
+    );
+    const sources = usesPresetMainWire ? [] : getRunCircuitSources(run);
     const wireSources = [...sources, ...mainSources];
     const assignments = [];
     const mainWires = [];
@@ -1470,6 +1476,8 @@ function renderRunsModal() {
 
                         const fromTag = run.fromCanvasItemId || "";
                         const toTag = run.toCanvasItemId || "";
+                        const usesPresetMainWire = getRunAllMainConductorSources(run)
+                            .some(source => String(source?.id || "").startsWith("preset-main:"));
                         return `
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
                                 <div class="run-name">
@@ -1498,7 +1506,7 @@ function renderRunsModal() {
                                         ${runModalEscape(getRunWireLabel(wires))}
                                     </button>
                                     <div class="run-wire-actions">
-                                        <button type="button" class="run-circuit-button" data-action="panel-breakers" title="Choose breakers from the connected panel">${runModalEscape(getRunCircuitSummary(run))}</button>
+                                        ${usesPresetMainWire ? "" : `<button type="button" class="run-circuit-button" data-action="panel-breakers" title="Choose breakers from the connected panel">${runModalEscape(getRunCircuitSummary(run))}</button>`}
                                         <button type="button" class="run-circuit-button" data-action="auto-wire" title="Automatically assign wires from WireAss">Auto wire</button>
                                         <button type="button" class="run-circuit-button" data-action="wire-assignments" title="Assign wire groups to selected breakers">${runModalEscape(getRunWireAssignmentSummary(run))}</button>
                                         <button type="button" data-action="copy-wire" ${wires.length ? "" : "disabled"}>Copy wire</button>
@@ -1720,7 +1728,7 @@ function renderRunsModal() {
 
                 const result = autoAssignRunWires(run);
                 if (!result.assigned) {
-                    alert("No WireAss rule matched the selected panel breakers.");
+                    alert("No WireAss rule matched this run's endpoints or selected breakers.");
                     return;
                 }
 
