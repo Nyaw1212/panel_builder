@@ -3,6 +3,14 @@
 //----------------------------------
 
 let linkHover = null;
+let pendingHoverFrame = null;
+let pendingHoverPosition = null;
+
+function placeLinkHover(x, y) {
+    if (!linkHover) return;
+    // Transform avoids a layout pass for every pointer movement.
+    linkHover.style.transform = `translate3d(${x}px, ${y + 20}px, 0)`;
+}
 
 //----------------------------------
 // Initialize
@@ -34,7 +42,9 @@ function initializeLinkHover() {
 
         zIndex: "99999",
 
-        pointerEvents: "none"
+        pointerEvents: "none",
+
+        willChange: "transform"
 
     });
 
@@ -50,10 +60,9 @@ function showLinkHover(x, y) {
 
     initializeLinkHover();
 
-    linkHover.innerHTML = "LINK";
+    linkHover.textContent = "LINK";
 
-    linkHover.style.left = `${x}px`;
-    linkHover.style.top = `${y + 20}px`;
+    placeLinkHover(x, y);
 
     linkHover.style.display = "block";
 
@@ -67,8 +76,17 @@ function moveLinkHover(x, y) {
 
     if (!linkHover) return;
 
-    linkHover.style.left = `${x}px`;
-    linkHover.style.top = `${y + 20}px`;
+    // Browsers can emit many mousemove events inside a single frame. Coalesce
+    // them into one visual update so hovering across a busy canvas stays smooth.
+    pendingHoverPosition = { x, y };
+    if (pendingHoverFrame !== null) return;
+
+    pendingHoverFrame = requestAnimationFrame(() => {
+        pendingHoverFrame = null;
+        if (!pendingHoverPosition) return;
+        placeLinkHover(pendingHoverPosition.x, pendingHoverPosition.y);
+        pendingHoverPosition = null;
+    });
 
 }
 
@@ -79,6 +97,12 @@ function moveLinkHover(x, y) {
 function hideLinkHover() {
 
     if (!linkHover) return;
+
+    if (pendingHoverFrame !== null) {
+        cancelAnimationFrame(pendingHoverFrame);
+        pendingHoverFrame = null;
+    }
+    pendingHoverPosition = null;
 
     linkHover.style.display = "none";
 

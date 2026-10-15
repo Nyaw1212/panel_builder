@@ -497,7 +497,10 @@ function getRunPanelCircuits(run) {
         }
 
         const panelLabel = String(panel?.preset || panel?.data?.CatalogNumber || "Panel").trim();
-        const panelPreset = String(panel?.preset || panel?.data?.PRESET || "").trim().toUpperCase();
+        // Prefer the WireAss-recognized preset. This makes panel catalog
+        // names such as "FSU 40/200" use the generic FSU breaker rule.
+        const panelPreset = getCanvasWireAssignmentPreset(panel) ||
+            String(panel?.preset || panel?.data?.PRESET || "").trim().toUpperCase();
         return (Array.isArray(panel.materials) ? panel.materials : [])
             .filter(component => component?.panelSlot?.section === "branch")
             .map(component => {
@@ -653,7 +656,20 @@ function getRunAllMainConductorSources(run) {
 }
 
 function getRunCircuitSources(run) {
-    return Array.isArray(run?.panelBreakerSources) ? run.panelBreakerSources : [];
+    // A new/manual canvas mapping starts with every installed branch breaker
+    // selected. An explicitly saved empty selection still means "no breakers".
+    if (run?.panelBreakerSourcesConfigured === true) {
+        return Array.isArray(run?.panelBreakerSources) ? run.panelBreakerSources : [];
+    }
+
+    return getRunPanelCircuits(run).map(circuit => ({
+        panelId: circuit.panelId,
+        breakerId: circuit.breakerId,
+        panelPreset: circuit.panelPreset,
+        catalogNumber: circuit.catalogNumber,
+        rating: circuit.rating,
+        poles: circuit.poles
+    }));
 }
 
 function getRunCircuitSourceKey(source) {
@@ -742,15 +758,18 @@ function getWirePresetColors(value) {
 
 function getWireAssignmentRule(panelPreset) {
     const target = String(panelPreset || "").trim().toUpperCase();
-    const acceptedPresets = new Set([target]);
+    const compactTarget = target.replace(/[^A-Z0-9]/g, "");
+    const acceptedPresets = new Set([target, compactTarget]);
 
     // Panel catalog presets such as FSU40/200 use the generic FSU WireAss row.
-    if (/^FSU\d/.test(target)) acceptedPresets.add("FSU");
+    if (/^FSU\d/.test(compactTarget)) acceptedPresets.add("FSU");
 
     return (Array.isArray(window.wireAssignments) ? window.wireAssignments : [])
-        .find(rule => acceptedPresets.has(
-            String(rule?.["Panel Preset"] || "").trim().toUpperCase()
-        )) || null;
+        .find(rule => {
+            const preset = String(rule?.["Panel Preset"] || "").trim().toUpperCase();
+            const compactPreset = preset.replace(/[^A-Z0-9]/g, "");
+            return acceptedPresets.has(preset) || acceptedPresets.has(compactPreset);
+        }) || null;
 }
 
 function getAutomaticWireSize(rating) {
@@ -1849,16 +1868,27 @@ function renderRunsModal() {
                 if (action === "run-from") run.fromCanvasItemId = String(event.target.value || "");
                 else run.toCanvasItemId = String(event.target.value || "");
                 updateRunCanvasName(run, getEditableRuns().indexOf(run), getCanvasTagOptions());
-                // A mapped main breaker/disconnect is enough to calculate the
-                // feeder. For example, a 60A main receives #8 R + #8 B using
-                // the company conductor mapping, without selecting branches.
-                const hasMainSource = getRunAllMainConductorSources(run).length > 0;
-                if (hasMainSource) {
+                // Each newly mapped panel contributes all of its installed
+                // branch breakers by default. The Panel breakers button can
+                // still be used afterwards to remove any circuit manually.
+                const circuits = getRunPanelCircuits(run);
+                run.panelBreakerSources = circuits.map(circuit => ({
+                    panelId: circuit.panelId,
+                    breakerId: circuit.breakerId,
+                    panelPreset: circuit.panelPreset,
+                    catalogNumber: circuit.catalogNumber,
+                    rating: circuit.rating,
+                    poles: circuit.poles
+                }));
+                run.panelBreakerSourcesConfigured = true;
+
+                const hasWireSource = getRunAllMainConductorSources(run).length > 0 || circuits.length > 0;
+                if (hasWireSource) {
                     autoAssignRunWires(run);
                 }
                 captureRunsHistory("Run mapped to canvas");
                 saveRunsDraft();
-                if (hasMainSource) refreshRunsBOM();
+                if (hasWireSource) refreshRunsBOM();
                 renderRunsModal();
             });
         });
