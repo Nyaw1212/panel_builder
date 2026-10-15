@@ -11,6 +11,7 @@ let runWireClipboard = null;
 let runCircuitModalElement = null;
 let runWireAssignmentModalElement = null;
 let runCanvasLinkModalElement = null;
+let runsModalScrollTop = 0;
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -1604,6 +1605,10 @@ function ensureRunsModal() {
 function renderRunsModal() {
 
     const overlay = ensureRunsModal();
+    const previousDialog = overlay.querySelector(".runs-dialog");
+    if (previousDialog) {
+        runsModalScrollTop = previousDialog.scrollTop;
+    }
     const runs = getEditableRuns();
     const gutters = getEditableGutters();
     const canvasTags = getCanvasTagOptions();
@@ -1829,6 +1834,13 @@ function renderRunsModal() {
             </footer>
         </section>
     `;
+
+    const dialog = overlay.querySelector(".runs-dialog");
+    if (dialog && runsModalScrollTop > 0) {
+        requestAnimationFrame(() => {
+            dialog.scrollTop = runsModalScrollTop;
+        });
+    }
 
     overlay.querySelector(".runs-close")?.addEventListener(
         "click",
