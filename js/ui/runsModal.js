@@ -739,7 +739,11 @@ function autoAssignRunWires(run) {
 
     wireSources.forEach(source => {
         const rule = getWireAssignmentRule(getRunPanelPreset(source));
-        const size = getAutomaticWireSize(source.rating);
+        // WireAss can explicitly override the ampacity-table size.  This is
+        // needed for panel families such as SON+/SON11 where the approved
+        // conductor size is defined in the assignment table.
+        const configuredSize = String(rule?.["WIRE SIZE"] || "").trim();
+        const size = configuredSize || getAutomaticWireSize(source.rating);
         const presetColumn = source.sourceType === "main"
             ? "Hot Preset"
             : "Breaker Preset";
@@ -755,8 +759,11 @@ function autoAssignRunWires(run) {
             return;
         }
 
+        // SET is the number of complete hot-conductor groups.  For example,
+        // RB + #8 + SET 2 produces #8 Red ×2 and #8 Black ×2.
+        const hotSetCount = Math.max(1, Number(rule?.SET || 1) || 1);
         const wires = [];
-        hotColors.forEach(color => addAutomaticWire(wires, size, color, 1));
+        hotColors.forEach(color => addAutomaticWire(wires, size, color, hotSetCount));
 
         if (getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
             addAutomaticWire(wires, size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
