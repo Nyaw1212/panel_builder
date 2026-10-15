@@ -449,6 +449,18 @@ function isPanelCanvasItem(item) {
     return type.includes("PANEL") || type.includes("FSU");
 }
 
+function isPanelRunEndpoint(item) {
+    if (isPanelCanvasItem(item)) return true;
+
+    return [
+        item?.name,
+        item?.label,
+        item?.preset,
+        item?.data?.CatalogNumber,
+        item?.data?.Description
+    ].some(value => /\bPANEL\b/i.test(String(value || "")));
+}
+
 function isDisconnectCanvasItem(item) {
     const type = [item?.data?.Type, item?.data?.NodeType]
         .map(value => String(value || "").toUpperCase())
@@ -479,7 +491,7 @@ function isThreePoleBreakerToPanelRun(run, source) {
     const connectsToPanel = [run?.fromCanvasItemId, run?.toCanvasItemId]
         .map(getCanvasItem)
         .filter(Boolean)
-        .some(isPanelCanvasItem);
+        .some(isPanelRunEndpoint);
     const isThreePole = Number(source?.poles || 0) === 3 ||
         /^3P\b/i.test(String(source?.catalogNumber || "").trim());
 
