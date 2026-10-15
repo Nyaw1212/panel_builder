@@ -882,6 +882,21 @@ function drawPlacedItems() {
 
     card.className = "panel-card";
 
+    // Keep the actual target values on the DOM card.  This makes a placed
+    // item inspectable in DevTools > Elements even when drag logging clears
+    // the Console.
+    card.dataset.itemId = item.id || "";
+    card.dataset.preset = item.preset || "";
+    card.dataset.catalogNumber = item.data?.CatalogNumber || "";
+    card.dataset.nodeType = item.data?.NodeType || "";
+    card.dataset.type = item.data?.Type || "";
+    card.dataset.description = item.data?.Description || "";
+    card.dataset.lDiscMatch = String(
+      String(item.preset || "")
+        .replace(/[^A-Z0-9]/gi, "")
+        .toUpperCase() === "LDISC"
+    );
+
     card.style.position = "absolute";
     card.style.left = "0";
     card.style.top = "0";

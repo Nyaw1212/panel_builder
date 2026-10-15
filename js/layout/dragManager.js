@@ -243,8 +243,6 @@ function onDrag(e) {
         SETTINGS.columns +
         col;
 
-    console.clear();
-
     console.log(
         "Dragging"
     );
