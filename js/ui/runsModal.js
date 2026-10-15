@@ -498,6 +498,33 @@ function getCanvasWireAssignmentPreset(item) {
         .find(preset => getWireAssignmentRule(preset)) || "";
 }
 
+function getRunStartWireAssPreset(run) {
+    const startItem = getCanvasItem(run?.fromCanvasItemId);
+    return getCanvasWireAssignmentPreset(startItem);
+}
+
+function getRunWireAssPreset(run) {
+    return normalizeWireAssignmentPreset(
+        run?.wireAssPreset || getRunStartWireAssPreset(run)
+    );
+}
+
+function getWireAssPresetOptions(run) {
+    const selected = getRunWireAssPreset(run);
+    const presets = [...new Set((Array.isArray(window.wireAssignments) ? window.wireAssignments : [])
+        .map(rule => normalizeWireAssignmentPreset(rule?.["Panel Preset"]))
+        .filter(Boolean))];
+
+    if (selected && !presets.includes(selected)) {
+        presets.unshift(selected);
+    }
+
+    return presets
+        .sort((left, right) => left.localeCompare(right))
+        .map(preset => `<option value="${runModalEscape(preset)}" ${preset === selected ? "selected" : ""}>${runModalEscape(preset)}</option>`)
+        .join("") || `<option value="">No WireAss presets available</option>`;
+}
+
 function findRunCircuitMaterial(catalogNumber) {
     const target = String(catalogNumber || "").trim();
     return (typeof getMaterials === "function" ? getMaterials() : [])
@@ -657,9 +684,9 @@ function getRunPresetMainConductorSources(run) {
     }];
 }
 
-function isPrescribedWireAssMainSource(source) {
+function isPrescribedWireAssMainSource(source, run) {
     if (!String(source?.id || "").startsWith("preset-main:")) return false;
-    const rule = getWireAssignmentRule(getRunPanelPreset(source));
+    const rule = getRunWireAssignmentRule(run, source);
     return Boolean(String(rule?.["WIRE SIZE"] || "").trim());
 }
 
@@ -799,6 +826,11 @@ function getWireAssignmentRule(panelPreset) {
 }
 
 function getRunWireAssignmentRule(run, source) {
+    // The Run dropdown is an explicit WireAss-condition override. Otherwise,
+    // use the starting endpoint's WireAss preset as the default condition.
+    const selectedRule = getWireAssignmentRule(getRunWireAssPreset(run));
+    if (selectedRule) return selectedRule;
+
     const directRule = getWireAssignmentRule(getRunPanelPreset(source));
     if (directRule) return directRule;
 
@@ -874,12 +906,12 @@ function autoAssignRunWires(run) {
     // come solely from the CONTACTOR WireAss row (for example RB or BBC),
     // never from the connected panel or feeder preset.
     const contactorRule = isContactorRun
-        ? getWireAssignmentRule("CONTACTOR")
+        ? getWireAssignmentRule(getRunWireAssPreset(run))
         : null;
     // SON+/SON11-style rows define a complete feeder in WireAss. Do not add
     // branch-breaker conductors for those runs, even if the connected canvas
     // panel happens to contain installed breakers.
-    const usesPresetMainWire = mainSources.some(isPrescribedWireAssMainSource);
+    const usesPresetMainWire = mainSources.some(source => isPrescribedWireAssMainSource(source, run));
     const sources = isContactorRun || !usesPresetMainWire
         ? getRunCircuitSources(run)
         : [];
@@ -1647,17 +1679,21 @@ function renderRunsModal() {
                         const fromTag = run.fromCanvasItemId || "";
                         const toTag = run.toCanvasItemId || "";
                         const usesPresetMainWire = !runConnectsToContactor(run) &&
-                            getRunAllMainConductorSources(run).some(isPrescribedWireAssMainSource);
+                            getRunAllMainConductorSources(run)
+                                .some(source => isPrescribedWireAssMainSource(source, run));
                         return `
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
                                 <div class="run-name">
-                                    <input
-                                        class="run-name-input"
-                                        type="text"
-                                        maxlength="80"
-                                        value="${runModalEscape(run.name || `Run ${index + 1}`)}"
-                                        aria-label="Run ${index + 1} name"
-                                    >
+                                    <label class="run-wireass-condition">
+                                        <span>What condition to use in WireAss</span>
+                                        <select
+                                            class="run-wireass-select"
+                                            data-action="wireass-preset"
+                                            aria-label="Run ${index + 1} WireAss condition"
+                                        >
+                                            ${getWireAssPresetOptions(run)}
+                                        </select>
+                                    </label>
                                     <div class="canvas-tag-selects">
                                         <select data-action="run-from" aria-label="Run ${index + 1} from canvas item">
                                             ${renderCanvasTagOptions(canvasTags, fromTag, "From canvas item")}
@@ -1903,6 +1939,26 @@ function renderRunsModal() {
                 }
 
                 captureRunsHistory("Run wires auto-assigned");
+                refreshRunsBOM();
+                renderRunsModal();
+            }
+        );
+
+        row.querySelector("[data-action='wireass-preset']")?.addEventListener(
+            "change",
+            event => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                run.wireAssPreset = normalizeWireAssignmentPreset(event.target.value);
+                const result = autoAssignRunWires(run);
+                if (!result.assigned) {
+                    alert("No wire sources matched the selected WireAss condition.");
+                    return;
+                }
+
+                captureRunsHistory("Run WireAss condition updated");
+                saveRunsDraft();
                 refreshRunsBOM();
                 renderRunsModal();
             }

@@ -267,6 +267,7 @@ function serializeRuns() {
       return {
         id: String(run?.id || ""),
         name: String(run?.name || `Run ${index + 1}`),
+        wireAssPreset: String(run?.wireAssPreset || ""),
         canvasLinkId: String(run?.canvasLinkId || ""),
         fromCanvasItemId: String(run?.fromCanvasItemId || ""),
         toCanvasItemId: String(run?.toCanvasItemId || ""),
