@@ -588,11 +588,42 @@ function getRunPanelMainConductorSources(run) {
         .filter(source => source.rating > 0);
 }
 
+function getRunPresetMainConductorSources(run) {
+    // Some equipment families (for example SON11 and SON+) have their
+    // complete feeder defined directly in WireAss. They do not need a panel
+    // breaker or a disconnect to establish the conductor set.
+    const endpoints = [run?.fromCanvasItemId, run?.toCanvasItemId]
+        .map(getCanvasItem)
+        .filter(Boolean);
+
+    const source = endpoints.find(item => {
+        const rule = getWireAssignmentRule(getCanvasWireAssignmentPreset(item));
+        return String(rule?.["WIRE SIZE"] || "").trim();
+    });
+
+    if (!source) return [];
+
+    const wirePreset = getCanvasWireAssignmentPreset(source);
+    return [{
+        id: `preset-main:${String(source.id)}`,
+        panelId: String(source.id),
+        panelPreset: wirePreset,
+        wirePreset,
+        catalogNumber: String(source?.preset || source?.data?.CatalogNumber || wirePreset).trim(),
+        rating: 0,
+        sourceType: "main"
+    }];
+}
+
 function getRunAllMainConductorSources(run) {
-    return [
+    const breakerOrDisconnectSources = [
         ...getRunMainConductorSources(run),
         ...getRunPanelMainConductorSources(run)
     ];
+
+    return breakerOrDisconnectSources.length
+        ? breakerOrDisconnectSources
+        : getRunPresetMainConductorSources(run);
 }
 
 function getRunCircuitSources(run) {
@@ -787,7 +818,8 @@ function autoAssignRunWires(run) {
         : null;
 
     if (getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
-        addAutomaticWire(sharedWires, largestSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
+        const neutralSize = String(sharedRule?.["NEUTRAL SIZE"] || "").trim() || largestSize;
+        addAutomaticWire(sharedWires, neutralSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
     }
     if (getWireRuleMode(sharedRule, "Ground Mode") === "PER RUN") {
         const groundSize = String(sharedRule?.["Ground Size"] || "").trim() || largestSize;
