@@ -748,18 +748,22 @@ function autoAssignRunWires(run) {
         }
     });
 
-    const allRules = [...new Set(wireSources.map(source => getWireAssignmentRule(getRunPanelPreset(source))).filter(Boolean))];
     const largestSize = getAutomaticWireSize(Math.max(0, ...wireSources.map(source => Number(source.rating || 0))));
+    // Neutral/ground marked "Per Run" are shared conductors.  Use the main
+    // feeder rule when there is one (for example L-DISC), otherwise the first
+    // circuit's panel rule.  They must not be added once for every source rule.
+    const sharedWireSource = mainSources[0] || sources[0] || null;
+    const sharedRule = sharedWireSource
+        ? getWireAssignmentRule(getRunPanelPreset(sharedWireSource))
+        : null;
 
-    allRules.forEach(rule => {
-        if (getWireRuleMode(rule, "Neutral Mode") === "PER RUN") {
-            addAutomaticWire(sharedWires, largestSize, "WHITE", Number(rule?.["Neutral Qty"] || 1));
-        }
-        if (getWireRuleMode(rule, "Ground Mode") === "PER RUN") {
-            const groundSize = String(rule?.["Ground Size"] || "").trim() || largestSize;
-            addAutomaticWire(sharedWires, groundSize, "GREEN", Number(rule?.["Ground Qty"] || 1));
-        }
-    });
+    if (getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
+        addAutomaticWire(sharedWires, largestSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
+    }
+    if (getWireRuleMode(sharedRule, "Ground Mode") === "PER RUN") {
+        const groundSize = String(sharedRule?.["Ground Size"] || "").trim() || largestSize;
+        addAutomaticWire(sharedWires, groundSize, "GREEN", Number(sharedRule?.["Ground Qty"] || 1));
+    }
 
     run.breakerWireAssignments = assignments;
     run.autoMainWires = mainWires;
