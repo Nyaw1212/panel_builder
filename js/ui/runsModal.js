@@ -1826,8 +1826,16 @@ function renderRunsModal() {
                 if (action === "run-from") run.fromCanvasItemId = String(event.target.value || "");
                 else run.toCanvasItemId = String(event.target.value || "");
                 updateRunCanvasName(run, getEditableRuns().indexOf(run), getCanvasTagOptions());
+                // A mapped main breaker/disconnect is enough to calculate the
+                // feeder. For example, a 60A main receives #8 R + #8 B using
+                // the company conductor mapping, without selecting branches.
+                const hasMainSource = getRunAllMainConductorSources(run).length > 0;
+                if (hasMainSource) {
+                    autoAssignRunWires(run);
+                }
                 captureRunsHistory("Run mapped to canvas");
                 saveRunsDraft();
+                if (hasMainSource) refreshRunsBOM();
                 renderRunsModal();
             });
         });
