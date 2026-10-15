@@ -475,6 +475,16 @@ function runConnectsToContactor(run) {
         ].some(value => String(value || "").toUpperCase().includes("CONTACTOR")));
 }
 
+function isThreePoleBreakerToSonSystemRun(run, source) {
+    const connectsToSonSystem = [run?.fromCanvasItemId, run?.toCanvasItemId]
+        .map(getCanvasItem)
+        .filter(Boolean)
+        .some(item => ["SON+", "SON11"].includes(getCanvasWireAssignmentPreset(item)));
+
+    return source?.sourceType !== "main" && Number(source?.poles || 0) === 3 &&
+        connectsToSonSystem;
+}
+
 function normalizeWireAssignmentPreset(value) {
     const preset = String(value || "").trim().toUpperCase();
     const compact = preset.replace(/[^A-Z0-9]/g, "");
@@ -908,6 +918,14 @@ function autoAssignRunWires(run) {
             ""
         ).trim().toUpperCase();
         let hotColors = getWirePresetColors(hotPreset);
+        // A 3P breaker feeding SON+/SON11 contributes one red conductor.
+        // The total therefore matches the number of selected 3P breakers:
+        // 3 breakers = R R R; 2 breakers = R R.
+        const forceSingleRedHot = isThreePoleBreakerToSonSystemRun(run, source);
+        if (forceSingleRedHot) {
+            hotPreset = "R";
+            hotColors = ["RED"];
+        }
 
         // WireAss can provide a fallback (for example BB) when the preferred
         // preset includes RED but that color/size is not present in the MML.
@@ -916,7 +934,7 @@ function autoAssignRunWires(run) {
                 String(rule?.["WIRE SIZE"] || "").trim() || getAutomaticWireSize(source.rating),
                 "RED"
             );
-        if (redIsUnavailable) {
+        if (!forceSingleRedHot && redIsUnavailable) {
             const fallbackPreset = getRedWireFallbackPreset(rule);
             const fallbackColors = getWirePresetColors(fallbackPreset);
             if (fallbackColors.length) {
@@ -1656,13 +1674,16 @@ function renderRunsModal() {
                         return `
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
                                 <div class="run-name">
-                                    <input
-                                        class="run-name-input"
-                                        type="text"
-                                        maxlength="80"
-                                        value="${runModalEscape(run.name || `Run ${index + 1}`)}"
-                                        aria-label="Run ${index + 1} name"
-                                    >
+                                    <div class="run-name-line">
+                                        <span class="run-number" aria-label="Run ${index + 1}">${index + 1}</span>
+                                        <input
+                                            class="run-name-input"
+                                            type="text"
+                                            maxlength="80"
+                                            value="${runModalEscape(run.name || `Run ${index + 1}`)}"
+                                            aria-label="Run ${index + 1} name"
+                                        >
+                                    </div>
                                     <div class="canvas-tag-selects">
                                         <select data-action="run-from" aria-label="Run ${index + 1} from canvas item">
                                             ${renderCanvasTagOptions(canvasTags, fromTag, "From canvas item")}
