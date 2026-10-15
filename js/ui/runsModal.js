@@ -743,8 +743,23 @@ function findAutomaticWireMaterial(size, color) {
             normalizeWireToken(material?.Color) === targetColor) || null;
 }
 
+function findAutomaticMaterialByCatalog(catalogNumber) {
+    const target = String(catalogNumber || "").trim().toUpperCase();
+    if (!target) return null;
+
+    return (typeof getMaterials === "function" ? getMaterials() : [])
+        .find(material => String(material?.CatalogNumber || "").trim().toUpperCase() === target) || null;
+}
+
 function addAutomaticWire(target, size, color, qty) {
     const material = findAutomaticWireMaterial(size, color);
+    if (!material || qty < 1) return false;
+    target.push({ ...structuredClone(material), qty: Math.max(1, Number(qty || 1)) });
+    return true;
+}
+
+function addAutomaticCatalogMaterial(target, catalogNumber, qty = 1) {
+    const material = findAutomaticMaterialByCatalog(catalogNumber);
     if (!material || qty < 1) return false;
     target.push({ ...structuredClone(material), qty: Math.max(1, Number(qty || 1)) });
     return true;
@@ -835,6 +850,17 @@ function autoAssignRunWires(run) {
         const groundSize = String(sharedRule?.["Ground Size"] || "").trim() || largestSize;
         addAutomaticWire(sharedWires, groundSize, "GREEN", Number(sharedRule?.["Ground Qty"] || 1));
     }
+    // COM accepts one or more catalog numbers separated by commas, semicolons,
+    // or new lines. For example, SON11/SON+ uses COM = CAT6BLUE.
+    String(sharedRule?.COM || "")
+        .split(/[;,\n]+/)
+        .map(value => value.trim())
+        .filter(Boolean)
+        .forEach(catalogNumber => {
+            if (!addAutomaticCatalogMaterial(sharedWires, catalogNumber, 1)) {
+                missing.push(`${catalogNumber} communication cable`);
+            }
+        });
 
     run.breakerWireAssignments = assignments;
     run.autoMainWires = mainWires;
@@ -1021,6 +1047,8 @@ function openRunWireAssignmentModal(runId) {
         .filter(wire => normalizeWireToken(wire?.Color) === "WHITE");
     const groundWires = getRunAutoWires(run)
         .filter(wire => normalizeWireToken(wire?.Color) === "GREEN");
+    const communicationWires = getRunAutoWires(run)
+        .filter(wire => !["WHITE", "GREEN"].includes(normalizeWireToken(wire?.Color)));
     const overlay = ensureRunWireAssignmentModal();
     overlay.innerHTML = `
         <section class="run-circuit-dialog run-wire-assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="runWireAssignmentTitle">
@@ -1064,6 +1092,14 @@ function openRunWireAssignmentModal(runId) {
                         <span>
                             <strong>Ground · Run level</strong>
                             <small>${runModalEscape(getRunWireListLabel(groundWires))}</small>
+                        </span>
+                        <em>Auto</em>
+                    </div>` : ""}
+                ${communicationWires.length ? `
+                    <div class="run-wire-assignment-row run-wire-generated-row">
+                        <span>
+                            <strong>Communication · Run level</strong>
+                            <small>${runModalEscape(getRunWireListLabel(communicationWires))}</small>
                         </span>
                         <em>Auto</em>
                     </div>` : ""}
