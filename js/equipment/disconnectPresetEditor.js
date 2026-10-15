@@ -11,7 +11,28 @@ function getEquipmentEditorType(equipment) {
     equipment?.data?.Category
   ].filter(Boolean).join(" ").trim().toUpperCase();
 
-  if (type.includes("DISCONNECT")) return "DISCONNECT";
+  const presetCode = String(
+    equipment?.preset ||
+    equipment?.data?.PRESET ||
+    ""
+  ).trim();
+
+  const presetEquipment = presetCode &&
+    typeof getPresetEquipment === "function"
+    ? getPresetEquipment(presetCode)
+    : null;
+
+  const presetType = [
+    presetEquipment?.Type,
+    presetEquipment?.NodeType,
+    presetEquipment?.Category
+  ].filter(Boolean).join(" ").trim().toUpperCase();
+
+  if (
+    type.includes("DISCONNECT") ||
+    presetType.includes("DISCONNECT") ||
+    /(?:^|[-_\s])DISC(?:ONNECT)?(?:$|[-_\s])/i.test(presetCode)
+  ) return "DISCONNECT";
   if (type.includes("PANEL") || type.includes("FSU")) return "PANEL";
 
   return "GENERIC";
