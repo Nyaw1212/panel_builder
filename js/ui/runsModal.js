@@ -430,6 +430,17 @@ function getCanvasItem(itemId) {
         .find(item => String(item?.id || "") === id) || null;
 }
 
+function getCanvasItemWireRating(item) {
+    const value = item?.data?.RATING ??
+        item?.data?.Rating ??
+        item?.data?.rating ??
+        item?.data?.AMPACITY ??
+        item?.data?.Amperage ??
+        item?.data?.AMPS ??
+        0;
+    return Math.max(0, Number(value) || 0);
+}
+
 function isPanelCanvasItem(item) {
     const type = [item?.data?.Type, item?.data?.NodeType, item?.data?.Category]
         .map(value => String(value || "").toUpperCase())
@@ -590,17 +601,25 @@ function getRunPanelMainConductorSources(run) {
 }
 
 function getRunPresetMainConductorSources(run) {
-    // Some equipment families (for example SON11 and SON+) have their
-    // complete feeder defined directly in WireAss. They do not need a panel
-    // breaker or a disconnect to establish the conductor set.
     const endpoints = [run?.fromCanvasItemId, run?.toCanvasItemId]
         .map(getCanvasItem)
         .filter(Boolean);
-
-    const source = endpoints.find(item => {
+    const configuredWireSizeSource = endpoints.find(item => {
         const rule = getWireAssignmentRule(getCanvasWireAssignmentPreset(item));
         return String(rule?.["WIRE SIZE"] || "").trim();
     });
+
+    // A WireAss row with an explicit WIRE SIZE (such as SON11/SON+) is a
+    // complete prescribed feeder. Otherwise, treat the From endpoint as a
+    // rated main source whenever it has a WireAss preset. This lets items
+    // such as SD wire themselves even when their canvas type is not labelled
+    // as a panel or disconnect.
+    const startItem = getCanvasItem(run?.fromCanvasItemId);
+    const startPreset = getCanvasWireAssignmentPreset(startItem);
+    const startRule = getWireAssignmentRule(startPreset);
+    const source = configuredWireSizeSource || (
+        startRule && getCanvasItemWireRating(startItem) > 0 ? startItem : null
+    );
 
     if (!source) return [];
 
@@ -611,9 +630,15 @@ function getRunPresetMainConductorSources(run) {
         panelPreset: wirePreset,
         wirePreset,
         catalogNumber: String(source?.preset || source?.data?.CatalogNumber || wirePreset).trim(),
-        rating: 0,
+        rating: getCanvasItemWireRating(source),
         sourceType: "main"
     }];
+}
+
+function isPrescribedWireAssMainSource(source) {
+    if (!String(source?.id || "").startsWith("preset-main:")) return false;
+    const rule = getWireAssignmentRule(getRunPanelPreset(source));
+    return Boolean(String(rule?.["WIRE SIZE"] || "").trim());
 }
 
 function getRunAllMainConductorSources(run) {
@@ -780,9 +805,7 @@ function autoAssignRunWires(run) {
     // SON+/SON11-style rows define a complete feeder in WireAss. Do not add
     // branch-breaker conductors for those runs, even if the connected canvas
     // panel happens to contain installed breakers.
-    const usesPresetMainWire = mainSources.some(source =>
-        String(source?.id || "").startsWith("preset-main:")
-    );
+    const usesPresetMainWire = mainSources.some(isPrescribedWireAssMainSource);
     const sources = usesPresetMainWire ? [] : getRunCircuitSources(run);
     const wireSources = [...sources, ...mainSources];
     const assignments = [];
@@ -1513,7 +1536,7 @@ function renderRunsModal() {
                         const fromTag = run.fromCanvasItemId || "";
                         const toTag = run.toCanvasItemId || "";
                         const usesPresetMainWire = getRunAllMainConductorSources(run)
-                            .some(source => String(source?.id || "").startsWith("preset-main:"));
+                            .some(isPrescribedWireAssMainSource);
                         return `
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
                                 <div class="run-name">
