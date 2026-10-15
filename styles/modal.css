@@ -2920,6 +2920,78 @@ DISCONNECT PRESET EDITOR
     gap: 8px;
 }
 
+.disconnect-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px;
+}
+
+.disconnect-choice-card {
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-height: 82px;
+    padding: 10px;
+    overflow: hidden;
+    border: 1px solid var(--v2-border);
+    border-radius: 9px;
+    color: var(--v2-text-soft);
+    background: rgba(15, 23, 42, .72);
+    cursor: pointer;
+    text-align: left;
+}
+
+.disconnect-choice-card:hover {
+    border-color: var(--v2-blue-light);
+    color: var(--v2-text);
+}
+
+.disconnect-choice-card.active {
+    border-color: var(--v2-blue-light);
+    box-shadow: 0 0 0 1px var(--v2-blue-light), 0 5px 14px rgba(37, 99, 235, .18);
+}
+
+.disconnect-choice-card img {
+    width: 62px;
+    height: 62px;
+    object-fit: contain;
+    border-radius: 5px;
+    background: #fff;
+}
+
+.disconnect-choice-card span {
+    min-width: 0;
+}
+
+.disconnect-choice-card strong,
+.disconnect-choice-card small,
+.disconnect-choice-card em {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.disconnect-choice-card strong {
+    color: var(--v2-text);
+    font-size: 13px;
+}
+
+.disconnect-choice-card small {
+    margin-top: 3px;
+    color: var(--v2-text-muted);
+    font-size: 11px;
+}
+
+.disconnect-choice-card em {
+    margin-top: 5px;
+    color: var(--v2-blue-light);
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 800;
+}
+
 .disconnect-preset-chip {
     min-width: 78px;
     padding: 9px 13px;

@@ -361,7 +361,7 @@ function renderDisconnectPresetEditor(
     modal.querySelector(".modal-header h2");
 
   title.textContent =
-    "Disconnect Preset Configuration";
+    "Choose Disconnect";
 
   list.className = "disconnect-library";
   list.innerHTML = "";
@@ -377,13 +377,18 @@ function renderDisconnectPresetEditor(
 
   presetSection.innerHTML = `
     <div class="panel-circuit-filter-label">
-      DISCONNECT PRESET
+      CHOOSE A DIFFERENT DISCONNECT
     </div>
-    <div class="disconnect-preset-chips">
-      ${presetCodes.map(code => `
+    <div class="disconnect-choice-grid">
+      ${presetCodes.map(code => {
+        const candidate = getPresetEquipment(code) || {};
+        const image = getPanelBreakerImage(candidate);
+        const catalogNumber = candidate.CatalogNumber || code;
+        const description = candidate.Description || candidate.Type || "Disconnect";
+        return `
         <button
           type="button"
-          class="disconnect-preset-chip ${
+          class="disconnect-choice-card ${
             String(equipment.preset || "")
               .toUpperCase() ===
             String(code).toUpperCase()
@@ -391,8 +396,18 @@ function renderDisconnectPresetEditor(
               : ""
           }"
           data-preset="${escapePanelText(code)}"
-        >${escapePanelText(code)}</button>
-      `).join("")}
+        >
+          ${image ? `
+            <img src="${escapePanelText(image)}" alt="">
+          ` : ""}
+          <span>
+            <strong>${escapePanelText(catalogNumber)}</strong>
+            <small>${escapePanelText(description)}</small>
+            <em>${escapePanelText(code)}</em>
+          </span>
+        </button>
+      `;
+      }).join("")}
     </div>
   `;
 
