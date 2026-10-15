@@ -480,9 +480,10 @@ function isThreePoleBreakerToSonSystemRun(run, source) {
         .map(getCanvasItem)
         .filter(Boolean)
         .some(item => ["SON+", "SON11"].includes(getCanvasWireAssignmentPreset(item)));
+    const isThreePole = Number(source?.poles || 0) === 3 ||
+        /^3P\b/i.test(String(source?.catalogNumber || "").trim());
 
-    return source?.sourceType !== "main" && Number(source?.poles || 0) === 3 &&
-        connectsToSonSystem;
+    return isThreePole && connectsToSonSystem;
 }
 
 function normalizeWireAssignmentPreset(value) {
@@ -1182,6 +1183,8 @@ function openRunWireAssignmentModal(runId) {
     const run = findRun(runId);
     if (!run) return;
 
+    const runNumber = Math.max(1, getEditableRuns().findIndex(candidate => candidate?.id === run.id) + 1);
+
     const sources = getRunCircuitSources(run);
     const mainSources = runConnectsToContactor(run)
         ? []
@@ -1204,7 +1207,7 @@ function openRunWireAssignmentModal(runId) {
         <section class="run-circuit-dialog run-wire-assignment-dialog" role="dialog" aria-modal="true" aria-labelledby="runWireAssignmentTitle">
             <header>
                 <div>
-                    <h2 id="runWireAssignmentTitle">${runModalEscape(run.name || "Run")} · Wire assignments</h2>
+                    <h2 id="runWireAssignmentTitle">Run ${runNumber} · ${runModalEscape(run.name || "Run")} · Wire assignments</h2>
                     <p>Breaker wires can be edited below. Main, neutral, and ground wires are generated from the run endpoints and WireAss.</p>
                 </div>
                 <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
