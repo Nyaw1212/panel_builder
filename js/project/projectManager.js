@@ -93,7 +93,9 @@ function buildProject() {
 // Save Current Project
 //----------------------------------
 
-async function saveCurrentProject() {
+async function saveCurrentProject(options = {}) {
+
+    const saveAsNew = options.saveAsNew === true;
 
     // Open the tab while the Save click still has browser user activation.
     // Navigating a tab after the async request alone can be blocked as a popup.
@@ -129,7 +131,8 @@ async function saveCurrentProject() {
 
     const result =
         await saveProject(
-            project
+            project,
+            { forceNew: saveAsNew }
         );
 
     console.timeEnd(
@@ -423,6 +426,9 @@ window.buildProject =
 
 window.saveCurrentProject =
     saveCurrentProject;
+
+window.saveProjectAsNew =
+    () => saveCurrentProject({ saveAsNew: true });
 
 window.loadCurrentProject =
     loadCurrentProject;

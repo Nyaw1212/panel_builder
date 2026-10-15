@@ -3,6 +3,7 @@
 //----------------------------------
 
 let projectDialog = null;
+let projectDialogSaveAsNew = false;
 
 //----------------------------------
 // Theme
@@ -436,7 +437,9 @@ function applyParsedProjectDetails(
 // Show
 //----------------------------------
 
-function showProjectDialog() {
+function showProjectDialog(options = {}) {
+
+    projectDialogSaveAsNew = options.saveAsNew === true;
 
     if (projectDialog) {
 
@@ -446,7 +449,9 @@ function showProjectDialog() {
         document
             .getElementById("projectJobName")
             .value =
-            project.jobName || "";
+            projectDialogSaveAsNew && project.jobName
+                ? `${project.jobName} Copy`
+                : project.jobName || "";
 
         document
             .getElementById("projectAddress")
@@ -471,6 +476,18 @@ function showProjectDialog() {
         document
             .getElementById("projectPasteDetails")
             .value = "";
+
+        document
+            .getElementById("projectDialogTitle")
+            .textContent = projectDialogSaveAsNew
+                ? "Save Project as New"
+                : "Save Project";
+
+        document
+            .getElementById("projectDialogSaveButton")
+            .textContent = projectDialogSaveAsNew
+                ? "Save as New"
+                : "Save";
 
         projectDialog.style.display =
             "flex";
@@ -555,7 +572,12 @@ function showProjectDialog() {
         document.createElement("h2");
 
     title.textContent =
-        "Save Project";
+        projectDialogSaveAsNew
+            ? "Save Project as New"
+            : "Save Project";
+
+    title.id =
+        "projectDialogTitle";
 
     Object.assign(title.style, {
         margin: "0 0 20px 0",
@@ -814,7 +836,9 @@ function showProjectDialog() {
         getProjectState();
 
     jobInput.value =
-        project.jobName || "";
+        projectDialogSaveAsNew && project.jobName
+            ? `${project.jobName} Copy`
+            : project.jobName || "";
 
     addressInput.value =
         project.address || "";
@@ -865,7 +889,12 @@ function showProjectDialog() {
         "button";
 
     saveButton.textContent =
-        "Save";
+        projectDialogSaveAsNew
+            ? "Save as New"
+            : "Save";
+
+    saveButton.id =
+        "projectDialogSaveButton";
 
     styleProjectDialogButton(
         saveButton,
@@ -874,6 +903,8 @@ function showProjectDialog() {
 
     saveButton.onclick =
         async () => {
+
+            const saveAsNew = projectDialogSaveAsNew;
 
             const jobName =
                 jobInput.value.trim();
@@ -940,7 +971,7 @@ function showProjectDialog() {
                 );
 
                 const result =
-                    await saveCurrentProject();
+                    await saveCurrentProject({ saveAsNew });
 
                 console.log(result);
 
@@ -949,7 +980,9 @@ function showProjectDialog() {
                     hideProjectDialog();
 
                     alert(
-                        "Project Saved!"
+                        saveAsNew
+                            ? "New project saved!"
+                            : "Project Saved!"
                     );
 
                 }
@@ -982,7 +1015,9 @@ function showProjectDialog() {
                     false;
 
                 saveButton.textContent =
-                    "Save";
+                    projectDialogSaveAsNew
+                        ? "Save as New"
+                        : "Save";
 
                 saveButton.style.opacity =
                     "1";

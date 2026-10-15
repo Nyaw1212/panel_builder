@@ -459,13 +459,15 @@ function saveProject(request) {
   const electrician = String(request.electrician || "").trim();
   const lender = String(request.lender || "").trim();
   const model = String(request.model || "").trim();
+  const forceNew = request.forceNew === true ||
+    String(request.forceNew || "").trim().toLowerCase() === "true";
   const usedMaterialsSpreadsheetId = String(
-    request.usedMaterialsSpreadsheetId || ""
+    forceNew ? "" : request.usedMaterialsSpreadsheetId || ""
   ).trim();
 
-  let projectId = String(
-    request.id || request.projectId || ""
-  ).trim();
+  let projectId = forceNew
+    ? ""
+    : String(request.id || request.projectId || "").trim();
 
   if (!jobName) {
     return {
@@ -517,7 +519,7 @@ function saveProject(request) {
     row = findProjectRowById(sheet, projectId);
   }
 
-  if (!row) {
+  if (!row && !forceNew) {
     row = findProjectRowByDetails(sheet, jobName, address);
   }
 

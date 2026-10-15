@@ -364,6 +364,9 @@ function initializeToolbar() {
     const saveButton =
         document.getElementById("saveButton");
 
+    const saveAsNewButton =
+        document.getElementById("saveAsNewButton");
+
     const openButton =
         document.getElementById("openProjectButton");
 
@@ -424,6 +427,20 @@ function initializeToolbar() {
     }
     else {
         console.warn("Save button not found.");
+    }
+
+    //----------------------------------
+    // Save as New
+    //----------------------------------
+
+    if (saveAsNewButton) {
+        saveAsNewButton.addEventListener("click", () => {
+            console.log("Opening Save as New dialog...");
+            showProjectDialog({ saveAsNew: true });
+        });
+    }
+    else {
+        console.warn("Save as New button not found.");
     }
 
     //----------------------------------

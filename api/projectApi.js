@@ -514,12 +514,13 @@ async function getWireAssignments() {
 // Save Project
 //----------------------------------
 
-async function saveProject(project) {
+async function saveProject(project, options = {}) {
     const payload = serializeProject(project);
 
     return await apiRequest({
         action: "saveProject",
-        ...payload
+        ...payload,
+        forceNew: options.forceNew === true
     });
 }
 
