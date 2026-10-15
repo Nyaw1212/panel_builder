@@ -475,15 +475,15 @@ function runConnectsToContactor(run) {
         ].some(value => String(value || "").toUpperCase().includes("CONTACTOR")));
 }
 
-function isThreePoleBreakerToSonSystemRun(run, source) {
-    const connectsToSonSystem = [run?.fromCanvasItemId, run?.toCanvasItemId]
+function isThreePoleBreakerToPanelRun(run, source) {
+    const connectsToPanel = [run?.fromCanvasItemId, run?.toCanvasItemId]
         .map(getCanvasItem)
         .filter(Boolean)
-        .some(item => ["SON+", "SON11"].includes(getCanvasWireAssignmentPreset(item)));
+        .some(isPanelCanvasItem);
     const isThreePole = Number(source?.poles || 0) === 3 ||
         /^3P\b/i.test(String(source?.catalogNumber || "").trim());
 
-    return isThreePole && connectsToSonSystem;
+    return isThreePole && connectsToPanel;
 }
 
 function normalizeWireAssignmentPreset(value) {
@@ -919,8 +919,8 @@ function autoAssignRunWires(run) {
             ""
         ).trim().toUpperCase();
         let hotColors = getWirePresetColors(hotPreset);
-        // A 3P breaker feeding SON+/SON11 always uses three red hots.
-        const forceThreeRedHots = isThreePoleBreakerToSonSystemRun(run, source);
+        // A 3P breaker feeding a panel always uses three red hots.
+        const forceThreeRedHots = isThreePoleBreakerToPanelRun(run, source);
         if (forceThreeRedHots) {
             hotPreset = "RRR";
             hotColors = ["RED", "RED", "RED"];
