@@ -866,8 +866,10 @@ function getRunWireListLabel(wires) {
 }
 
 function autoAssignRunWires(run) {
-    const mainSources = getRunAllMainConductorSources(run);
     const isContactorRun = runConnectsToContactor(run);
+    // A contactor path is always a breaker-only run. The feeder/main on the
+    // other endpoint is deliberately ignored.
+    const mainSources = isContactorRun ? [] : getRunAllMainConductorSources(run);
     // A contactor is a dedicated two/three-hot control path. Its colors must
     // come solely from the CONTACTOR WireAss row (for example RB or BBC),
     // never from the connected panel or feeder preset.
@@ -878,7 +880,9 @@ function autoAssignRunWires(run) {
     // branch-breaker conductors for those runs, even if the connected canvas
     // panel happens to contain installed breakers.
     const usesPresetMainWire = mainSources.some(isPrescribedWireAssMainSource);
-    const sources = usesPresetMainWire ? [] : getRunCircuitSources(run);
+    const sources = isContactorRun || !usesPresetMainWire
+        ? getRunCircuitSources(run)
+        : [];
     const wireSources = [...sources, ...mainSources];
     const assignments = [];
     const mainWires = [];
@@ -1160,7 +1164,9 @@ function openRunWireAssignmentModal(runId) {
     if (!run) return;
 
     const sources = getRunCircuitSources(run);
-    const mainSources = getRunAllMainConductorSources(run);
+    const mainSources = runConnectsToContactor(run)
+        ? []
+        : getRunAllMainConductorSources(run);
     if (!sources.length && !mainSources.length) {
         alert("Choose panel breakers for this run first.");
         return;
@@ -1640,8 +1646,8 @@ function renderRunsModal() {
 
                         const fromTag = run.fromCanvasItemId || "";
                         const toTag = run.toCanvasItemId || "";
-                        const usesPresetMainWire = getRunAllMainConductorSources(run)
-                            .some(isPrescribedWireAssMainSource);
+                        const usesPresetMainWire = !runConnectsToContactor(run) &&
+                            getRunAllMainConductorSources(run).some(isPrescribedWireAssMainSource);
                         return `
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
                                 <div class="run-name">
