@@ -231,82 +231,94 @@ async function saveCurrentProject(options = {}) {
 }
 
 //----------------------------------
-// Download Used Materials XLS
+// Generate Used Materials
 //----------------------------------
 
-function downloadUsedMaterialsXls() {
+async function generateUsedMaterials() {
 
-    const materials =
-        typeof serializeMaterialSummary === "function"
-            ? serializeMaterialSummary()
-            : [];
+    let state = getProjectState();
 
-    if (!materials.length) {
+    if (!String(state.jobName || "").trim()) {
+        const jobName = window.prompt(
+            "Project name for this Used Materials sheet:",
+            String(state.model || "").trim()
+        );
+
+        if (!String(jobName || "").trim()) {
+            return {
+                success: false,
+                message: "A project name is needed to generate Used Materials."
+            };
+        }
+
+        setProjectState({
+            ...state,
+            jobName: String(jobName).trim()
+        });
+
+        state = getProjectState();
+    }
+
+    // Open the tab inside the click event so the browser does not block it.
+    const usedMaterialsWindow =
+        typeof window !== "undefined" &&
+        typeof window.open === "function"
+            ? window.open("", "_blank")
+            : null;
+
+    try {
+        const result = await saveProject(
+            buildProject(),
+            { usedMaterialsOutput: "" }
+        );
+
+        if (!result?.success) {
+            usedMaterialsWindow?.close();
+            return result || {
+                success: false,
+                message: "Unable to generate Used Materials."
+            };
+        }
+
+        if (result.projectId) {
+            setProjectId(result.projectId);
+        }
+
+        if (result.usedMaterials?.success) {
+            const project = getProjectState();
+            project.usedMaterialsSpreadsheetId = String(
+                result.usedMaterials.spreadsheetId || ""
+            );
+            project.usedMaterialsSpreadsheetUrl = String(
+                result.usedMaterials.spreadsheetUrl || ""
+            );
+
+            if (usedMaterialsWindow && project.usedMaterialsSpreadsheetUrl) {
+                usedMaterialsWindow.location.replace(
+                    project.usedMaterialsSpreadsheetUrl
+                );
+            }
+        }
+        else {
+            usedMaterialsWindow?.close();
+        }
+
+        if (typeof invalidateProjectCache === "function") {
+            invalidateProjectCache();
+        }
+
+        return result;
+    }
+    catch (error) {
+        usedMaterialsWindow?.close();
+        console.error("Generate Used Materials Failed:", error);
+
         return {
             success: false,
-            message: "There are no BOS or VAN materials to export."
+            message: error?.message || "Unable to generate Used Materials."
         };
     }
 
-    const project = getProjectState();
-    const projectName = String(
-        project.jobName || project.model || "Panel Builder"
-    ).trim();
-    const escapeXml = value => String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&apos;");
-    const numberCell = value =>
-        `<Cell><Data ss:Type="Number">${Number(value) || 0}</Data></Cell>`;
-    const textCell = value =>
-        `<Cell><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`;
-    const rows = materials.map(material => {
-        const qty = Number(material.Qty ?? material.qty ?? 0) || 0;
-        const price = Number(material.Price ?? material.price ?? 0) || 0;
-
-        return `<Row>${textCell(material.Description || material.description || "")}${textCell(material.CatalogNumber || material.catalogNumber || "")}${textCell(material.InventoryCategory || material.inventoryCategory || "")}${numberCell(qty)}${numberCell(price)}${numberCell(qty * price)}</Row>`;
-    }).join("");
-    const spreadsheet = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Worksheet ss:Name="Used Materials">
-  <Table>
-   <Row><Cell ss:MergeAcross="5"><Data ss:Type="String">Project Name: ${escapeXml(projectName)}</Data></Cell></Row>
-   <Row><Cell ss:MergeAcross="5"><Data ss:Type="String">Address: ${escapeXml(project.address || "")}</Data></Cell></Row>
-   <Row></Row>
-   <Row>${textCell("Description")}${textCell("Catalog Number")}${textCell("Category")}${textCell("Qty")}${textCell("Unit Price")}${textCell("Total")}</Row>
-   ${rows}
-  </Table>
- </Worksheet>
-</Workbook>`;
-    const safeName = projectName
-        .replace(/[\\/:*?"<>|]/g, "-")
-        .trim() || "Panel Builder";
-    const blob = new Blob(
-        [spreadsheet],
-        { type: "application/vnd.ms-excel;charset=utf-8" }
-    );
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-
-    anchor.href = url;
-    anchor.download = `${safeName} Used Materials.xls`;
-    anchor.style.display = "none";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-    return {
-        success: true,
-        fileName: anchor.download,
-        materialCount: materials.length
-    };
 }
 
 //----------------------------------
