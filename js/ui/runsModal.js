@@ -2468,12 +2468,7 @@ function renderRunsModal() {
                         Add free-form conduit and wire runs. Wire length automatically includes 2 ft at each end.
                     </p>
                 </div>
-                <div class="runs-header-actions">
-                    <button id="clearAllRunMaterialsButton" class="runs-clear-materials" type="button">
-                        Clear conduit &amp; fittings
-                    </button>
-                    <button class="runs-close" type="button" aria-label="Close runs">&times;</button>
-                </div>
+                <button class="runs-close" type="button" aria-label="Close runs">&times;</button>
             </header>
 
             <div class="runs-grid-header" aria-hidden="true">
@@ -2694,6 +2689,9 @@ function renderRunsModal() {
                 <button id="addRunButton" class="runs-add" type="button">+ Add Run</button>
                 <button id="addLinkRunButton" class="runs-add" type="button">+ Run from Link</button>
                 <button id="addGutterButton" class="runs-add" type="button">+ Add Gutter</button>
+                <button id="clearAllRunMaterialsButton" class="runs-clear-materials" type="button">
+                    Clear conduit &amp; fittings
+                </button>
                 <div class="runs-rule">Wire BOM = run length + 4 ft</div>
                 <button id="doneRunsButton" class="runs-done" type="button">Done</button>
             </footer>
