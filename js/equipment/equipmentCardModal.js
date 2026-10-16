@@ -16,6 +16,9 @@ function openEquipmentCardModal(item) {
     const meterMatch =
         typeof isMeterMaterialCard === "function" &&
         isMeterMaterialCard(item);
+    const hDiscMatch =
+        typeof isHDiscMaterialCard === "function" &&
+        isHDiscMaterialCard(item);
 
     console.group("[Equipment card click]");
     console.log("Canvas item:", item);
@@ -26,7 +29,8 @@ function openEquipmentCardModal(item) {
         catalogNumber: item?.data?.CatalogNumber || "",
         nodeType: item?.data?.NodeType || "",
         isLDisc: lDiscMatch,
-        isMeter: meterMatch
+        isMeter: meterMatch,
+        isHDisc: hDiscMatch
     });
     console.groupEnd();
 
@@ -47,6 +51,17 @@ function openEquipmentCardModal(item) {
     ) {
 
         openLDiscMaterialPicker(item);
+
+        return;
+
+    }
+
+    if (
+        hDiscMatch &&
+        typeof openHDiscMaterialPicker === "function"
+    ) {
+
+        openHDiscMaterialPicker(item);
 
         return;
 
