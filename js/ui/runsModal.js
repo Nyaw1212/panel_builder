@@ -2163,7 +2163,9 @@ function ensureRunsModal() {
     const overlay = document.createElement("div");
 
     overlay.id = "runsModal";
-    overlay.className = "runs-modal";
+    // Material Runs is a full-screen workspace so large run lists can be
+    // edited without the canvas competing for room behind a dialog.
+    overlay.className = "runs-modal runs-workspace-overlay";
     overlay.addEventListener("click", event => {
         if (event.target === overlay) {
             closeRunsModal();
@@ -2375,7 +2377,7 @@ function renderRunsModal() {
     const canvasTags = getCanvasTagOptions();
 
     overlay.innerHTML = `
-        <section class="runs-dialog" role="dialog" aria-modal="true" aria-labelledby="runsModalTitle">
+        <section class="runs-dialog runs-workspace" role="dialog" aria-modal="true" aria-labelledby="runsModalTitle">
             <header class="runs-header">
                 <div>
                     <h2 id="runsModalTitle">Material Runs</h2>
