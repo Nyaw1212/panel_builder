@@ -386,7 +386,6 @@ function serializeGutters() {
 //----------------------------------
 function serializeMaterialSummary() {
   const map = {};
-  const seen = new Set();
 
   function normalizeCategory(value) {
     return String(value || "").trim().toUpperCase();
@@ -436,53 +435,47 @@ function serializeMaterialSummary() {
     row.Qty += Number(qty) || 0;
   }
 
-  //----------------------------------
-  // Equipment + Equipment Card Materials = BOS
-  //----------------------------------
-  getLayout().forEach(item => {
-    if (!item || seen.has(item.id)) return;
-    seen.add(item.id);
-
-    const equipmentCatalogNumber = String(
-      item.data?.CatalogNumber ?? item.data?.catalogNumber ?? ""
-    ).trim();
-
-    addMaterial(item.data, 1, "BOS");
-
-    (item.materials || []).forEach(component => {
-      const catalogNumber = String(
-        component.CatalogNumber ?? component.catalogNumber ?? ""
-      ).trim();
-
-      if (!catalogNumber) return;
-      if (catalogNumber === equipmentCatalogNumber) return;
-
-      const material =
-        typeof getMaterial === "function"
-          ? getMaterial(catalogNumber)
-          : null;
-
-      addMaterial(
-        material || component,
-        component.Qty ?? component.qty ?? component.Quantity ?? 1,
-        "BOS"
-      );
-    });
-  });
-
-  //----------------------------------
-  // Generated BOM = VAN
-  //----------------------------------
-  const bom = generateBOM();
+  // The export must be built from exactly the same live BOM as the material
+  // panel.  Counting canvas cards and then adding the generated BOM created
+  // a second route for a primary component to enter Used Materials.
+  const bom = typeof generateBOM === "function"
+    ? generateBOM()
+    : {};
 
   Object.values(bom || {}).forEach(group => {
     if (!Array.isArray(group)) return;
 
     group.forEach(item => {
+      const catalogNumber = String(
+        item?.CatalogNumber ?? item?.catalogNumber ?? ""
+      ).trim();
+      const catalogMaterial =
+        typeof getMaterial === "function"
+          ? getMaterial(catalogNumber)
+          : null;
+
       addMaterial(
-        item,
+        {
+          ...catalogMaterial,
+          ...item,
+          CatalogNumber: catalogNumber,
+          Description:
+            item?.Description ??
+            item?.description ??
+            catalogMaterial?.Description ??
+            catalogMaterial?.description ??
+            "",
+          InventoryCategory:
+            item?.InventoryCategory ??
+            item?.inventoryCategory ??
+            item?.category ??
+            catalogMaterial?.InventoryCategory ??
+            catalogMaterial?.inventoryCategory ??
+            catalogMaterial?.category ??
+            ""
+        },
         item.Qty ?? item.qty ?? item.Quantity ?? 1,
-        "VAN"
+        ""
       );
     });
   });
