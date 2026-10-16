@@ -8,6 +8,10 @@ let expandedGutterId = null;
 let fittingModalElement = null;
 let activeFittingTarget = null;
 let fittingQuantityMode = false;
+
+// Run fitting choices are intentionally limited to the two field sizes the
+// estimator uses. This is separate from the conduit selected on the run.
+const RUN_FITTING_SIZE_OPTIONS = ["1\"", "2\""];
 let runWireClipboard = null;
 let runCircuitModalElement = null;
 let runWireAssignmentModalElement = null;
@@ -176,10 +180,18 @@ function getGutterFittingSizeOptions(gutter, runs) {
         options.get(size).push(run?.name || `Run ${index + 1}`);
     });
 
-    return [...options.entries()].map(([size, sourceRuns]) => ({
-        size,
-        sourceRuns
-    }));
+    return RUN_FITTING_SIZE_OPTIONS.map(allowedSize => {
+        const matchingSize = [...options.keys()].find(size =>
+            normalizeFittingValue(size) === normalizeFittingValue(allowedSize)
+        );
+
+        if (!matchingSize) return null;
+
+        return {
+            size: matchingSize,
+            sourceRuns: options.get(matchingSize) || []
+        };
+    }).filter(Boolean);
 
 }
 
@@ -3157,9 +3169,19 @@ async function openRunFittingModal(runId, returnTo = "runs") {
 
     fittingReturnModal = returnTo;
 
+    const currentSize = String(run?.conduit?.Size || "").trim();
+    const selectedSize = RUN_FITTING_SIZE_OPTIONS.find(size =>
+        normalizeFittingValue(size) === normalizeFittingValue(currentSize)
+    ) || RUN_FITTING_SIZE_OPTIONS[0];
+
     openFittingModalForTarget(run, {
         title: `${run.name || "Run"} Fittings`,
-        historyLabel: "Run fitting"
+        historyLabel: "Run fitting",
+        sizeOptions: RUN_FITTING_SIZE_OPTIONS.map(size => ({
+            size,
+            sourceRuns: []
+        })),
+        selectedSizes: [selectedSize]
     });
 
 }
@@ -3200,7 +3222,10 @@ async function openGutterFittingModal(gutterId) {
 
 async function openFittingModalForTarget(target, options = {}) {
 
-    if (!target?.conduit?.Size) {
+    const hasManualSizeOptions = Array.isArray(options.sizeOptions) &&
+        options.sizeOptions.length > 0;
+
+    if (!target?.conduit?.Size && !hasManualSizeOptions) {
         alert("Select the conduit first so fittings can be filtered by size.");
         return;
     }
