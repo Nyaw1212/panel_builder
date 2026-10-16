@@ -55,6 +55,27 @@
     background: var(--v2-bg, #0f172a);
 }
 
+/* Give the page editor enough room to identify each linked component. */
+.runs-workspace .run-row {
+    padding: 18px 0;
+}
+
+.runs-workspace .run-canvas-component-preview {
+    grid-template-columns: auto 54px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 62px;
+    padding: 5px 8px;
+}
+
+.runs-workspace .run-canvas-component-preview img {
+    width: 54px;
+    height: 54px;
+}
+
+.runs-workspace .run-canvas-component-preview small {
+    font-size: 12px;
+}
+
 .runs-header,
 .runs-footer {
     display: flex;
