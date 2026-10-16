@@ -2185,7 +2185,15 @@ function setPanelCommandLineForRuns(isRunsOpen) {
     const commandLine = document.getElementById("panelCommandLine");
 
     if (commandLine) {
-        commandLine.hidden = Boolean(isRunsOpen);
+        // The command bar's own CSS sets display:flex, which overrides the
+        // browser's normal [hidden] rule. Use an inline important rule while
+        // Material Runs is open so its autocomplete menu cannot overlay rows.
+        if (isRunsOpen) {
+            commandLine.style.setProperty("display", "none", "important");
+        }
+        else {
+            commandLine.style.removeProperty("display");
+        }
     }
 
 }
