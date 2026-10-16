@@ -22,6 +22,9 @@ function openEquipmentCardModal(item) {
     const mdpMatch =
         typeof isMDPMaterialCard === "function" &&
         isMDPMaterialCard(item);
+    const l30303Match =
+        typeof isL30303MaterialCard === "function" &&
+        isL30303MaterialCard(item);
 
     console.group("[Equipment card click]");
     console.log("Canvas item:", item);
@@ -34,13 +37,28 @@ function openEquipmentCardModal(item) {
         isLDisc: lDiscMatch,
         isMeter: meterMatch,
         isHDisc: hDiscMatch,
-        isMDP: mdpMatch
+        isMDP: mdpMatch,
+        isL30303Pad: l30303Match
     });
     console.groupEnd();
 
     // The L-DISC picker applies a preset directly, so it needs the same
     // live target reference as the normal component editor.
     currentEquipment = item;
+
+    // The concrete pad belongs to the equipment assembly. Replacing it
+    // must not replace the canvas card, or links and WireAss targeting would
+    // be lost. The pad picker changes only the L30303 material entry.
+    if (
+        l30303Match &&
+        typeof openL30303MaterialPicker === "function"
+    ) {
+
+        openL30303MaterialPicker(item);
+
+        return;
+
+    }
 
     //----------------------------------
     // L-DISC Material Picker
