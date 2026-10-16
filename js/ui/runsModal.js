@@ -21,6 +21,34 @@ let runsModalScrollTop = 0;
 let runMaterialsModalScrollTop = 0;
 let fittingReturnModal = "runs";
 
+function rememberRunsModalScroll() {
+
+    const dialog = runsModalElement?.querySelector(".runs-dialog");
+
+    if (dialog) {
+        runsModalScrollTop = dialog.scrollTop;
+    }
+
+}
+
+function restoreRunsModalScroll(dialog) {
+
+    if (!dialog) return;
+
+    const savedScrollTop = runsModalScrollTop;
+    const applyScrollPosition = () => {
+        dialog.scrollTop = savedScrollTop;
+    };
+
+    // Rebuilds can change row height. Apply twice so a focused button or an
+    // image layout pass cannot pull the full-screen workspace back to top.
+    requestAnimationFrame(() => {
+        applyScrollPosition();
+        requestAnimationFrame(applyScrollPosition);
+    });
+
+}
+
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
     { key: "SRT", label: "SRT", pattern: /\bSRT\b|STEEL.*RAIN\s*TIGHT|STL.*RAIN\s*TIGHT/ },
@@ -1540,6 +1568,7 @@ function openRunBreakerWirePicker(runId, source) {
     };
 
     ensureRunWireAssignmentModal().style.display = "none";
+    rememberRunsModalScroll();
     ensureRunsModal().style.display = "none";
 
     openMaterialModal(draftConnection, {
@@ -2386,10 +2415,7 @@ function renderRunMaterialsModal() {
 function renderRunsModal() {
 
     const overlay = ensureRunsModal();
-    const previousDialog = overlay.querySelector(".runs-dialog");
-    if (previousDialog) {
-        runsModalScrollTop = previousDialog.scrollTop;
-    }
+    rememberRunsModalScroll();
     const runs = getEditableRuns();
     const gutters = getEditableGutters();
     const canvasTags = getCanvasTagOptions();
@@ -2631,11 +2657,8 @@ function renderRunsModal() {
     `;
 
     const dialog = overlay.querySelector(".runs-dialog");
-    if (dialog && runsModalScrollTop > 0) {
-        requestAnimationFrame(() => {
-            dialog.scrollTop = runsModalScrollTop;
-        });
-    }
+    dialog?.addEventListener("scroll", rememberRunsModalScroll, { passive: true });
+    restoreRunsModalScroll(dialog);
 
     overlay.querySelector(".runs-close")?.addEventListener(
         "click",
@@ -3080,6 +3103,7 @@ async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
     const overlay = returnTo === "materials"
         ? ensureRunMaterialsModal()
         : ensureRunsModal();
+    if (returnTo === "runs") rememberRunsModalScroll();
     overlay.style.display = "none";
 
     openPickerModal(
@@ -3125,6 +3149,7 @@ function openRunWireModal(runId) {
     };
 
     const overlay = ensureRunsModal();
+    rememberRunsModalScroll();
     overlay.style.display = "none";
 
     openMaterialModal(draftConnection, {
