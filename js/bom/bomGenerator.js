@@ -31,6 +31,13 @@ function getFittingBOM() {
         ? getLayout()
         : [];
     const seenEquipment = new Set();
+    const primaryEquipmentCatalogs = new Set(
+        (Array.isArray(layout) ? layout : [])
+            .map(item => String(
+                item?.data?.CatalogNumber || item?.data?.catalogNumber || ""
+            ).trim().toUpperCase())
+            .filter(Boolean)
+    );
 
     (Array.isArray(layout) ? layout : []).forEach(item => {
 
@@ -88,7 +95,9 @@ function getFittingBOM() {
 
             map,
 
-            link.nodes?.start?.hardware
+            link.nodes?.start?.hardware,
+
+            { skipCatalogs: primaryEquipmentCatalogs }
 
         );
 
@@ -124,7 +133,9 @@ function getFittingBOM() {
 
             map,
 
-            link.nodes?.end?.hardware
+            link.nodes?.end?.hardware,
+
+            { skipCatalogs: primaryEquipmentCatalogs }
 
         );
 
@@ -241,13 +252,27 @@ function addMaterials(
 
     map,
 
-    list
+    list,
+
+    options = {}
 
 ) {
 
     if (!Array.isArray(list)) return;
 
+    const skipCatalogs = options.skipCatalogs instanceof Set
+        ? options.skipCatalogs
+        : new Set();
+
     list.forEach(material => {
+
+        const catalogNumber = String(
+            material?.CatalogNumber || material?.catalogNumber || ""
+        ).trim();
+
+        // A primary equipment card is already counted once above. Saved
+        // link endpoint hardware can contain that same card for every link.
+        if (skipCatalogs.has(catalogNumber.toUpperCase())) return;
 
         mergeMaterial(
 
