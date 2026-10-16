@@ -30,6 +30,10 @@ function getEquipmentEditorType(equipment) {
 
   if (
     type.includes("DISCONNECT") ||
+    type.includes("L-DISC") ||
+    type.includes("H-DISC") ||
+    type.includes("LDISC") ||
+    type.includes("HDISC") ||
     presetType.includes("DISCONNECT") ||
     /(?:^|[-_\s])DISC(?:ONNECT)?(?:$|[-_\s])/i.test(presetCode)
   ) return "DISCONNECT";
@@ -406,6 +410,20 @@ function isLDiscMaterialCard(item) {
   return type.includes("LDISC");
 }
 
+function isHDiscMaterialCard(item) {
+  const type = [
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category,
+    item?.preset,
+    item?.data?.PRESET
+  ].join(" ")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
+  return type.includes("HDISC");
+}
+
 function isMeterMaterialCard(item) {
   const type = [
     item?.data?.NodeType,
@@ -516,6 +534,35 @@ function getLDiscPresetLibrary() {
         ...structuredClone(equipment),
         // Keep the catalog number for its component image, while the card
         // itself identifies the WireAss preset that will be applied.
+        PickerCardCode: presetCode,
+        Code: presetCode,
+        presetCode
+      };
+    })
+    .filter(Boolean);
+}
+
+function getHDiscPresetLibrary() {
+  const hDiscPresetCodes = getPresetCodesByComponentType("H-DISC");
+  const fallbackCodes = getDisconnectPresetCodes().filter(presetCode => {
+    const equipment = getPresetEquipment(presetCode);
+    const type = [equipment?.NodeType, equipment?.Type, equipment?.Category]
+      .join(" ")
+      .replace(/[^A-Z0-9]/gi, "")
+      .toUpperCase();
+    return type.includes("HDISC");
+  });
+  const presetCodes = hDiscPresetCodes.length
+    ? hDiscPresetCodes
+    : fallbackCodes;
+
+  return presetCodes
+    .map(presetCode => {
+      const equipment = getPresetEquipment(presetCode);
+      if (!equipment) return null;
+
+      return {
+        ...structuredClone(equipment),
         PickerCardCode: presetCode,
         Code: presetCode,
         presetCode
@@ -735,6 +782,24 @@ function openLDiscMaterialPicker(equipment) {
 
       return applyDisconnectPreset(preset.presetCode);
     }
+  );
+}
+
+function openHDiscMaterialPicker(equipment) {
+  if (!equipment || typeof openPickerModal !== "function") {
+    return;
+  }
+
+  const presets = getHDiscPresetLibrary();
+  if (!presets.length) {
+    alert("No H-DISC presets were found. Add TYPE = H-DISC on the PRESETS sheet.");
+    return;
+  }
+
+  openPickerModal(
+    "Choose H-DISC Preset",
+    presets,
+    preset => applyDisconnectPreset(preset.presetCode)
   );
 }
 
@@ -1094,6 +1159,12 @@ window.isLDiscMaterialCard =
 
 window.openLDiscMaterialPicker =
   openLDiscMaterialPicker;
+
+window.isHDiscMaterialCard =
+  isHDiscMaterialCard;
+
+window.openHDiscMaterialPicker =
+  openHDiscMaterialPicker;
 
 window.isMeterMaterialCard =
   isMeterMaterialCard;
