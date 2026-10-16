@@ -158,6 +158,17 @@ function capturePanelCircuitHistory(label) {
   }
 }
 
+function refreshCurrentPanelRuns() {
+  const equipment = getCurrentEquipment();
+
+  if (
+    equipment?.id &&
+    typeof refreshRunsForCanvasComponent === "function"
+  ) {
+    refreshRunsForCanvasComponent(equipment.id);
+  }
+}
+
 function addEquipmentComponent(material) {
   const equipment = getCurrentEquipment();
   if (!equipment || !material) return false;
@@ -186,6 +197,7 @@ function addEquipmentComponent(material) {
     });
 
     capturePanelCircuitHistory("Main breaker installed");
+    refreshCurrentPanelRuns();
     refreshEquipmentCardModal();
     return true;
   }
@@ -223,6 +235,7 @@ function addEquipmentComponent(material) {
   });
 
   capturePanelCircuitHistory("Panel breaker installed");
+  refreshCurrentPanelRuns();
   selectFirstAvailablePanelSlot();
   refreshEquipmentCardModal();
   return true;
@@ -335,6 +348,7 @@ function removeEquipmentComponent(componentId) {
   }
 
   capturePanelCircuitHistory("Panel breaker removed");
+  refreshCurrentPanelRuns();
   refreshEquipmentCardModal();
   return true;
 }
