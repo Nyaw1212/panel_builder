@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 30172)
-Total output lines: 3183
-
 //----------------------------------
 // Free-form Material Runs
 //----------------------------------
@@ -1568,7 +1565,32 @@ function removeRunsForCanvasLinks(canvasLinkIds, options = {}) {
     return removedRuns;
 }
 
-function removeRunsForCanvasLink(canvasLinkId, options = {}) …172 tokens truncated… }
+function removeRunsForCanvasLink(canvasLinkId, options = {}) {
+    return removeRunsForCanvasLinks([canvasLinkId], options);
+}
+
+function removeRunAndCanvasLink(runId) {
+    const runs = getEditableRuns();
+    const index = runs.findIndex(run => run.id === runId);
+
+    if (index < 0) return false;
+
+    const run = runs[index];
+    const canvasLinkId = String(run?.canvasLinkId || "");
+
+    runs.splice(index, 1);
+
+    // Runs created from a canvas link own that link. Manual runs have no
+    // canvasLinkId and remain a runs-only estimate.
+    if (
+        canvasLinkId &&
+        typeof removeLink === "function"
+    ) {
+        removeLink(canvasLinkId, {
+            captureHistory: false,
+            removeMaterialRun: false
+        });
+    }
 
     getEditableGutters().forEach(gutter => {
         if (!Array.isArray(gutter?.excludedRunIds)) return;
