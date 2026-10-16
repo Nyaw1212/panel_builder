@@ -294,6 +294,9 @@ function serializeRuns() {
             ? run.autoMainWires
             : []
         ),
+        suppressedWireGroups: Array.isArray(run?.suppressedWireGroups)
+          ? run.suppressedWireGroups.map(value => String(value || "")).filter(Boolean)
+          : [],
         breakerWireAssignments: (Array.isArray(run?.breakerWireAssignments)
           ? run.breakerWireAssignments
           : []
