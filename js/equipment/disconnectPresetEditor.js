@@ -364,6 +364,23 @@ function isLDiscMaterialCard(item) {
   return type.includes("LDISC");
 }
 
+function isDisconnectReplacementMaterial(item) {
+  const type = [
+    item?.NodeType,
+    item?.Type,
+    item?.Category,
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category
+  ].join(" ")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
+  // Older saved canvas cards use L-DISC, while the current MML catalog
+  // classifies the same family as DISCONNECT. Both are valid replacements.
+  return type.includes("LDISC") || type.includes("DISCONNECT");
+}
+
 function getLDiscMaterialLibrary() {
   const catalog = [
     ...(typeof getMaterials === "function"
@@ -387,9 +404,9 @@ function getLDiscMaterialLibrary() {
   });
 
   return Array.from(unique.values())
-    // The MML NodeType is the real component category. D60 is a WireAss
-    // preset, while L-DISC identifies which materials may replace it.
-    .filter(isLDiscMaterialCard)
+    // D60 is the WireAss preset. The material catalog may label physical
+    // replacements as either L-DISC (saved cards) or DISCONNECT (MML).
+    .filter(isDisconnectReplacementMaterial)
     .sort((first, second) => {
       const favoriteDifference =
         Number(second.Favorite || 0) -
@@ -406,7 +423,7 @@ function getLDiscMaterialLibrary() {
 }
 
 function replaceLDiscMaterial(equipment, material) {
-  if (!equipment || !material || !isLDiscMaterialCard({ data: material })) {
+  if (!equipment || !material || !isDisconnectReplacementMaterial(material)) {
     return false;
   }
 
@@ -510,14 +527,14 @@ function openLDiscMaterialPicker(equipment) {
 
   if (!materials.length) {
     console.warn(
-      "No L-DISC materials were found. Check the MML NodeType column for L-DISC."
+      "No disconnect materials were found. Check the MML NodeType column for L-DISC or DISCONNECT."
     );
   }
 
   console.groupEnd();
 
   openPickerModal(
-    "L-DISC Material Picker",
+    "Replace L-DISC",
     materials,
     material => {
       console.info("[L-DISC Picker] Selected replacement:", {
