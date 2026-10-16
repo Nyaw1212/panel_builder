@@ -517,6 +517,11 @@ async function getWireAssignments() {
 async function saveProject(project, options = {}) {
     const payload = serializeProject(project);
 
+    if ("usedMaterialsOutput" in options) {
+        payload.usedMaterialsOutput =
+            String(options.usedMaterialsOutput || "");
+    }
+
     return await apiRequest({
         action: "saveProject",
         ...payload,
