@@ -856,6 +856,36 @@ function drawGrid() {
 // Draw Equipment
 //----------------------------------
 
+function getCanvasItemRatingLabel(item) {
+  const data = item?.data || {};
+  const directRating = [
+    data.RATING,
+    data.Rating,
+    data.rating,
+    data.AMPERAGE,
+    data.Amperage,
+    data.Amps,
+    data.AMP,
+    data.Ampacity
+  ].find(value => String(value ?? "").trim());
+
+  const directNumber = Number(
+    String(directRating ?? "").replace(/[^0-9.]/g, "")
+  );
+
+  if (Number.isFinite(directNumber) && directNumber > 0) {
+    return `${directNumber}A`;
+  }
+
+  const ratingMatch = [
+    data.Description,
+    data.Size,
+    item?.preset
+  ].join(" ").match(/\b(\d+(?:\.\d+)?)\s*(?:A|AMP(?:ERE)?S?)\b/i);
+
+  return ratingMatch ? `${ratingMatch[1]}A` : "";
+}
+
 function drawPlacedItems() {
   const drawn = new Set();
 
@@ -996,6 +1026,36 @@ function drawPlacedItems() {
     desc.style.textAlign = "center";
     desc.style.fontSize = "10px";
     desc.style.pointerEvents = "none";
+
+    //----------------------------------
+    // Rating
+    //----------------------------------
+
+    const ratingLabel = getCanvasItemRatingLabel(item);
+
+    if (ratingLabel) {
+      const rating = document.createElement("div");
+
+      rating.className = "canvas-rating";
+      rating.textContent = ratingLabel;
+      rating.title = `Equipment rating: ${ratingLabel}`;
+
+      // Keep the large rating outside the card so it does not reduce
+      // the component image or move the catalog/description text.
+      rating.style.position = "absolute";
+      rating.style.top = "-31px";
+      rating.style.left = "8px";
+      rating.style.zIndex = "20";
+      rating.style.color = "#ffffff";
+      rating.style.fontSize = "24pt";
+      rating.style.fontWeight = "800";
+      rating.style.lineHeight = "1";
+      rating.style.letterSpacing = "0.02em";
+      rating.style.pointerEvents = "none";
+      rating.style.textShadow = "0 2px 5px rgba(0, 0, 0, .9)";
+
+      card.appendChild(rating);
+    }
 
     //----------------------------------
     // Assemble Card
