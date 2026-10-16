@@ -236,13 +236,27 @@ async function saveCurrentProject(options = {}) {
 
 async function generateUsedMaterials() {
 
-    const state = getProjectState();
+    let state = getProjectState();
 
     if (!String(state.jobName || "").trim()) {
-        return {
-            success: false,
-            message: "Enter a project name before generating Used Materials."
-        };
+        const jobName = window.prompt(
+            "Project name for this Used Materials sheet:",
+            String(state.model || "").trim()
+        );
+
+        if (!String(jobName || "").trim()) {
+            return {
+                success: false,
+                message: "A project name is needed to generate Used Materials."
+            };
+        }
+
+        setProjectState({
+            ...state,
+            jobName: String(jobName).trim()
+        });
+
+        state = getProjectState();
     }
 
     // Open the tab inside the click event so the browser does not block it.
