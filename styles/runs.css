@@ -76,6 +76,49 @@
     font-size: 12px;
 }
 
+/* Match the material controls to the large component previews in this page. */
+.runs-workspace .run-material-button {
+    min-height: 58px;
+    padding: 0 15px;
+    font-size: 16px;
+}
+
+.runs-workspace .run-conduit-clear {
+    width: 38px;
+    min-height: 58px;
+    font-size: 25px;
+}
+
+.runs-workspace .run-wire-actions {
+    gap: 6px;
+}
+
+.runs-workspace .run-wire-actions button {
+    min-height: 30px;
+    padding: 4px 7px;
+    font-size: 13px;
+}
+
+.runs-workspace .run-length-field {
+    height: 58px;
+}
+
+.runs-workspace .run-length-input {
+    padding-left: 13px;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.runs-workspace .run-length-field span {
+    padding-right: 12px;
+    font-size: 15px;
+}
+
+.runs-workspace .run-calculated {
+    gap: 5px;
+    font-size: 15px;
+}
+
 .runs-header,
 .runs-footer {
     display: flex;
