@@ -119,6 +119,29 @@
     font-size: 15px;
 }
 
+/* Gutters use the same page-scale controls as a material run. */
+.runs-workspace .gutter-row {
+    padding: 18px 0;
+}
+
+.runs-workspace .gutter-row .gutter-runs-button,
+.runs-workspace .gutter-row .run-material-button {
+    min-height: 58px;
+    padding: 0 15px;
+    font-size: 16px;
+}
+
+.runs-workspace .gutter-row .gutter-name-input {
+    min-height: 46px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+.runs-workspace .gutter-row .gutter-tag-select {
+    height: 38px;
+    font-size: 14px;
+}
+
 .runs-header,
 .runs-footer {
     display: flex;
