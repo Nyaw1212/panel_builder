@@ -294,6 +294,15 @@ function serializeRuns() {
             ? run.autoMainWires
             : []
         ),
+        // Preserve the explicit WireAss groups selected in the Runs modal.
+        // A missing condition is an older project and means all groups on.
+        wireCondition: {
+          main: run?.wireCondition?.main !== false,
+          breakers: run?.wireCondition?.breakers !== false,
+          neutral: run?.wireCondition?.neutral !== false,
+          ground: run?.wireCondition?.ground !== false,
+          communication: run?.wireCondition?.communication !== false
+        },
         suppressedWireGroups: Array.isArray(run?.suppressedWireGroups)
           ? run.suppressedWireGroups.map(value => String(value || "")).filter(Boolean)
           : [],
