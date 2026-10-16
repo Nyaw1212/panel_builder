@@ -293,6 +293,57 @@ function getCanvasTagLabel(itemId, options) {
 
 }
 
+function getRunCanvasComponentImage(item) {
+
+    if (!item?.data) return "";
+
+    const driveId = String(item.data.DriveFileID || "").trim();
+
+    if (driveId && typeof getDriveImageUrl === "function") {
+        return getDriveImageUrl(driveId, 100);
+    }
+
+    const catalogNumber = String(item.data.CatalogNumber || "").trim();
+
+    return catalogNumber
+        ? `images/materials/${encodeURIComponent(catalogNumber)}.png`
+        : "";
+
+}
+
+function renderRunCanvasComponentPreview(itemId, endpointLabel) {
+
+    const item = getCanvasItem(itemId);
+
+    if (!item) {
+        return `
+            <div class="run-canvas-component-preview is-empty">
+                <span>${runModalEscape(endpointLabel)}</span>
+                <small>Choose component</small>
+            </div>
+        `;
+    }
+
+    const image = getRunCanvasComponentImage(item);
+    const label = String(
+        item.preset ||
+        item.data?.CatalogNumber ||
+        item.data?.Description ||
+        "Canvas item"
+    ).trim();
+
+    return `
+        <div class="run-canvas-component-preview">
+            <span>${runModalEscape(endpointLabel)}</span>
+            ${image ? `
+                <img src="${runModalEscape(image)}" alt="" onerror="this.style.display='none'">
+            ` : ""}
+            <small>${runModalEscape(label)}</small>
+        </div>
+    `;
+
+}
+
 function getRunCanvasLinks() {
     const options = getCanvasTagOptions();
 
@@ -1698,6 +1749,11 @@ function renderRunsModal() {
                                         >
                                     </div>
                                     <div class="canvas-tag-selects">
+                                        <div class="canvas-component-previews">
+                                            ${renderRunCanvasComponentPreview(fromTag, "From")}
+                                            <span class="canvas-component-arrow">→</span>
+                                            ${renderRunCanvasComponentPreview(toTag, "To")}
+                                        </div>
                                         <select data-action="run-from" aria-label="Run ${index + 1} from canvas item">
                                             ${renderCanvasTagOptions(canvasTags, fromTag, "From canvas item")}
                                         </select>
