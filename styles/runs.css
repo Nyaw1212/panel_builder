@@ -61,15 +61,15 @@
 }
 
 .runs-workspace .run-canvas-component-preview {
-    grid-template-columns: auto 54px minmax(0, 1fr);
-    gap: 8px;
-    min-height: 62px;
-    padding: 5px 8px;
+    grid-template-columns: auto 108px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 116px;
+    padding: 7px 10px;
 }
 
 .runs-workspace .run-canvas-component-preview img {
-    width: 54px;
-    height: 54px;
+    width: 108px;
+    height: 108px;
 }
 
 .runs-workspace .run-canvas-component-preview small {
