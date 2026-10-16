@@ -453,6 +453,35 @@ function isMeterReplacementMaterial(item) {
   return type.includes("METER");
 }
 
+function isMDPMaterialCard(item) {
+  const type = [
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category,
+    item?.preset,
+    item?.data?.PRESET
+  ].join(" ")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
+  return type.includes("MDP");
+}
+
+function isMDPReplacementMaterial(item) {
+  const type = [
+    item?.NodeType,
+    item?.Type,
+    item?.Category,
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category
+  ].join(" ")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
+  return type.includes("MDP");
+}
+
 function isDisconnectReplacementMaterial(item) {
   const type = [
     item?.NodeType,
@@ -600,6 +629,32 @@ function getMeterPresetLibrary() {
     .filter(Boolean);
 }
 
+function getMDPPresetLibrary() {
+  const mdpPresetCodes = getPresetCodesByComponentType("MDP");
+  const fallbackCodes = Array.from(new Set(
+    (window.presets || [])
+      .map(row => getRowPresetCode(row))
+      .filter(code => /^MDP/i.test(String(code || "")))
+  ));
+  const presetCodes = mdpPresetCodes.length
+    ? mdpPresetCodes
+    : fallbackCodes;
+
+  return presetCodes
+    .map(presetCode => {
+      const equipment = getPresetEquipment(presetCode);
+      if (!equipment) return null;
+
+      return {
+        ...structuredClone(equipment),
+        PickerCardCode: presetCode,
+        Code: presetCode,
+        presetCode
+      };
+    })
+    .filter(Boolean);
+}
+
 function applyMeterPreset(presetCode) {
   const equipment = getCurrentEquipment();
   const presetEquipment = getPresetEquipment(presetCode);
@@ -642,6 +697,70 @@ function applyMeterPreset(presetCode) {
     typeof window.HistoryManagerV2.capture === "function"
   ) {
     window.HistoryManagerV2.capture("Meter preset changed");
+  }
+
+  if (typeof drawCanvas === "function") {
+    drawCanvas();
+  }
+
+  const refreshedRuns = typeof refreshRunsForCanvasComponent === "function"
+    ? refreshRunsForCanvasComponent(equipment.id)
+    : false;
+  if (!refreshedRuns && typeof renderBOM === "function") {
+    renderBOM();
+  }
+
+  return true;
+}
+
+function applyMDPPreset(presetCode) {
+  const equipment = getCurrentEquipment();
+  const presetEquipment = getPresetEquipment(presetCode);
+  const knownMDPPreset = getPresetCodesByComponentType("MDP")
+    .includes(String(presetCode || ""));
+
+  if (
+    !equipment ||
+    !presetEquipment ||
+    (!knownMDPPreset && !isMDPReplacementMaterial(presetEquipment))
+  ) {
+    return false;
+  }
+
+  if (
+    typeof canPlace === "function" &&
+    !canPlace(presetEquipment, equipment.startCell, equipment)
+  ) {
+    alert("The replacement MDP does not fit in its current canvas position.");
+    return false;
+  }
+
+  const layout = getLayout();
+  (equipment.occupied || []).forEach(index => {
+    if (layout[index] === equipment) {
+      layout[index] = null;
+    }
+  });
+
+  equipment.data = structuredClone(presetEquipment);
+  equipment.width = Number(presetEquipment.GridWidth || 1);
+  equipment.height = Number(presetEquipment.GridHeight || 1);
+  equipment.preset = String(presetCode || "").trim();
+  equipment.materials = ensureMainEquipmentMaterial(
+    getApiPresetMaterials(presetCode),
+    presetEquipment
+  );
+
+  updateOccupiedCells(equipment);
+  equipment.occupied.forEach(index => {
+    layout[index] = equipment;
+  });
+
+  if (
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture === "function"
+  ) {
+    window.HistoryManagerV2.capture("MDP preset changed");
   }
 
   if (typeof drawCanvas === "function") {
@@ -818,6 +937,24 @@ function openMeterMaterialPicker(equipment) {
     "Choose Meter Preset",
     presets,
     preset => applyMeterPreset(preset.presetCode)
+  );
+}
+
+function openMDPMaterialPicker(equipment) {
+  if (!equipment || typeof openPickerModal !== "function") {
+    return;
+  }
+
+  const presets = getMDPPresetLibrary();
+  if (!presets.length) {
+    alert("No MDP presets were found. Add TYPE = MDP on the PRESETS sheet.");
+    return;
+  }
+
+  openPickerModal(
+    "Choose MDP Preset",
+    presets,
+    preset => applyMDPPreset(preset.presetCode)
   );
 }
 
@@ -1171,6 +1308,12 @@ window.isMeterMaterialCard =
 
 window.openMeterMaterialPicker =
   openMeterMaterialPicker;
+
+window.isMDPMaterialCard =
+  isMDPMaterialCard;
+
+window.openMDPMaterialPicker =
+  openMDPMaterialPicker;
 
 window.renderDisconnectPresetEditor =
   renderDisconnectPresetEditor;
