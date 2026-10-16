@@ -467,6 +467,22 @@ function isMDPMaterialCard(item) {
   return type.includes("MDP");
 }
 
+function isSonPlusMaterialCard(item) {
+  const type = [
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category,
+    item?.data?.CatalogNumber,
+    item?.preset,
+    item?.data?.PRESET,
+    item?.data?.Preset
+  ].join(" ")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+
+  return type.includes("SON+");
+}
+
 function isMDPReplacementMaterial(item) {
   const type = [
     item?.NodeType,
@@ -827,6 +843,36 @@ function getMDPPresetLibrary() {
     .filter(Boolean);
 }
 
+function getSonPlusPresetLibrary() {
+  const sonPlusPresetCodes = getPresetCodesByComponentType("SON+");
+  const fallbackCodes = Array.from(new Set(
+    (window.presets || [])
+      .map(row => getRowPresetCode(row))
+      .filter(Boolean)
+      .filter(code => isSonPlusMaterialCard({
+        preset: code,
+        data: getPresetEquipment(code)
+      }))
+  ));
+  const presetCodes = sonPlusPresetCodes.length
+    ? sonPlusPresetCodes
+    : fallbackCodes;
+
+  return presetCodes
+    .map(presetCode => {
+      const equipment = getPresetEquipment(presetCode);
+      if (!equipment) return null;
+
+      return {
+        ...structuredClone(equipment),
+        PickerCardCode: presetCode,
+        Code: presetCode,
+        presetCode
+      };
+    })
+    .filter(Boolean);
+}
+
 function applyMeterPreset(presetCode) {
   const equipment = getCurrentEquipment();
   const presetEquipment = getPresetEquipment(presetCode);
@@ -933,6 +979,66 @@ function applyMDPPreset(presetCode) {
     typeof window.HistoryManagerV2.capture === "function"
   ) {
     window.HistoryManagerV2.capture("MDP preset changed");
+  }
+
+  if (typeof drawCanvas === "function") {
+    drawCanvas();
+  }
+
+  const refreshedRuns = typeof refreshRunsForCanvasComponent === "function"
+    ? refreshRunsForCanvasComponent(equipment.id)
+    : false;
+  if (!refreshedRuns && typeof renderBOM === "function") {
+    renderBOM();
+  }
+
+  return true;
+}
+
+function applySonPlusPreset(presetCode) {
+  const equipment = getCurrentEquipment();
+  const presetEquipment = getPresetEquipment(presetCode);
+  const knownSonPlusPreset = getPresetCodesByComponentType("SON+")
+    .includes(String(presetCode || ""));
+
+  if (!equipment || !presetEquipment || !knownSonPlusPreset) {
+    return false;
+  }
+
+  if (
+    typeof canPlace === "function" &&
+    !canPlace(presetEquipment, equipment.startCell, equipment)
+  ) {
+    alert("The replacement SON+ preset does not fit in its current canvas position.");
+    return false;
+  }
+
+  const layout = getLayout();
+  (equipment.occupied || []).forEach(index => {
+    if (layout[index] === equipment) {
+      layout[index] = null;
+    }
+  });
+
+  equipment.data = structuredClone(presetEquipment);
+  equipment.width = Number(presetEquipment.GridWidth || 1);
+  equipment.height = Number(presetEquipment.GridHeight || 1);
+  equipment.preset = String(presetCode || "").trim();
+  equipment.materials = ensureMainEquipmentMaterial(
+    getApiPresetMaterials(presetCode),
+    presetEquipment
+  );
+
+  updateOccupiedCells(equipment);
+  equipment.occupied.forEach(index => {
+    layout[index] = equipment;
+  });
+
+  if (
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture === "function"
+  ) {
+    window.HistoryManagerV2.capture("SON+ preset changed");
   }
 
   if (typeof drawCanvas === "function") {
@@ -1127,6 +1233,24 @@ function openMDPMaterialPicker(equipment) {
     "Choose MDP Preset",
     presets,
     preset => applyMDPPreset(preset.presetCode)
+  );
+}
+
+function openSonPlusMaterialPicker(equipment) {
+  if (!equipment || typeof openPickerModal !== "function") {
+    return;
+  }
+
+  const presets = getSonPlusPresetLibrary();
+  if (!presets.length) {
+    alert("No SON+ presets were found. Add TYPE = SON+ to the PRESETS sheet.");
+    return;
+  }
+
+  openPickerModal(
+    "Choose SON+ Preset",
+    presets,
+    preset => applySonPlusPreset(preset.presetCode)
   );
 }
 
@@ -1486,6 +1610,12 @@ window.isMDPMaterialCard =
 
 window.openMDPMaterialPicker =
   openMDPMaterialPicker;
+
+window.isSonPlusMaterialCard =
+  isSonPlusMaterialCard;
+
+window.openSonPlusMaterialPicker =
+  openSonPlusMaterialPicker;
 
 window.isL30303MaterialCard =
   isL30303MaterialCard;
