@@ -223,7 +223,7 @@
 .run-materials-grid-header,
 .run-materials-row {
     display: grid;
-    grid-template-columns: minmax(300px, 2fr) minmax(180px, 1.2fr) minmax(150px, 1fr) minmax(92px, .55fr) minmax(130px, .7fr);
+    grid-template-columns: minmax(300px, 2fr) minmax(180px, 1.2fr) minmax(150px, 1fr) minmax(92px, .55fr) minmax(130px, .7fr) 36px;
     gap: 12px;
     align-items: center;
 }
@@ -244,6 +244,10 @@
 
 .run-materials-row .canvas-component-previews {
     margin-top: 7px;
+}
+
+.run-materials-actions {
+    justify-content: flex-end;
 }
 
 .runs-grid-header {
@@ -1137,10 +1141,6 @@
     .gutter-row,
     .run-materials-row {
         grid-template-columns: 1fr 1fr 36px;
-    }
-
-    .run-materials-row {
-        grid-template-columns: 1fr 1fr;
     }
 
     .run-name,
