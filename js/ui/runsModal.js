@@ -11,6 +11,7 @@ let fittingQuantityMode = false;
 let runWireClipboard = null;
 let runCircuitModalElement = null;
 let runWireAssignmentModalElement = null;
+let runWireConditionModalElement = null;
 let runCanvasLinkModalElement = null;
 let runsModalScrollTop = 0;
 let runMaterialsModalScrollTop = 0;
@@ -1031,15 +1032,63 @@ function getRunWireListLabel(wires) {
         .join(", ") || "No wire assigned";
 }
 
+function getRunWireCondition(run) {
+    const saved = run?.wireCondition || {};
+
+    return {
+        main: saved.main !== false,
+        breakers: saved.breakers !== false,
+        neutral: saved.neutral !== false,
+        ground: saved.ground !== false,
+        communication: saved.communication !== false
+    };
+}
+
+function isRunWireConditionEnabled(run, group) {
+    return getRunWireCondition(run)[group] !== false;
+}
+
+function getRunCommunicationCatalogs(run) {
+    const mainSources = runConnectsToContactor(run)
+        ? []
+        : getRunAllMainConductorSources(run);
+    const circuitSources = getRunCircuitSources(run);
+    const sharedSource = mainSources[0] || circuitSources[0] || null;
+    const rule = sharedSource
+        ? getRunWireAssignmentRule(run, sharedSource)
+        : null;
+
+    return String(rule?.COM || "")
+        .split(/[;,\n]+/)
+        .map(value => value.trim())
+        .filter(Boolean);
+}
+
+function getRunWireConditionSummary(run) {
+    const labels = [
+        isRunWireConditionEnabled(run, "main") ? "Main" : "",
+        isRunWireConditionEnabled(run, "breakers") ? "Breaker" : "",
+        isRunWireConditionEnabled(run, "neutral") ? "Neutral" : "",
+        isRunWireConditionEnabled(run, "ground") ? "Ground" : "",
+        isRunWireConditionEnabled(run, "communication") ? "COM" : ""
+    ].filter(Boolean);
+
+    if (labels.length === 5) return "Condition: all";
+    return labels.length ? `Condition: ${labels.join(" + ")}` : "Condition: none";
+}
+
 function autoAssignRunWires(run, options = {}) {
     if (options.resetSuppressed === true) {
         run.suppressedWireGroups = [];
     }
 
     const isContactorRun = runConnectsToContactor(run);
+    const wireCondition = getRunWireCondition(run);
     // A contactor path is always a breaker-only run. The feeder/main on the
     // other endpoint is deliberately ignored.
-    const mainSources = isContactorRun ? [] : getRunAllMainConductorSources(run);
+    const mainSources = isContactorRun || !wireCondition.main
+        ? []
+        : getRunAllMainConductorSources(run);
     // A contactor is a dedicated two/three-hot control path. Its colors must
     // come solely from the CONTACTOR WireAss row (for example RB or BBC),
     // never from the connected panel or feeder preset.
@@ -1050,7 +1099,7 @@ function autoAssignRunWires(run, options = {}) {
     // branch-breaker conductors for those runs, even if the connected canvas
     // panel happens to contain installed breakers.
     const usesPresetMainWire = mainSources.some(isPrescribedWireAssMainSource);
-    const sources = isContactorRun || !usesPresetMainWire
+    const sources = wireCondition.breakers && (isContactorRun || !usesPresetMainWire)
         ? getRunCircuitSources(run)
         : [];
     const wireSources = [...sources, ...mainSources];
@@ -1125,7 +1174,11 @@ function autoAssignRunWires(run, options = {}) {
             hotColors.forEach(color => addWire(size, color, 1));
         }
 
-        if (!isContactorRun && getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER") {
+        if (
+            wireCondition.neutral &&
+            !isContactorRun &&
+            getWireRuleMode(rule, "Neutral Mode") === "PER BREAKER"
+        ) {
             addWire(size, "WHITE", Number(rule?.["Neutral Qty"] || 1));
         }
 
@@ -1149,13 +1202,21 @@ function autoAssignRunWires(run, options = {}) {
         ? getRunWireAssignmentRule(run, sharedWireSource)
         : null;
 
-    if (!isContactorRun && getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
+    if (
+        wireCondition.neutral &&
+        !isContactorRun &&
+        getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN"
+    ) {
         const neutralSize = String(sharedRule?.["NEUTRAL SIZE"] || "").trim() || largestSize;
         if (!isRunWireGroupSuppressed(run, "shared:neutral")) {
             addAutomaticWire(sharedWires, neutralSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
         }
     }
-    if (!isContactorRun && getWireRuleMode(sharedRule, "Ground Mode") === "PER RUN") {
+    if (
+        wireCondition.ground &&
+        !isContactorRun &&
+        getWireRuleMode(sharedRule, "Ground Mode") === "PER RUN"
+    ) {
         // Some existing WireAss rows intentionally leave Ground Size blank.
         // Do not try to use the (often very large) feeder conductor as ground:
         // it may not exist in green in the MML.  #10 is the company fallback;
@@ -1167,7 +1228,10 @@ function autoAssignRunWires(run, options = {}) {
     }
     // COM accepts one or more catalog numbers separated by commas, semicolons,
     // or new lines. For example, SON11/SON+ uses COM = CAT6BLUE.
-    if (!isRunWireGroupSuppressed(run, "shared:communication")) String(isContactorRun ? "" : sharedRule?.COM || "")
+    if (
+        wireCondition.communication &&
+        !isRunWireGroupSuppressed(run, "shared:communication")
+    ) String(isContactorRun ? "" : sharedRule?.COM || "")
         .split(/[;,\n]+/)
         .map(value => value.trim())
         .filter(Boolean)
@@ -1323,6 +1387,94 @@ function openRunCircuitModal(runId) {
 
         captureRunsHistory(autoResult.assigned ? "Run panel breakers and wires selected" : "Run panel breakers selected");
         saveRunsDraft();
+        renderRunsModal();
+        close();
+    });
+
+    overlay.style.display = "flex";
+}
+
+function ensureRunWireConditionModal() {
+    if (runWireConditionModalElement) return runWireConditionModalElement;
+
+    const overlay = document.createElement("div");
+    overlay.className = "run-circuit-modal";
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) overlay.style.display = "none";
+    });
+    document.body.appendChild(overlay);
+    runWireConditionModalElement = overlay;
+    return overlay;
+}
+
+function openRunWireConditionModal(runId) {
+    const run = findRun(runId);
+    if (!run) return;
+
+    const runNumber = Math.max(
+        1,
+        getEditableRuns().findIndex(candidate => candidate?.id === run.id) + 1
+    );
+    const condition = getRunWireCondition(run);
+    const communicationCatalogs = getRunCommunicationCatalogs(run);
+    const overlay = ensureRunWireConditionModal();
+    const choice = (key, label, detail) => `
+        <label class="run-circuit-choice">
+            <input type="checkbox" data-wire-condition="${key}" ${condition[key] ? "checked" : ""}>
+            <span>
+                <strong>${runModalEscape(label)}</strong>
+                <small>${runModalEscape(detail)}</small>
+            </span>
+        </label>`;
+
+    overlay.innerHTML = `
+        <section class="run-circuit-dialog" role="dialog" aria-modal="true" aria-labelledby="runWireConditionTitle">
+            <header>
+                <div>
+                    <h2 id="runWireConditionTitle">Run ${runNumber} · Wire condition</h2>
+                    <p>Choose the wire groups this run should use. Sizes, colors, and COM catalog numbers still come from WireAss.</p>
+                </div>
+                <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
+            </header>
+            <div class="run-circuit-list">
+                ${choice("main", "Main", "Main feeder conductors from the connected equipment")}
+                ${choice("breakers", "Breaker", "Conductors for selected panel breakers")}
+                ${choice("neutral", "Neutral", "Neutral conductors defined in WireAss")}
+                ${choice("ground", "Ground", "Ground conductors defined in WireAss")}
+                ${choice(
+                    "communication",
+                    "COM",
+                    communicationCatalogs.length
+                        ? `WireAss: ${communicationCatalogs.join(", ")}`
+                        : "No COM catalog number is set in WireAss"
+                )}
+            </div>
+            <footer>
+                <button type="button" class="run-circuit-cancel">Cancel</button>
+                <button type="button" class="run-circuit-save">Apply condition</button>
+            </footer>
+        </section>`;
+
+    const close = () => { overlay.style.display = "none"; };
+    overlay.querySelector(".run-circuit-close")?.addEventListener("click", close);
+    overlay.querySelector(".run-circuit-cancel")?.addEventListener("click", close);
+    overlay.querySelector(".run-circuit-save")?.addEventListener("click", () => {
+        const enabled = key => Boolean(
+            overlay.querySelector(`[data-wire-condition="${key}"]`)?.checked
+        );
+
+        run.wireCondition = {
+            main: enabled("main"),
+            breakers: enabled("breakers"),
+            neutral: enabled("neutral"),
+            ground: enabled("ground"),
+            communication: enabled("communication")
+        };
+
+        autoAssignRunWires(run);
+        captureRunsHistory("Run wire condition updated");
+        saveRunsDraft();
+        refreshRunsBOM();
         renderRunsModal();
         close();
     });
@@ -2249,6 +2401,7 @@ function renderRunsModal() {
                                     </button>
                                     <div class="run-wire-actions">
                                         ${usesPresetMainWire ? "" : `<button type="button" class="run-circuit-button" data-action="panel-breakers" title="Choose breakers from the connected panel">${runModalEscape(getRunCircuitSummary(run))}</button>`}
+                                        <button type="button" class="run-circuit-button" data-action="wire-condition" title="Choose which WireAss groups this run uses">${runModalEscape(getRunWireConditionSummary(run))}</button>
                                         <button type="button" class="run-circuit-button" data-action="auto-wire" title="Automatically assign wires from WireAss">Auto wire</button>
                                         <button type="button" class="run-circuit-button" data-action="wire-assignments" title="Assign wire groups to selected breakers">${runModalEscape(getRunWireAssignmentSummary(run))}</button>
                                         <button type="button" data-action="copy-wire" ${wires.length ? "" : "disabled"}>Copy wire</button>
@@ -2462,6 +2615,11 @@ function renderRunsModal() {
         row.querySelector("[data-action='panel-breakers']")?.addEventListener(
             "click",
             () => openRunCircuitModal(runId)
+        );
+
+        row.querySelector("[data-action='wire-condition']")?.addEventListener(
+            "click",
+            () => openRunWireConditionModal(runId)
         );
 
         row.querySelector("[data-action='wire-assignments']")?.addEventListener(
@@ -3140,94 +3298,3 @@ function renderRunFittingModal(run, materials, options = {}) {
             }
             else {
                 addRunFitting(run, material);
-                captureRunsHistory(`${options.historyLabel || "Run fitting"} added`);
-            }
-            refreshRunsBOM();
-            renderRunFittingModal(run, materials, options);
-        });
-    });
-
-    overlay.querySelectorAll(".fitting-remove-button").forEach(button => {
-        button.addEventListener("click", () => {
-            const material = catalogLookup.get(button.dataset.catalog || "");
-            if (!material) return;
-
-            removeRunFitting(run, material);
-            captureRunsHistory(`${options.historyLabel || "Run fitting"} removed`);
-            refreshRunsBOM();
-            renderRunFittingModal(run, materials, options);
-        });
-    });
-
-    overlay.style.display = "flex";
-
-    // Adding/removing a fitting rebuilds the quantities. Keep the user at
-    // the same position in the large matrix instead of jumping back to top.
-    const table = overlay.querySelector(".run-fitting-table-wrap");
-    const summary = overlay.querySelector(".fitting-summary-list");
-    if (table) {
-        table.scrollLeft = scrollState.tableLeft;
-        table.scrollTop = scrollState.tableTop;
-    }
-    if (summary) summary.scrollTop = scrollState.summaryTop;
-
-}
-
-function closeRunFittingModal() {
-
-    if (fittingModalElement) fittingModalElement.style.display = "none";
-
-    activeFittingTarget = null;
-
-    if (fittingReturnModal === "materials") {
-        openRunMaterialsModal();
-    }
-    else {
-        renderRunsModal();
-    }
-
-}
-
-function openRunsModal() {
-
-    const overlay = ensureRunsModal();
-
-    renderRunsModal();
-    overlay.style.display = "flex";
-
-}
-
-function closeRunsModal() {
-
-    if (runsModalElement) {
-        runsModalElement.style.display = "none";
-    }
-
-}
-
-function openRunMaterialsModal() {
-
-    const overlay = ensureRunMaterialsModal();
-
-    renderRunMaterialsModal();
-    overlay.style.display = "flex";
-
-}
-
-function closeRunMaterialsModal() {
-
-    if (runMaterialsModalElement) {
-        runMaterialsModalElement.style.display = "none";
-    }
-
-}
-
-// Expose the toolbar entry point only after this module has fully evaluated.
-window.openRunsModal = openRunsModal;
-window.closeRunsModal = closeRunsModal;
-window.openRunMaterialsModal = openRunMaterialsModal;
-window.closeRunMaterialsModal = closeRunMaterialsModal;
-window.autoCreateRunFromCanvasLink = autoCreateRunFromCanvasLink;
-window.refreshRunsForCanvasComponent = refreshRunsForCanvasComponent;
-window.removeRunsForCanvasLink = removeRunsForCanvasLink;
-window.removeRunsForCanvasLinks = removeRunsForCanvasLinks;
