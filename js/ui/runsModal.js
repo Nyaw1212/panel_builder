@@ -1627,6 +1627,15 @@ function refreshRunsForCanvasComponent(itemId) {
         }
 
         updateRunCanvasName(run, index, tags);
+        const hasWireSource =
+            getRunAllMainConductorSources(run).length > 0 ||
+            getRunCircuitSources(run).length > 0;
+        if (hasWireSource) {
+            // The canvas item keeps its ID when replaced, but its preset,
+            // ampacity, and main breaker can change. Rebuild the generated
+            // wires so WireAss immediately reflects the replacement.
+            autoAssignRunWires(run);
+        }
         changed = true;
     });
 
