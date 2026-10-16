@@ -97,6 +97,44 @@ function getDisconnectPresetCodes() {
     });
 }
 
+function normalizePresetComponentType(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+}
+
+function getRowPresetComponentType(row) {
+  return normalizePresetComponentType(
+    row?.TYPE ??
+    row?.Type ??
+    row?.type ??
+    ""
+  );
+}
+
+function getPresetCodesByComponentType(componentType) {
+  const expectedType = normalizePresetComponentType(componentType);
+
+  return Array.from(
+    new Set(
+      (window.presets || [])
+        .filter(row =>
+          getRowPresetComponentType(row) === expectedType
+        )
+        .map(row => getRowPresetCode(row))
+        .filter(Boolean)
+    )
+  ).sort((first, second) => {
+    const firstNumber =
+      Number(String(first).replace(/\D/g, "")) || 0;
+    const secondNumber =
+      Number(String(second).replace(/\D/g, "")) || 0;
+
+    return secondNumber - firstNumber;
+  });
+}
+
 function getDisconnectFuseLibrary() {
   return (typeof getMaterials === "function"
     ? getMaterials()
@@ -428,8 +466,14 @@ function getLDiscMaterialLibrary() {
 
 function getLDiscPresetLibrary() {
   const seen = new Set();
+  const lDiscPresetCodes =
+    getPresetCodesByComponentType("L-DISC");
+  const presetCodes = lDiscPresetCodes.length
+    ? lDiscPresetCodes
+    // Existing saved projects without the new TYPE column remain usable.
+    : getDisconnectPresetCodes();
 
-  return getDisconnectPresetCodes()
+  return presetCodes
     .map(presetCode => {
       const equipment = getPresetEquipment(presetCode);
 
@@ -548,6 +592,7 @@ function openLDiscMaterialPicker(equipment) {
   });
   console.table(presets.map(preset => ({
     preset: preset.presetCode,
+    presetType: "L-DISC",
     catalogNumber: preset.CatalogNumber,
     description: preset.Description || "",
     nodeType: preset.NodeType || "",
