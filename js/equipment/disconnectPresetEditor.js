@@ -406,6 +406,35 @@ function isLDiscMaterialCard(item) {
   return type.includes("LDISC");
 }
 
+function isMeterMaterialCard(item) {
+  const type = [
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category,
+    item?.preset,
+    item?.data?.PRESET
+  ].join(" ")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
+  return type.includes("METER");
+}
+
+function isMeterReplacementMaterial(item) {
+  const type = [
+    item?.NodeType,
+    item?.Type,
+    item?.Category,
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category
+  ].join(" ")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
+  return type.includes("METER");
+}
+
 function isDisconnectReplacementMaterial(item) {
   const type = [
     item?.NodeType,
@@ -493,6 +522,93 @@ function getLDiscPresetLibrary() {
       };
     })
     .filter(Boolean);
+}
+
+function getMeterPresetLibrary() {
+  const meterPresetCodes = getPresetCodesByComponentType("METER");
+  const fallbackCodes = Array.from(new Set(
+    (window.presets || [])
+      .map(row => getRowPresetCode(row))
+      .filter(Boolean)
+      .filter(code => isMeterReplacementMaterial(getPresetEquipment(code)))
+  ));
+  const presetCodes = meterPresetCodes.length
+    ? meterPresetCodes
+    : fallbackCodes;
+
+  return presetCodes
+    .map(presetCode => {
+      const equipment = getPresetEquipment(presetCode);
+      if (!equipment || !isMeterReplacementMaterial(equipment)) {
+        return null;
+      }
+
+      return {
+        ...structuredClone(equipment),
+        PickerCardCode: presetCode,
+        Code: presetCode,
+        presetCode
+      };
+    })
+    .filter(Boolean);
+}
+
+function applyMeterPreset(presetCode) {
+  const equipment = getCurrentEquipment();
+  const presetEquipment = getPresetEquipment(presetCode);
+
+  if (!equipment || !presetEquipment || !isMeterReplacementMaterial(presetEquipment)) {
+    return false;
+  }
+
+  if (
+    typeof canPlace === "function" &&
+    !canPlace(presetEquipment, equipment.startCell, equipment)
+  ) {
+    alert("The replacement meter does not fit in its current canvas position.");
+    return false;
+  }
+
+  const layout = getLayout();
+  (equipment.occupied || []).forEach(index => {
+    if (layout[index] === equipment) {
+      layout[index] = null;
+    }
+  });
+
+  equipment.data = structuredClone(presetEquipment);
+  equipment.width = Number(presetEquipment.GridWidth || 1);
+  equipment.height = Number(presetEquipment.GridHeight || 1);
+  equipment.preset = String(presetCode || "").trim();
+  equipment.materials = ensureMainEquipmentMaterial(
+    getApiPresetMaterials(presetCode),
+    presetEquipment
+  );
+
+  updateOccupiedCells(equipment);
+  equipment.occupied.forEach(index => {
+    layout[index] = equipment;
+  });
+
+  if (
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture === "function"
+  ) {
+    window.HistoryManagerV2.capture("Meter preset changed");
+  }
+
+  if (typeof drawCanvas === "function") {
+    drawCanvas();
+  }
+
+  const refreshedRuns = typeof refreshRunsForCanvasComponent === "function"
+    ? refreshRunsForCanvasComponent(equipment.id)
+    : false;
+  if (!refreshedRuns && typeof renderBOM === "function") {
+    renderBOM();
+  }
+
+  return true;
 }
 
 function replaceLDiscMaterial(equipment, material) {
@@ -619,6 +735,24 @@ function openLDiscMaterialPicker(equipment) {
 
       return applyDisconnectPreset(preset.presetCode);
     }
+  );
+}
+
+function openMeterMaterialPicker(equipment) {
+  if (!equipment || typeof openPickerModal !== "function") {
+    return;
+  }
+
+  const presets = getMeterPresetLibrary();
+  if (!presets.length) {
+    alert("No METER presets were found. Add TYPE = METER on the PRESETS sheet.");
+    return;
+  }
+
+  openPickerModal(
+    "Choose Meter Preset",
+    presets,
+    preset => applyMeterPreset(preset.presetCode)
   );
 }
 
@@ -960,6 +1094,12 @@ window.isLDiscMaterialCard =
 
 window.openLDiscMaterialPicker =
   openLDiscMaterialPicker;
+
+window.isMeterMaterialCard =
+  isMeterMaterialCard;
+
+window.openMeterMaterialPicker =
+  openMeterMaterialPicker;
 
 window.renderDisconnectPresetEditor =
   renderDisconnectPresetEditor;
