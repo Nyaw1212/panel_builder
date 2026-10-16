@@ -1766,6 +1766,45 @@ function refreshRunsBOM() {
 
 }
 
+function clearAllRunConduitAndFittings() {
+
+    const runs = getEditableRuns();
+    const gutters = getEditableGutters();
+    const affectedRuns = runs.filter(run =>
+        run?.conduit ||
+        (Array.isArray(run?.fittings) && run.fittings.length)
+    );
+    const affectedGutters = gutters.filter(gutter =>
+        Array.isArray(gutter?.fittings) && gutter.fittings.length
+    );
+
+    if (!affectedRuns.length && !affectedGutters.length) {
+        alert("There are no conduit or fittings to remove.");
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "Remove all conduit and fittings from every run and gutter?\n\n" +
+        "Wire selections and lengths will stay unchanged."
+    );
+
+    if (!confirmed) return;
+
+    runs.forEach(run => {
+        run.conduit = null;
+        run.fittings = [];
+    });
+
+    gutters.forEach(gutter => {
+        gutter.fittings = [];
+    });
+
+    captureRunsHistory("All conduit and fittings removed");
+    refreshRunsBOM();
+    renderRunsModal();
+
+}
+
 function removeRunsForCanvasLinks(canvasLinkIds, options = {}) {
     const linkIds = new Set(
         (Array.isArray(canvasLinkIds) ? canvasLinkIds : [canvasLinkIds])
@@ -2429,7 +2468,12 @@ function renderRunsModal() {
                         Add free-form conduit and wire runs. Wire length automatically includes 2 ft at each end.
                     </p>
                 </div>
-                <button class="runs-close" type="button" aria-label="Close runs">&times;</button>
+                <div class="runs-header-actions">
+                    <button id="clearAllRunMaterialsButton" class="runs-clear-materials" type="button">
+                        Clear conduit &amp; fittings
+                    </button>
+                    <button class="runs-close" type="button" aria-label="Close runs">&times;</button>
+                </div>
             </header>
 
             <div class="runs-grid-header" aria-hidden="true">
@@ -2668,6 +2712,11 @@ function renderRunsModal() {
     overlay.querySelector("#doneRunsButton")?.addEventListener(
         "click",
         closeRunsModal
+    );
+
+    overlay.querySelector("#clearAllRunMaterialsButton")?.addEventListener(
+        "click",
+        clearAllRunConduitAndFittings
     );
 
     overlay.querySelector("#addRunButton")?.addEventListener(
