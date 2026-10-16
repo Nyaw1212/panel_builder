@@ -53,6 +53,16 @@ function deserializeProject(project) {
             autoMainWires: typeof hydrateCatalogList === "function"
                 ? hydrateCatalogList(Array.isArray(savedRun?.autoMainWires) ? savedRun.autoMainWires : [])
                 : structuredClone(Array.isArray(savedRun?.autoMainWires) ? savedRun.autoMainWires : []),
+            // Older projects did not store wireCondition, so their behavior
+            // remains all groups enabled. Newer projects keep the exact
+            // condition selected for this run in the Runs modal.
+            wireCondition: {
+                main: savedRun?.wireCondition?.main !== false,
+                breakers: savedRun?.wireCondition?.breakers !== false,
+                neutral: savedRun?.wireCondition?.neutral !== false,
+                ground: savedRun?.wireCondition?.ground !== false,
+                communication: savedRun?.wireCondition?.communication !== false
+            },
             suppressedWireGroups: Array.isArray(savedRun?.suppressedWireGroups)
                 ? savedRun.suppressedWireGroups.map(value => String(value || "")).filter(Boolean)
                 : [],
