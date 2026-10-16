@@ -231,6 +231,83 @@ async function saveCurrentProject(options = {}) {
 }
 
 //----------------------------------
+// Generate Used Materials
+//----------------------------------
+
+async function generateUsedMaterials() {
+
+    const state = getProjectState();
+
+    if (!String(state.jobName || "").trim()) {
+        return {
+            success: false,
+            message: "Enter a project name before generating Used Materials."
+        };
+    }
+
+    // Open the tab inside the click event so the browser does not block it.
+    const usedMaterialsWindow =
+        typeof window !== "undefined" &&
+        typeof window.open === "function"
+            ? window.open("", "_blank")
+            : null;
+
+    try {
+        const result = await saveProject(
+            buildProject(),
+            { usedMaterialsOutput: "" }
+        );
+
+        if (!result?.success) {
+            usedMaterialsWindow?.close();
+            return result || {
+                success: false,
+                message: "Unable to generate Used Materials."
+            };
+        }
+
+        if (result.projectId) {
+            setProjectId(result.projectId);
+        }
+
+        if (result.usedMaterials?.success) {
+            const project = getProjectState();
+            project.usedMaterialsSpreadsheetId = String(
+                result.usedMaterials.spreadsheetId || ""
+            );
+            project.usedMaterialsSpreadsheetUrl = String(
+                result.usedMaterials.spreadsheetUrl || ""
+            );
+
+            if (usedMaterialsWindow && project.usedMaterialsSpreadsheetUrl) {
+                usedMaterialsWindow.location.replace(
+                    project.usedMaterialsSpreadsheetUrl
+                );
+            }
+        }
+        else {
+            usedMaterialsWindow?.close();
+        }
+
+        if (typeof invalidateProjectCache === "function") {
+            invalidateProjectCache();
+        }
+
+        return result;
+    }
+    catch (error) {
+        usedMaterialsWindow?.close();
+        console.error("Generate Used Materials Failed:", error);
+
+        return {
+            success: false,
+            message: error?.message || "Unable to generate Used Materials."
+        };
+    }
+
+}
+
+//----------------------------------
 // Load Current Project
 //----------------------------------
 
