@@ -391,6 +391,10 @@ function serializeMaterialSummary() {
     return String(value || "").trim().toUpperCase();
   }
 
+  function firstFilledValue(...values) {
+    return values.find(value => String(value ?? "").trim()) ?? "";
+  }
+
   function addMaterial(item, qty = 1, fallbackCategory = "") {
     if (!item) return;
 
@@ -453,26 +457,34 @@ function serializeMaterialSummary() {
         typeof getMaterial === "function"
           ? getMaterial(catalogNumber)
           : null;
+      const inventoryCategory = firstFilledValue(
+        item?.InventoryCategory,
+        item?.inventoryCategory,
+        item?.category,
+        catalogMaterial?.InventoryCategory,
+        catalogMaterial?.inventoryCategory,
+        catalogMaterial?.category
+      );
+
+      // Used Materials is the export of the Project Materials panel.  That
+      // panel intentionally shows only BOS and VAN, so do not export
+      // uncategorized or other catalog rows.
+      if (!["BOS", "VAN"].includes(normalizeCategory(inventoryCategory))) {
+        return;
+      }
 
       addMaterial(
         {
           ...catalogMaterial,
           ...item,
           CatalogNumber: catalogNumber,
-          Description:
-            item?.Description ??
-            item?.description ??
-            catalogMaterial?.Description ??
-            catalogMaterial?.description ??
-            "",
-          InventoryCategory:
-            item?.InventoryCategory ??
-            item?.inventoryCategory ??
-            item?.category ??
-            catalogMaterial?.InventoryCategory ??
-            catalogMaterial?.inventoryCategory ??
-            catalogMaterial?.category ??
-            ""
+          Description: firstFilledValue(
+            item?.Description,
+            item?.description,
+            catalogMaterial?.Description,
+            catalogMaterial?.description
+          ),
+          InventoryCategory: inventoryCategory
         },
         item.Qty ?? item.qty ?? item.Quantity ?? 1,
         ""
