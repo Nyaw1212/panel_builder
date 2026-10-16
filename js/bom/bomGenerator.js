@@ -41,18 +41,19 @@ function getFittingBOM() {
             ? item.materials
             : [];
         const mainCatalog = String(
-            item.data?.CatalogNumber || ""
-        ).trim().toUpperCase();
-        const hasMainMaterial = itemMaterials.some(material => {
-            return String(
-                material?.CatalogNumber || material?.catalogNumber || ""
-            ).trim().toUpperCase() === mainCatalog;
-        });
+            item.data?.CatalogNumber || item.data?.catalogNumber || ""
+        ).trim();
+        const mainCatalogKey = mainCatalog.toUpperCase();
 
-        if (mainCatalog && !hasMainMaterial) {
+        // A canvas card represents one physical primary component. Some
+        // PRESETS also repeat that same catalog in item.materials, so using
+        // both sources made every disconnect count twice. Count the card's
+        // primary equipment once, then use item.materials only for add-ons
+        // such as breakers, fuses, pads, and accessories.
+        if (mainCatalog) {
             mergeMaterial(map, {
                 ...item.data,
-                CatalogNumber: item.data.CatalogNumber,
+                CatalogNumber: mainCatalog,
                 qty: 1
             });
         }
@@ -63,6 +64,8 @@ function getFittingBOM() {
             ).trim();
 
             if (!catalogNumber) return;
+
+            if (catalogNumber.toUpperCase() === mainCatalogKey) return;
 
             mergeMaterial(map, {
                 ...material,
