@@ -2238,9 +2238,14 @@ function renderRunMaterialsModal() {
                                         ${renderRunCanvasComponentPreview(toTag, "To")}
                                     </div>
                                 </div>
-                                <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
-                                    ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
-                                </button>
+                                <div class="run-conduit-field">
+                                    <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
+                                        ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
+                                    </button>
+                                    ${run.conduit ? `
+                                        <button class="run-conduit-clear" type="button" data-action="clear-conduit" title="Remove conduit" aria-label="Remove conduit">&times;</button>
+                                    ` : ""}
+                                </div>
                                 <button class="run-material-button" type="button" data-action="fittings" title="Select run fittings">
                                     ${runModalEscape(getRunFittingsSummary(run))}
                                 </button>
@@ -2298,6 +2303,19 @@ function renderRunMaterialsModal() {
         row.querySelector("[data-action='conduit']")?.addEventListener(
             "click",
             () => openRunMaterialPicker(runId, "conduit", "materials")
+        );
+        row.querySelector("[data-action='clear-conduit']")?.addEventListener(
+            "click",
+            () => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                run.conduit = null;
+                captureRunsHistory("Run conduit removed");
+                saveRunsDraft();
+                refreshRunsBOM();
+                renderRunMaterialsModal();
+            }
         );
         row.querySelector("[data-action='fittings']")?.addEventListener(
             "click",
@@ -2412,9 +2430,14 @@ function renderRunsModal() {
                                         </select>
                                     </div>
                                 </div>
-                                <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
-                                    ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
-                                </button>
+                                <div class="run-conduit-field">
+                                    <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
+                                        ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
+                                    </button>
+                                    ${run.conduit ? `
+                                        <button class="run-conduit-clear" type="button" data-action="clear-conduit" title="Remove conduit" aria-label="Remove conduit">&times;</button>
+                                    ` : ""}
+                                </div>
                                 <div class="run-wire-field">
                                     <button class="run-material-button" type="button" data-action="wire" title="Select wire using ampacity filters">
                                         ${runModalEscape(getRunWireLabel(wires))}
@@ -2625,6 +2648,20 @@ function renderRunsModal() {
         row.querySelector("[data-action='conduit']")?.addEventListener(
             "click",
             () => openRunMaterialPicker(runId, "conduit")
+        );
+
+        row.querySelector("[data-action='clear-conduit']")?.addEventListener(
+            "click",
+            () => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                run.conduit = null;
+                captureRunsHistory("Run conduit removed");
+                saveRunsDraft();
+                refreshRunsBOM();
+                renderRunsModal();
+            }
         );
 
         row.querySelector("[data-action='wire']")?.addEventListener(
