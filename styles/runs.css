@@ -155,6 +155,31 @@
     border-bottom: 1px solid var(--v2-border, #2b3b54);
 }
 
+.runs-header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.runs-clear-materials {
+    min-height: 36px;
+    border: 1px solid rgba(248, 113, 113, .65);
+    border-radius: 8px;
+    padding: 0 12px;
+    color: #fecaca;
+    background: rgba(127, 29, 29, .45);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.runs-clear-materials:hover {
+    color: #fff;
+    background: rgba(185, 28, 28, .7);
+}
+
 .runs-header h2 {
     margin: 0;
     font-size: 22px;
