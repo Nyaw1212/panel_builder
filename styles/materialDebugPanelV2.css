@@ -68,7 +68,7 @@
 
 .material-debug-panel-v2--minimized .material-debug-panel-v2__header {
   min-height: 56px;
-  padding: 10px 14px 10px 104px;
+  padding: 10px 14px 10px 170px;
   border-bottom: 0;
 }
 
@@ -86,7 +86,7 @@
   display: flex;
   align-items: center;
   min-height: 66px;
-  padding: 14px 16px 14px 110px;
+  padding: 14px 16px 14px 176px;
   background: linear-gradient(90deg, var(--v2-navy-dark), var(--v2-navy-light));
   border-bottom: 3px solid var(--v2-yellow);
   overflow: visible;
@@ -124,6 +124,7 @@
   Minimize Button
 ----------------------------------*/
 
+.material-debug-panel-v2__used-materials,
 .material-debug-panel-v2__refresh,
 .material-debug-panel-v2__minimize {
   position: absolute;
@@ -167,16 +168,28 @@
   background: linear-gradient(145deg, var(--v2-navy-light), var(--v2-navy));
 }
 
+.material-debug-panel-v2__used-materials {
+  left: 102px;
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  background: linear-gradient(145deg, #1d6f42, #12512f);
+  font-size: 12px;
+}
+
+.material-debug-panel-v2__used-materials:hover,
 .material-debug-panel-v2__refresh:hover,
 .material-debug-panel-v2__minimize:hover {
   filter: brightness(1.15);
 }
 
+.material-debug-panel-v2__used-materials:active,
 .material-debug-panel-v2__refresh:active,
 .material-debug-panel-v2__minimize:active {
   transform: translateY(-50%) scale(0.94);
 }
 
+.material-debug-panel-v2__used-materials:focus-visible,
 .material-debug-panel-v2__refresh:focus-visible,
 .material-debug-panel-v2__minimize:focus-visible {
   outline: 3px solid rgba(255, 210, 30, 0.35);
