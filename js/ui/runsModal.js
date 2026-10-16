@@ -3298,3 +3298,94 @@ function renderRunFittingModal(run, materials, options = {}) {
             }
             else {
                 addRunFitting(run, material);
+                captureRunsHistory(`${options.historyLabel || "Run fitting"} added`);
+            }
+            refreshRunsBOM();
+            renderRunFittingModal(run, materials, options);
+        });
+    });
+
+    overlay.querySelectorAll(".fitting-remove-button").forEach(button => {
+        button.addEventListener("click", () => {
+            const material = catalogLookup.get(button.dataset.catalog || "");
+            if (!material) return;
+
+            removeRunFitting(run, material);
+            captureRunsHistory(`${options.historyLabel || "Run fitting"} removed`);
+            refreshRunsBOM();
+            renderRunFittingModal(run, materials, options);
+        });
+    });
+
+    overlay.style.display = "flex";
+
+    // Adding/removing a fitting rebuilds the quantities. Keep the user at
+    // the same position in the large matrix instead of jumping back to top.
+    const table = overlay.querySelector(".run-fitting-table-wrap");
+    const summary = overlay.querySelector(".fitting-summary-list");
+    if (table) {
+        table.scrollLeft = scrollState.tableLeft;
+        table.scrollTop = scrollState.tableTop;
+    }
+    if (summary) summary.scrollTop = scrollState.summaryTop;
+
+}
+
+function closeRunFittingModal() {
+
+    if (fittingModalElement) fittingModalElement.style.display = "none";
+
+    activeFittingTarget = null;
+
+    if (fittingReturnModal === "materials") {
+        openRunMaterialsModal();
+    }
+    else {
+        renderRunsModal();
+    }
+
+}
+
+function openRunsModal() {
+
+    const overlay = ensureRunsModal();
+
+    renderRunsModal();
+    overlay.style.display = "flex";
+
+}
+
+function closeRunsModal() {
+
+    if (runsModalElement) {
+        runsModalElement.style.display = "none";
+    }
+
+}
+
+function openRunMaterialsModal() {
+
+    const overlay = ensureRunMaterialsModal();
+
+    renderRunMaterialsModal();
+    overlay.style.display = "flex";
+
+}
+
+function closeRunMaterialsModal() {
+
+    if (runMaterialsModalElement) {
+        runMaterialsModalElement.style.display = "none";
+    }
+
+}
+
+// Expose the toolbar entry point only after this module has fully evaluated.
+window.openRunsModal = openRunsModal;
+window.closeRunsModal = closeRunsModal;
+window.openRunMaterialsModal = openRunMaterialsModal;
+window.closeRunMaterialsModal = closeRunMaterialsModal;
+window.autoCreateRunFromCanvasLink = autoCreateRunFromCanvasLink;
+window.refreshRunsForCanvasComponent = refreshRunsForCanvasComponent;
+window.removeRunsForCanvasLink = removeRunsForCanvasLink;
+window.removeRunsForCanvasLinks = removeRunsForCanvasLinks;
