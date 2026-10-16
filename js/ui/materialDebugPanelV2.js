@@ -13,6 +13,7 @@ const MaterialDebugPanelV2 = (() => {
 
   let minimizeButton = null;
   let refreshButton = null;
+  let usedMaterialsButton = null;
 
   let refreshTimer = null;
   let previousSignature = "";
@@ -37,6 +38,16 @@ const MaterialDebugPanelV2 = (() => {
           <h2>Project Materials</h2>
           <p>BOS and VAN summary</p>
         </div>
+
+        <button
+          type="button"
+          class="material-debug-panel-v2__used-materials"
+          data-action="used-materials"
+          aria-label="Generate Used Materials spreadsheet"
+          title="Generate Used Materials spreadsheet"
+        >
+          Used
+        </button>
 
         <button
           type="button"
@@ -155,6 +166,16 @@ const MaterialDebugPanelV2 = (() => {
     refreshButton.addEventListener(
       "click",
       () => refresh(true)
+    );
+
+    usedMaterialsButton =
+      panel.querySelector(
+        '[data-action="used-materials"]'
+      );
+
+    usedMaterialsButton.addEventListener(
+      "click",
+      generateUsedMaterialsFile
     );
 
     minimizeButton.addEventListener(
@@ -295,6 +316,34 @@ const MaterialDebugPanelV2 = (() => {
         equipment?.category ??
         ""
     };
+  }
+
+  async function generateUsedMaterialsFile() {
+    if (typeof window.generateUsedMaterials !== "function") {
+      alert("Used Materials is not available yet. Please reload the app.");
+      return;
+    }
+
+    const originalLabel = usedMaterialsButton.textContent;
+    usedMaterialsButton.disabled = true;
+    usedMaterialsButton.textContent = "...";
+
+    const result = await window.generateUsedMaterials();
+
+    usedMaterialsButton.disabled = false;
+    usedMaterialsButton.textContent = originalLabel;
+
+    if (!result?.success) {
+      alert(result?.message || "Unable to generate Used Materials.");
+      return;
+    }
+
+    if (!result.usedMaterials?.success) {
+      alert(
+        result.usedMaterials?.message ||
+        "Project saved, but Used Materials was not generated."
+      );
+    }
   }
 
   //----------------------------------
