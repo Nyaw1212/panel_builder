@@ -416,6 +416,7 @@ function buildModalCard(item) {
                 <div class="equipment-code material-card-code">
 
                     ${escapeModalHTML(
+                        item.PickerCardCode ||
                         item.CatalogNumber || ""
                     )}
 

@@ -26,6 +26,10 @@ function openEquipmentCardModal(item) {
     });
     console.groupEnd();
 
+    // The L-DISC picker applies a preset directly, so it needs the same
+    // live target reference as the normal component editor.
+    currentEquipment = item;
+
     //----------------------------------
     // L-DISC Material Picker
     //

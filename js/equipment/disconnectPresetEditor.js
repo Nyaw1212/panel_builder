@@ -253,6 +253,10 @@ function applyDisconnectPreset(presetCode) {
     drawCanvas();
   }
 
+  if (typeof refreshRunsForCanvasComponent === "function") {
+    refreshRunsForCanvasComponent(equipment.id);
+  }
+
   refreshEquipmentCardModal();
   return true;
 }
@@ -422,6 +426,31 @@ function getLDiscMaterialLibrary() {
     });
 }
 
+function getLDiscPresetLibrary() {
+  const seen = new Set();
+
+  return getDisconnectPresetCodes()
+    .map(presetCode => {
+      const equipment = getPresetEquipment(presetCode);
+
+      if (!equipment || seen.has(presetCode)) {
+        return null;
+      }
+
+      seen.add(presetCode);
+
+      return {
+        ...structuredClone(equipment),
+        // Keep the catalog number for its component image, while the card
+        // itself identifies the WireAss preset that will be applied.
+        PickerCardCode: presetCode,
+        Code: presetCode,
+        presetCode
+      };
+    })
+    .filter(Boolean);
+}
+
 function replaceLDiscMaterial(equipment, material) {
   if (!equipment || !material || !isDisconnectReplacementMaterial(material)) {
     return false;
@@ -507,7 +536,7 @@ function openLDiscMaterialPicker(equipment) {
     return;
   }
 
-  const materials = getLDiscMaterialLibrary();
+  const presets = getLDiscPresetLibrary();
 
   console.group("[L-DISC Picker] Target and filter");
   console.log("Clicked canvas card:", {
@@ -517,32 +546,33 @@ function openLDiscMaterialPicker(equipment) {
     description: equipment.data?.Description || "",
     startCell: equipment.startCell
   });
-  console.table(materials.map(material => ({
-    catalogNumber: material.CatalogNumber,
-    description: material.Description || "",
-    nodeType: material.NodeType || "",
-    gridWidth: material.GridWidth || "",
-    gridHeight: material.GridHeight || ""
+  console.table(presets.map(preset => ({
+    preset: preset.presetCode,
+    catalogNumber: preset.CatalogNumber,
+    description: preset.Description || "",
+    nodeType: preset.NodeType || "",
+    gridWidth: preset.GridWidth || "",
+    gridHeight: preset.GridHeight || ""
   })));
 
-  if (!materials.length) {
+  if (!presets.length) {
     console.warn(
-      "No disconnect materials were found. Check the MML NodeType column for L-DISC or DISCONNECT."
+      "No disconnect presets were found. Check the PRESETS and MML catalogs."
     );
   }
 
   console.groupEnd();
 
   openPickerModal(
-    "Replace L-DISC",
-    materials,
-    material => {
-      console.info("[L-DISC Picker] Selected replacement:", {
-        from: equipment.data?.CatalogNumber || "",
-        to: material.CatalogNumber || ""
+    "Choose L-DISC Preset",
+    presets,
+    preset => {
+      console.info("[L-DISC Picker] Selected preset:", {
+        from: getItemPresetCode(equipment),
+        to: preset.presetCode || ""
       });
 
-      return replaceLDiscMaterial(equipment, material);
+      return applyDisconnectPreset(preset.presetCode);
     }
   );
 }
