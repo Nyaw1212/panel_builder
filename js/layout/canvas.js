@@ -856,8 +856,31 @@ function drawGrid() {
 // Draw Equipment
 //----------------------------------
 
+function getCanvasDisconnectPresetRating(item) {
+  const presetCode = String(
+    item?.preset ||
+    item?.data?.PRESET ||
+    item?.data?.Preset ||
+    ""
+  ).trim();
+
+  if (!presetCode || typeof window.getPresetAssemblyRating !== "function") {
+    return 0;
+  }
+
+  return Number(
+    window.getPresetAssemblyRating(presetCode, ["L-DISC", "H-DISC"]) || 0
+  );
+}
+
 function getCanvasItemRatingLabel(item) {
   const data = item?.data || {};
+  const presetRating = getCanvasDisconnectPresetRating(item);
+
+  if (presetRating > 0) {
+    return `${presetRating}A`;
+  }
+
   const directRating = [
     data.RATING,
     data.Rating,
