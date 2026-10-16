@@ -22,6 +22,39 @@
     box-shadow: 0 24px 70px rgba(0, 0, 0, .58);
 }
 
+/* The primary Material Runs editor is a page-like workspace.  The smaller
+   Conduit & Fittings editor keeps the regular centered-dialog layout. */
+.runs-workspace-overlay {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: var(--v2-bg, #0f172a);
+    backdrop-filter: none;
+}
+
+.runs-dialog.runs-workspace {
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.runs-workspace .runs-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--v2-bg, #0f172a);
+}
+
+.runs-workspace .runs-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: var(--v2-bg, #0f172a);
+}
+
 .runs-header,
 .runs-footer {
     display: flex;
