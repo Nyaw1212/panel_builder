@@ -481,6 +481,26 @@ function getCanvasItem(itemId) {
 }
 
 function getCanvasItemWireRating(item) {
+    const presetCode = String(
+        item?.preset ||
+        item?.data?.PRESET ||
+        item?.data?.Preset ||
+        ""
+    ).trim();
+    const disconnectPresetRating = presetCode &&
+        typeof window.getPresetAssemblyRating === "function"
+        ? Number(
+            window.getPresetAssemblyRating(
+                presetCode,
+                ["L-DISC", "H-DISC"]
+            ) || 0
+        )
+        : 0;
+
+    if (disconnectPresetRating > 0) {
+        return disconnectPresetRating;
+    }
+
     const value = item?.data?.RATING ??
         item?.data?.Rating ??
         item?.data?.rating ??
@@ -658,7 +678,7 @@ function getRunMainConductorSources(run) {
     return endpoints
         .filter(isDisconnectCanvasItem)
         .map(disconnect => {
-            const rating = Number(disconnect?.data?.RATING ?? disconnect?.data?.Rating ?? 0);
+            const rating = getCanvasItemWireRating(disconnect);
             const label = String(disconnect?.preset || disconnect?.data?.CatalogNumber || "Disconnect").trim();
             const wirePreset = getCanvasWireAssignmentPreset(disconnect) || panelPreset;
 
