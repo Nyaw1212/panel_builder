@@ -376,6 +376,9 @@ function initializeToolbar() {
     const runsButton =
         document.getElementById("runsButton");
 
+    const runMaterialsButton =
+        document.getElementById("runMaterialsButton");
+
     const reloadMMLButton =
         document.getElementById("reloadMMLButton");
 
@@ -484,6 +487,19 @@ function initializeToolbar() {
             else {
                 console.error("Runs modal was not loaded.");
                 alert("Runs is still loading. Please refresh the page, then try again.");
+            }
+        });
+    }
+
+    if (runMaterialsButton) {
+        runMaterialsButton.addEventListener("click", () => {
+            const openRunMaterials = window.openRunMaterialsModal;
+            if (typeof openRunMaterials === "function") {
+                openRunMaterials();
+            }
+            else {
+                console.error("Conduit & Fittings modal was not loaded.");
+                alert("Conduit & Fittings is still loading. Please refresh the page, then try again.");
             }
         });
     }

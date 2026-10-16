@@ -143,22 +143,65 @@ function buildHardwarePanel() {
 
             };
 
-            card.querySelector(".assembly-qty-input")?.addEventListener(
+            const quantityInput =
+                card.querySelector(".assembly-qty-input");
+
+            const saveQuantity = value => {
+                const quantity = Number(value);
+
+                if (!Number.isInteger(quantity) || quantity < 1) {
+                    alert("Enter a whole number of at least 1.");
+                    return false;
+                }
+
+                hardware.qty = quantity;
+                buildModalList(modalSearch?.value || "");
+                drawCanvas();
+                return true;
+            };
+
+            quantityInput?.addEventListener("focus", () => {
+                quantityInput.select();
+            });
+
+            quantityInput?.addEventListener(
                 "change",
                 event => {
-                    const quantity = Number(event.target.value);
-
-                    if (!Number.isInteger(quantity) || quantity < 1) {
-                        event.target.value = String(Math.max(1, Number(hardware.qty || 1)));
-                        alert("Enter a whole number of at least 1.");
-                        return;
+                    if (!saveQuantity(event.target.value)) {
+                        event.target.value = String(
+                            Math.max(1, Number(hardware.qty || 1))
+                        );
                     }
-
-                    hardware.qty = quantity;
-                    buildModalList(modalSearch?.value || "");
-                    drawCanvas();
                 }
             );
+
+            quantityInput?.addEventListener("keydown", event => {
+                if (event.key !== "Enter") return;
+
+                event.preventDefault();
+
+                if (!saveQuantity(event.target.value)) {
+                    quantityInput.value = String(
+                        Math.max(1, Number(hardware.qty || 1))
+                    );
+                    quantityInput.select();
+                    return;
+                }
+
+                requestAnimationFrame(() => {
+                    const inputs = [
+                        ...document.querySelectorAll(
+                            ".assembly-qty-input"
+                        )
+                    ];
+                    const next = inputs[index + 1] || inputs[0];
+
+                    if (next) {
+                        next.focus();
+                        next.select();
+                    }
+                });
+            });
 
             row.appendChild(card);
 
