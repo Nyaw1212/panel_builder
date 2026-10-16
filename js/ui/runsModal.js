@@ -2180,6 +2180,16 @@ function ensureRunsModal() {
 
 }
 
+function setPanelCommandLineForRuns(isRunsOpen) {
+
+    const commandLine = document.getElementById("panelCommandLine");
+
+    if (commandLine) {
+        commandLine.hidden = Boolean(isRunsOpen);
+    }
+
+}
+
 function ensureRunMaterialsModal() {
 
     if (runMaterialsModalElement) return runMaterialsModalElement;
@@ -3489,6 +3499,7 @@ function openRunsModal() {
 
     const overlay = ensureRunsModal();
 
+    setPanelCommandLineForRuns(true);
     renderRunsModal();
     overlay.style.display = "flex";
 
@@ -3499,6 +3510,8 @@ function closeRunsModal() {
     if (runsModalElement) {
         runsModalElement.style.display = "none";
     }
+
+    setPanelCommandLineForRuns(false);
 
 }
 
