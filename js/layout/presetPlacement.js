@@ -102,6 +102,65 @@ function getRowPresetCode(row) {
 }
 
 //----------------------------------
+// Preset Rating
+//----------------------------------
+
+function normalizePresetAssemblyType(value) {
+  return normalizePresetText(value)
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+}
+
+function getRowPresetRating(row) {
+  const value =
+    row?.RATING ??
+    row?.Rating ??
+    row?.rating ??
+    row?.AMPERAGE ??
+    row?.Amperage ??
+    row?.AMPS ??
+    "";
+
+  const rating = Number(
+    String(value ?? "").replace(/[^0-9.]/g, "")
+  );
+
+  return Number.isFinite(rating) && rating > 0
+    ? rating
+    : 0;
+}
+
+// An assembly can intentionally use a different operating rating than the
+// physical MML component. For example, the same 200A disconnect can be used
+// by an F125 or F80 preset. Read that value from PRESETS for wire estimates.
+function getPresetAssemblyRating(preset, allowedTypes = []) {
+  const presetAliases = getPresetCodeAliases(preset);
+  if (!presetAliases.length) return 0;
+
+  const acceptedTypes = new Set(
+    (Array.isArray(allowedTypes) ? allowedTypes : [allowedTypes])
+      .map(normalizePresetAssemblyType)
+      .filter(Boolean)
+  );
+
+  const row = (Array.isArray(window.presets) ? window.presets : [])
+    .find(candidate => {
+      const matchesPreset = presetAliases.includes(
+        normalizePresetCode(getRowPresetCode(candidate))
+      );
+      if (!matchesPreset) return false;
+
+      return !acceptedTypes.size || acceptedTypes.has(
+        normalizePresetAssemblyType(
+          candidate?.TYPE ?? candidate?.Type ?? candidate?.type ?? ""
+        )
+      );
+    });
+
+  return getRowPresetRating(row);
+}
+
+//----------------------------------
 // Get Row Catalog Number
 //----------------------------------
 
@@ -712,6 +771,9 @@ window.getPresetEquipment =
 
 window.getApiPresetRows =
   getApiPresetRows;
+
+window.getPresetAssemblyRating =
+  getPresetAssemblyRating;
 
 window.getApiPresetMaterials =
   getApiPresetMaterials;
