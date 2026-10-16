@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 30172)
+Total output lines: 3183
+
 //----------------------------------
 // Free-form Material Runs
 //----------------------------------
@@ -779,6 +782,45 @@ function getRunBreakerWireAssignments(run) {
         : [];
 }
 
+function getRunSuppressedWireGroups(run) {
+    return new Set(
+        Array.isArray(run?.suppressedWireGroups)
+            ? run.suppressedWireGroups.map(value => String(value || "")).filter(Boolean)
+            : []
+    );
+}
+
+function isRunWireGroupSuppressed(run, groupKey) {
+    return getRunSuppressedWireGroups(run).has(String(groupKey || ""));
+}
+
+function suppressRunWireGroup(run, groupKey) {
+    const suppressed = getRunSuppressedWireGroups(run);
+    if (groupKey) suppressed.add(String(groupKey));
+    run.suppressedWireGroups = [...suppressed];
+}
+
+function restoreRunWireGroup(run, groupKey) {
+    const suppressed = getRunSuppressedWireGroups(run);
+    suppressed.delete(String(groupKey || ""));
+    run.suppressedWireGroups = [...suppressed];
+}
+
+function getMainAutoWireGroupKey(source) {
+    return `main:${getRunCircuitSourceKey(source)}`;
+}
+
+function getBreakerAutoWireGroupKey(source) {
+    return `breaker:${getRunCircuitSourceKey(source)}`;
+}
+
+function getSharedAutoWireGroupKey(wire) {
+    const color = normalizeWireToken(wire?.Color);
+    if (color === "WHITE") return "shared:neutral";
+    if (color === "GREEN") return "shared:ground";
+    return "shared:communication";
+}
+
 function getRunManualWires(run) {
     return Array.isArray(run?.manualWires)
         ? run.manualWires
@@ -786,11 +828,13 @@ function getRunManualWires(run) {
 }
 
 function getRunAutoWires(run) {
-    return Array.isArray(run?.autoRunWires) ? run.autoRunWires : [];
+    return (Array.isArray(run?.autoRunWires) ? run.autoRunWires : [])
+        .filter(wire => !isRunWireGroupSuppressed(run, getSharedAutoWireGroupKey(wire)));
 }
 
 function getRunAutoMainWires(run) {
-    return Array.isArray(run?.autoMainWires) ? run.autoMainWires : [];
+    return (Array.isArray(run?.autoMainWires) ? run.autoMainWires : [])
+        .filter(wire => !wire?.runWireGroup || !isRunWireGroupSuppressed(run, wire.runWireGroup));
 }
 
 function rebuildRunWiresFromAssignments(run) {
@@ -801,7 +845,8 @@ function rebuildRunWiresFromAssignments(run) {
     }
     const selectedKeys = new Set(getRunCircuitSources(run).map(getRunCircuitSourceKey));
     const assignments = getRunBreakerWireAssignments(run)
-        .filter(assignment => selectedKeys.has(getRunCircuitSourceKey(assignment)));
+        .filter(assignment => selectedKeys.has(getRunCircuitSourceKey(assignment)))
+        .filter(assignment => !isRunWireGroupSuppressed(run, getBreakerAutoWireGroupKey(assignment)));
 
     run.breakerWireAssignments = assignments;
     run.wires = [
@@ -943,7 +988,11 @@ function getRunWireListLabel(wires) {
         .join(", ") || "No wire assigned";
 }
 
-function autoAssignRunWires(run) {
+function autoAssignRunWires(run, options = {}) {
+    if (options.resetSuppressed === true) {
+        run.suppressedWireGroups = [];
+    }
+
     const isContactorRun = runConnectsToContactor(run);
     // A contactor path is always a breaker-only run. The feeder/main on the
     // other endpoint is deliberately ignored.
@@ -968,6 +1017,11 @@ function autoAssignRunWires(run) {
     const missing = [];
 
     wireSources.forEach(source => {
+        const wireGroupKey = source.sourceType === "main"
+            ? getMainAutoWireGroupKey(source)
+            : getBreakerAutoWireGroupKey(source);
+        if (isRunWireGroupSuppressed(run, wireGroupKey)) return;
+
         const rule = isContactorRun
             ? contactorRule
             : getRunWireAssignmentRule(run, source);
@@ -1033,6 +1087,7 @@ function autoAssignRunWires(run) {
         }
 
         if (source.sourceType === "main") {
+            wires.forEach(wire => { wire.runWireGroup = wireGroupKey; });
             mainWires.push(...wires);
         }
         else {
@@ -1053,7 +1108,9 @@ function autoAssignRunWires(run) {
 
     if (!isContactorRun && getWireRuleMode(sharedRule, "Neutral Mode") === "PER RUN") {
         const neutralSize = String(sharedRule?.["NEUTRAL SIZE"] || "").trim() || largestSize;
-        addAutomaticWire(sharedWires, neutralSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
+        if (!isRunWireGroupSuppressed(run, "shared:neutral")) {
+            addAutomaticWire(sharedWires, neutralSize, "WHITE", Number(sharedRule?.["Neutral Qty"] || 1));
+        }
     }
     if (!isContactorRun && getWireRuleMode(sharedRule, "Ground Mode") === "PER RUN") {
         // Some existing WireAss rows intentionally leave Ground Size blank.
@@ -1061,11 +1118,13 @@ function autoAssignRunWires(run) {
         // it may not exist in green in the MML.  #10 is the company fallback;
         // an entered Ground Size always takes precedence.
         const groundSize = String(sharedRule?.["Ground Size"] || "").trim() || "#10";
-        addAutomaticWire(sharedWires, groundSize, "GREEN", Number(sharedRule?.["Ground Qty"] || 1));
+        if (!isRunWireGroupSuppressed(run, "shared:ground")) {
+            addAutomaticWire(sharedWires, groundSize, "GREEN", Number(sharedRule?.["Ground Qty"] || 1));
+        }
     }
     // COM accepts one or more catalog numbers separated by commas, semicolons,
     // or new lines. For example, SON11/SON+ uses COM = CAT6BLUE.
-    String(isContactorRun ? "" : sharedRule?.COM || "")
+    if (!isRunWireGroupSuppressed(run, "shared:communication")) String(isContactorRun ? "" : sharedRule?.COM || "")
         .split(/[;,\n]+/)
         .map(value => value.trim())
         .filter(Boolean)
@@ -1081,6 +1140,45 @@ function autoAssignRunWires(run) {
     rebuildRunWiresFromAssignments(run);
 
     return { assigned: assignments.length + (mainWires.length ? 1 : 0), missing };
+}
+
+function removeRunWireGroup(run, groupKey, source = null) {
+    if (!run || !groupKey) return false;
+
+    const key = String(groupKey);
+    suppressRunWireGroup(run, key);
+
+    if (key.startsWith("breaker:")) {
+        run.breakerWireAssignments = getRunBreakerWireAssignments(run)
+            .filter(assignment => getBreakerAutoWireGroupKey(assignment) !== key);
+    }
+    else if (key.startsWith("main:")) {
+        const fallbackSize = source
+            ? normalizeWireSize(getAutomaticWireSize(source.rating))
+            : "";
+        run.autoMainWires = (Array.isArray(run.autoMainWires) ? run.autoMainWires : [])
+            .filter(wire => {
+                if (wire?.runWireGroup) return wire.runWireGroup !== key;
+                return !fallbackSize || normalizeWireSize(wire?.Size) !== fallbackSize;
+            });
+    }
+    else if (key === "shared:neutral") {
+        run.autoRunWires = (Array.isArray(run.autoRunWires) ? run.autoRunWires : [])
+            .filter(wire => normalizeWireToken(wire?.Color) !== "WHITE");
+    }
+    else if (key === "shared:ground") {
+        run.autoRunWires = (Array.isArray(run.autoRunWires) ? run.autoRunWires : [])
+            .filter(wire => normalizeWireToken(wire?.Color) !== "GREEN");
+    }
+    else if (key === "shared:communication") {
+        run.autoRunWires = (Array.isArray(run.autoRunWires) ? run.autoRunWires : [])
+            .filter(wire => !["WHITE", "GREEN"].includes(normalizeWireToken(wire?.Color)));
+    }
+
+    rebuildRunWiresFromAssignments(run);
+    captureRunsHistory("Run wire group removed");
+    refreshRunsBOM();
+    return true;
 }
 
 function getRunCircuitSummary(run) {
@@ -1230,6 +1328,7 @@ function openRunBreakerWirePicker(runId, source) {
                 const assignments = getRunBreakerWireAssignments(currentRun)
                     .filter(assignment => getRunCircuitSourceKey(assignment) !== key);
                 if (draftConnection.hardware.length) {
+                    restoreRunWireGroup(currentRun, getBreakerAutoWireGroupKey(source));
                     assignments.push({ ...source, wires: structuredClone(draftConnection.hardware) });
                 }
                 currentRun.breakerWireAssignments = assignments;
@@ -1277,13 +1376,19 @@ function openRunWireAssignmentModal(runId) {
                 <button type="button" class="run-circuit-close" aria-label="Close">&times;</button>
             </header>
             <div class="run-circuit-list">
-                ${mainSources.map(source => {
+                ${mainSources
+                    .filter(source => !isRunWireGroupSuppressed(run, getMainAutoWireGroupKey(source)))
+                    .map(source => {
                     const rule = getRunWireAssignmentRule(run, source);
                     const size = normalizeWireSize(
                         String(rule?.["WIRE SIZE"] || "").trim() ||
                         getAutomaticWireSize(source.rating)
                     );
-                    const wires = autoMainWires.filter(wire => normalizeWireSize(wire?.Size) === size);
+                    const groupKey = getMainAutoWireGroupKey(source);
+                    const groupedWires = autoMainWires.filter(wire => wire?.runWireGroup === groupKey);
+                    const wires = groupedWires.length || autoMainWires.some(wire => wire?.runWireGroup)
+                        ? groupedWires
+                        : autoMainWires.filter(wire => normalizeWireSize(wire?.Size) === size);
                     const mainLabel = source.rating
                         ? `Main · ${source.rating}A · ${source.catalogNumber}`
                         : `Main · ${source.catalogNumber}`;
@@ -1293,7 +1398,7 @@ function openRunWireAssignmentModal(runId) {
                                 <strong>${runModalEscape(mainLabel)}</strong>
                                 <small>${runModalEscape(getRunWireListLabel(wires))}</small>
                             </span>
-                            <em>Auto</em>
+                            <div class="run-wire-assignment-actions"><em>Auto</em><button type="button" class="run-wire-remove" data-remove-wire-group="${runModalEscape(groupKey)}" title="Remove main wire group" aria-label="Remove main wire group">&times;</button></div>
                         </div>`;
                 }).join("")}
                 ${neutralWires.length ? `
@@ -1302,7 +1407,7 @@ function openRunWireAssignmentModal(runId) {
                             <strong>Neutral · Run level</strong>
                             <small>${runModalEscape(getRunWireListLabel(neutralWires))}</small>
                         </span>
-                        <em>Auto</em>
+                        <div class="run-wire-assignment-actions"><em>Auto</em><button type="button" class="run-wire-remove" data-remove-wire-group="shared:neutral" title="Remove neutral wire" aria-label="Remove neutral wire">&times;</button></div>
                     </div>` : ""}
                 ${groundWires.length ? `
                     <div class="run-wire-assignment-row run-wire-generated-row">
@@ -1310,7 +1415,7 @@ function openRunWireAssignmentModal(runId) {
                             <strong>Ground · Run level</strong>
                             <small>${runModalEscape(getRunWireListLabel(groundWires))}</small>
                         </span>
-                        <em>Auto</em>
+                        <div class="run-wire-assignment-actions"><em>Auto</em><button type="button" class="run-wire-remove" data-remove-wire-group="shared:ground" title="Remove ground wire" aria-label="Remove ground wire">&times;</button></div>
                     </div>` : ""}
                 ${communicationWires.length ? `
                     <div class="run-wire-assignment-row run-wire-generated-row">
@@ -1318,7 +1423,7 @@ function openRunWireAssignmentModal(runId) {
                             <strong>Communication · Run level</strong>
                             <small>${runModalEscape(getRunWireListLabel(communicationWires))}</small>
                         </span>
-                        <em>Auto</em>
+                        <div class="run-wire-assignment-actions"><em>Auto</em><button type="button" class="run-wire-remove" data-remove-wire-group="shared:communication" title="Remove communication wire" aria-label="Remove communication wire">&times;</button></div>
                     </div>` : ""}
                 ${sources.map(source => {
                     const assignment = assignments.find(item => getRunCircuitSourceKey(item) === getRunCircuitSourceKey(source));
@@ -1332,7 +1437,10 @@ function openRunWireAssignmentModal(runId) {
                                 <strong>${runModalEscape(`${source.rating || "?"}A · ${source.catalogNumber}`)}</strong>
                                 <small>${runModalEscape(`${label}${missing}`)}</small>
                             </span>
-                            <button type="button" data-source-key="${runModalEscape(getRunCircuitSourceKey(source))}">${assignment?.wires?.length ? "Edit wires" : "Assign wires"}</button>
+                            <div class="run-wire-assignment-actions">
+                                <button type="button" data-source-key="${runModalEscape(getRunCircuitSourceKey(source))}">${assignment?.wires?.length ? "Edit wires" : "Assign wires"}</button>
+                                ${assignment?.wires?.length ? `<button type="button" class="run-wire-remove" data-remove-wire-group="${runModalEscape(getBreakerAutoWireGroupKey(source))}" title="Remove breaker wire group" aria-label="Remove breaker wire group">&times;</button>` : ""}
+                            </div>
                         </div>`;
                 }).join("")}
             </div>
@@ -1346,6 +1454,14 @@ function openRunWireAssignmentModal(runId) {
     overlay.querySelectorAll("[data-source-key]").forEach(button => button.addEventListener("click", () => {
         const source = sources.find(item => getRunCircuitSourceKey(item) === button.dataset.sourceKey);
         if (source) openRunBreakerWirePicker(runId, source);
+    }));
+    overlay.querySelectorAll("[data-remove-wire-group]").forEach(button => button.addEventListener("click", () => {
+        const groupKey = String(button.dataset.removeWireGroup || "");
+        const source = groupKey.startsWith("main:")
+            ? mainSources.find(item => getMainAutoWireGroupKey(item) === groupKey)
+            : null;
+        if (!removeRunWireGroup(run, groupKey, source)) return;
+        openRunWireAssignmentModal(runId);
     }));
     overlay.style.display = "flex";
 }
@@ -1452,32 +1568,7 @@ function removeRunsForCanvasLinks(canvasLinkIds, options = {}) {
     return removedRuns;
 }
 
-function removeRunsForCanvasLink(canvasLinkId, options = {}) {
-    return removeRunsForCanvasLinks([canvasLinkId], options);
-}
-
-function removeRunAndCanvasLink(runId) {
-    const runs = getEditableRuns();
-    const index = runs.findIndex(run => run.id === runId);
-
-    if (index < 0) return false;
-
-    const run = runs[index];
-    const canvasLinkId = String(run?.canvasLinkId || "");
-
-    runs.splice(index, 1);
-
-    // Runs created from a canvas link own that link. Manual runs have no
-    // canvasLinkId and remain a runs-only estimate.
-    if (
-        canvasLinkId &&
-        typeof removeLink === "function"
-    ) {
-        removeLink(canvasLinkId, {
-            captureHistory: false,
-            removeMaterialRun: false
-        });
-    }
+function removeRunsForCanvasLink(canvasLinkId, options = {}) …172 tokens truncated… }
 
     getEditableGutters().forEach(gutter => {
         if (!Array.isArray(gutter?.excludedRunIds)) return;
@@ -2306,7 +2397,9 @@ function renderRunsModal() {
                 const run = findRun(runId);
                 if (!run) return;
 
-                const result = autoAssignRunWires(run);
+                const result = autoAssignRunWires(run, {
+                    resetSuppressed: true
+                });
                 if (!result.assigned) {
                     alert("No WireAss rule matched this run's endpoints or selected breakers.");
                     return;
