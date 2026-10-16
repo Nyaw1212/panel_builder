@@ -1871,6 +1871,7 @@ function renderRunMaterialsModal() {
                 <span>Fittings</span>
                 <span>Length</span>
                 <span>Conduit BOM</span>
+                <span></span>
             </div>
 
             <div class="runs-list">
@@ -1916,6 +1917,9 @@ function renderRunMaterialsModal() {
                                 </label>
                                 <div class="run-calculated">
                                     <span>Conduit: <strong>${conduitQty}</strong></span>
+                                </div>
+                                <div class="run-actions run-materials-actions">
+                                    <button class="run-delete" type="button" data-action="delete-run" title="Remove Run ${index + 1}" aria-label="Remove Run ${index + 1}">&times;</button>
                                 </div>
                             </article>
                         `;
@@ -1977,6 +1981,11 @@ function renderRunMaterialsModal() {
             run.length = Number.isFinite(value) ? value : 0;
             captureRunsHistory("Run length updated");
             refreshRunsBOM();
+            renderRunMaterialsModal();
+        });
+
+        row.querySelector("[data-action='delete-run']")?.addEventListener("click", () => {
+            if (!removeRunAndCanvasLink(runId)) return;
             renderRunMaterialsModal();
         });
     });
