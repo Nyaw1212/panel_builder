@@ -3,6 +3,7 @@
 //----------------------------------
 
 let runsModalElement = null;
+let runMaterialsModalElement = null;
 let expandedGutterId = null;
 let fittingModalElement = null;
 let activeFittingTarget = null;
@@ -12,6 +13,8 @@ let runCircuitModalElement = null;
 let runWireAssignmentModalElement = null;
 let runCanvasLinkModalElement = null;
 let runsModalScrollTop = 0;
+let runMaterialsModalScrollTop = 0;
+let fittingReturnModal = "runs";
 
 const FITTING_MATRIX_COLUMNS = [
     { key: "DIECAST", label: "Diecast", pattern: /DIE\s*CAST/ },
@@ -1822,6 +1825,164 @@ function ensureRunsModal() {
 
 }
 
+function ensureRunMaterialsModal() {
+
+    if (runMaterialsModalElement) return runMaterialsModalElement;
+
+    const overlay = document.createElement("div");
+
+    overlay.id = "runMaterialsModal";
+    overlay.className = "runs-modal";
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) {
+            closeRunMaterialsModal();
+        }
+    });
+
+    document.body.appendChild(overlay);
+    runMaterialsModalElement = overlay;
+    return overlay;
+
+}
+
+function renderRunMaterialsModal() {
+
+    const overlay = ensureRunMaterialsModal();
+    const previousDialog = overlay.querySelector(".runs-dialog");
+    if (previousDialog) {
+        runMaterialsModalScrollTop = previousDialog.scrollTop;
+    }
+
+    const runs = getEditableRuns();
+
+    overlay.innerHTML = `
+        <section class="runs-dialog run-materials-dialog" role="dialog" aria-modal="true" aria-labelledby="runMaterialsTitle">
+            <header class="runs-header">
+                <div>
+                    <h2 id="runMaterialsTitle">Conduit &amp; Fittings</h2>
+                    <p>Edit route length, conduit, and fittings without opening the wire controls.</p>
+                </div>
+                <button class="runs-close" type="button" aria-label="Close conduit and fittings">&times;</button>
+            </header>
+
+            <div class="run-materials-grid-header" aria-hidden="true">
+                <span>Run / canvas link</span>
+                <span>Conduit</span>
+                <span>Fittings</span>
+                <span>Length</span>
+                <span>Conduit BOM</span>
+            </div>
+
+            <div class="runs-list">
+                ${runs.length
+                    ? runs.map((run, index) => {
+                        const length = Math.max(0, Number(run.length || 0));
+                        const fromTag = run.fromCanvasItemId || "";
+                        const toTag = run.toCanvasItemId || "";
+                        const conduitQty = run.conduit
+                            ? `${formatRunFeet(length)} ft`
+                            : "—";
+
+                        return `
+                            <article class="run-materials-row" data-run-id="${runModalEscape(run.id)}">
+                                <div class="run-name">
+                                    <div class="run-name-line">
+                                        <span class="run-number" aria-label="Run ${index + 1}">${index + 1}</span>
+                                        <strong>${runModalEscape(run.name || `Run ${index + 1}`)}</strong>
+                                    </div>
+                                    <div class="canvas-component-previews">
+                                        ${renderRunCanvasComponentPreview(fromTag, "From")}
+                                        <span class="canvas-component-arrow">→</span>
+                                        ${renderRunCanvasComponentPreview(toTag, "To")}
+                                    </div>
+                                </div>
+                                <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
+                                    ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
+                                </button>
+                                <button class="run-material-button" type="button" data-action="fittings" title="Select run fittings">
+                                    ${runModalEscape(getRunFittingsSummary(run))}
+                                </button>
+                                <label class="run-length-field">
+                                    <input
+                                        class="run-materials-length-input"
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        inputmode="decimal"
+                                        value="${runModalEscape(length)}"
+                                        aria-label="Run ${index + 1} length in feet"
+                                    >
+                                    <span>ft</span>
+                                </label>
+                                <div class="run-calculated">
+                                    <span>Conduit: <strong>${conduitQty}</strong></span>
+                                </div>
+                            </article>
+                        `;
+                    }).join("")
+                    : `<div class="runs-empty">Create a canvas link or add a Run first.</div>`
+                }
+            </div>
+
+            <footer class="runs-footer">
+                <div class="runs-rule">Wire edits remain under Runs.</div>
+                <button class="runs-done" type="button">Done</button>
+            </footer>
+        </section>
+    `;
+
+    const dialog = overlay.querySelector(".runs-dialog");
+    if (dialog && runMaterialsModalScrollTop > 0) {
+        requestAnimationFrame(() => {
+            dialog.scrollTop = runMaterialsModalScrollTop;
+        });
+    }
+
+    overlay.querySelector(".runs-close")?.addEventListener(
+        "click",
+        closeRunMaterialsModal
+    );
+    overlay.querySelector(".runs-done")?.addEventListener(
+        "click",
+        closeRunMaterialsModal
+    );
+
+    overlay.querySelectorAll(".run-materials-row").forEach(row => {
+        const runId = row.dataset.runId;
+
+        row.querySelector("[data-action='conduit']")?.addEventListener(
+            "click",
+            () => openRunMaterialPicker(runId, "conduit", "materials")
+        );
+        row.querySelector("[data-action='fittings']")?.addEventListener(
+            "click",
+            () => openRunFittingModal(runId, "materials")
+        );
+
+        const lengthInput = row.querySelector(".run-materials-length-input");
+        lengthInput?.addEventListener("focus", () => lengthInput.select());
+        lengthInput?.addEventListener("input", event => {
+            const run = findRun(runId);
+            if (!run) return;
+
+            const value = Math.max(0, Number(event.target.value || 0));
+            run.length = Number.isFinite(value) ? value : 0;
+            saveRunsDraft();
+        });
+        lengthInput?.addEventListener("change", event => {
+            const run = findRun(runId);
+            if (!run) return;
+
+            const value = Math.max(0, Number(event.target.value || 0));
+            run.length = Number.isFinite(value) ? value : 0;
+            captureRunsHistory("Run length updated");
+            refreshRunsBOM();
+            renderRunMaterialsModal();
+        });
+    });
+
+}
+
 function renderRunsModal() {
 
     const overlay = ensureRunsModal();
@@ -2419,7 +2580,7 @@ function renderRunsModal() {
 
 }
 
-async function openRunMaterialPicker(runId, materialType) {
+async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
 
     const materials = typeof getMaterials === "function"
         ? await getMaterials()
@@ -2440,7 +2601,9 @@ async function openRunMaterialPicker(runId, materialType) {
         return;
     }
 
-    const overlay = ensureRunsModal();
+    const overlay = returnTo === "materials"
+        ? ensureRunMaterialsModal()
+        : ensureRunsModal();
     overlay.style.display = "none";
 
     openPickerModal(
@@ -2462,7 +2625,12 @@ async function openRunMaterialPicker(runId, materialType) {
             materialFilters: true,
             category: nodeType,
             onClose: () => {
-                openRunsModal();
+                if (returnTo === "materials") {
+                    openRunMaterialsModal();
+                }
+                else {
+                    openRunsModal();
+                }
             }
         }
     );
@@ -2537,11 +2705,13 @@ function getFittingImage(material) {
 
 }
 
-async function openRunFittingModal(runId) {
+async function openRunFittingModal(runId, returnTo = "runs") {
 
     const run = findRun(runId);
 
     if (!run) return;
+
+    fittingReturnModal = returnTo;
 
     openFittingModalForTarget(run, {
         title: `${run.name || "Run"} Fittings`,
@@ -2558,6 +2728,8 @@ async function openGutterFittingModal(gutterId) {
         : [];
 
     if (!gutter) return;
+
+    fittingReturnModal = "runs";
 
     if (options.length === 0) {
         alert("Include a Run with a selected conduit size before adding gutter fittings.");
@@ -2832,7 +3004,13 @@ function closeRunFittingModal() {
     if (fittingModalElement) fittingModalElement.style.display = "none";
 
     activeFittingTarget = null;
-    renderRunsModal();
+
+    if (fittingReturnModal === "materials") {
+        openRunMaterialsModal();
+    }
+    else {
+        renderRunsModal();
+    }
 
 }
 
@@ -2853,9 +3031,28 @@ function closeRunsModal() {
 
 }
 
+function openRunMaterialsModal() {
+
+    const overlay = ensureRunMaterialsModal();
+
+    renderRunMaterialsModal();
+    overlay.style.display = "flex";
+
+}
+
+function closeRunMaterialsModal() {
+
+    if (runMaterialsModalElement) {
+        runMaterialsModalElement.style.display = "none";
+    }
+
+}
+
 // Expose the toolbar entry point only after this module has fully evaluated.
 window.openRunsModal = openRunsModal;
 window.closeRunsModal = closeRunsModal;
+window.openRunMaterialsModal = openRunMaterialsModal;
+window.closeRunMaterialsModal = closeRunMaterialsModal;
 window.autoCreateRunFromCanvasLink = autoCreateRunFromCanvasLink;
 window.refreshRunsForCanvasComponent = refreshRunsForCanvasComponent;
 window.removeRunsForCanvasLink = removeRunsForCanvasLink;
