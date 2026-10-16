@@ -389,15 +389,9 @@ function createRunFromCanvasLink(link) {
     };
 
     const circuits = getRunPanelCircuits(run);
-    run.panelBreakerSources = circuits.map(circuit => ({
-        panelId: circuit.panelId,
-        breakerId: circuit.breakerId,
-        panelPreset: circuit.panelPreset,
-        catalogNumber: circuit.catalogNumber,
-        rating: circuit.rating,
-        poles: circuit.poles
-    }));
+    run.panelBreakerSources = circuits.map(createRunCircuitSource);
     run.panelBreakerSourcesConfigured = true;
+    run.panelBreakerExcludedSourceKeys = [];
     autoAssignRunWires(run);
 
     getEditableRuns().push(run);
@@ -767,6 +761,58 @@ function getRunCircuitSources(run) {
         rating: circuit.rating,
         poles: circuit.poles
     }));
+}
+
+function getRunPanelBreakerExcludedSourceKeys(run) {
+    return new Set(
+        Array.isArray(run?.panelBreakerExcludedSourceKeys)
+            ? run.panelBreakerExcludedSourceKeys
+                .map(value => String(value || ""))
+                .filter(Boolean)
+            : []
+    );
+}
+
+function createRunCircuitSource(circuit) {
+    return {
+        panelId: circuit.panelId,
+        breakerId: circuit.breakerId,
+        panelPreset: circuit.panelPreset,
+        catalogNumber: circuit.catalogNumber,
+        rating: circuit.rating,
+        poles: circuit.poles
+    };
+}
+
+// The panel editor stores each breaker once, but Runs keeps its own selected
+// source list. Refresh that list after a panel breaker is added, removed, or
+// replaced so the run count and automatic wires follow the live panelboard.
+// Explicitly unchecked breakers remain excluded; newly added breakers are
+// included by default.
+function syncRunPanelBreakerSources(run) {
+    if (!run || run.panelBreakerSourcesConfigured !== true) return false;
+
+    const circuits = getRunPanelCircuits(run);
+    const validKeys = new Set(circuits.map(getRunCircuitSourceKey));
+    const excluded = getRunPanelBreakerExcludedSourceKeys(run);
+    const nextExcluded = [...excluded].filter(key => validKeys.has(key));
+    const nextSources = circuits
+        .filter(circuit => !excluded.has(getRunCircuitSourceKey(circuit)))
+        .map(createRunCircuitSource);
+    const previousSources = Array.isArray(run.panelBreakerSources)
+        ? run.panelBreakerSources
+        : [];
+    const sourceChanged = JSON.stringify(previousSources) !== JSON.stringify(nextSources);
+    const exclusionChanged = JSON.stringify(
+        Array.isArray(run.panelBreakerExcludedSourceKeys)
+            ? run.panelBreakerExcludedSourceKeys
+            : []
+    ) !== JSON.stringify(nextExcluded);
+
+    run.panelBreakerSources = nextSources;
+    run.panelBreakerExcludedSourceKeys = nextExcluded;
+
+    return sourceChanged || exclusionChanged;
 }
 
 function getRunCircuitSourceKey(source) {
@@ -1267,15 +1313,11 @@ function openRunCircuitModal(runId) {
 
         run.panelBreakerSources = circuits
             .filter(circuit => ids.has(circuit.id))
-            .map(circuit => ({
-                panelId: circuit.panelId,
-                breakerId: circuit.breakerId,
-                panelPreset: circuit.panelPreset,
-                catalogNumber: circuit.catalogNumber,
-                rating: circuit.rating,
-                poles: circuit.poles
-            }));
+            .map(createRunCircuitSource);
         run.panelBreakerSourcesConfigured = true;
+        run.panelBreakerExcludedSourceKeys = circuits
+            .filter(circuit => !ids.has(circuit.id))
+            .map(getRunCircuitSourceKey);
 
         const autoResult = autoAssignRunWires(run);
 
@@ -1614,6 +1656,8 @@ function removeRunAndCanvasLink(runId) {
 function refreshRunsForCanvasComponent(itemId) {
 
     const targetId = String(itemId || "");
+    const changedItem = getCanvasItem(targetId);
+    const panelBreakersChanged = isPanelCanvasItem(changedItem);
     const runs = getEditableRuns();
     const tags = getCanvasTagOptions();
     let changed = false;
@@ -1627,6 +1671,9 @@ function refreshRunsForCanvasComponent(itemId) {
         }
 
         updateRunCanvasName(run, index, tags);
+        if (panelBreakersChanged) {
+            syncRunPanelBreakerSources(run);
+        }
         const hasWireSource =
             getRunAllMainConductorSources(run).length > 0 ||
             getRunCircuitSources(run).length > 0;
@@ -2498,15 +2545,9 @@ function renderRunsModal() {
                 // branch breakers by default. The Panel breakers button can
                 // still be used afterwards to remove any circuit manually.
                 const circuits = getRunPanelCircuits(run);
-                run.panelBreakerSources = circuits.map(circuit => ({
-                    panelId: circuit.panelId,
-                    breakerId: circuit.breakerId,
-                    panelPreset: circuit.panelPreset,
-                    catalogNumber: circuit.catalogNumber,
-                    rating: circuit.rating,
-                    poles: circuit.poles
-                }));
+                run.panelBreakerSources = circuits.map(createRunCircuitSource);
                 run.panelBreakerSourcesConfigured = true;
+                run.panelBreakerExcludedSourceKeys = [];
 
                 const hasWireSource = getRunAllMainConductorSources(run).length > 0 || circuits.length > 0;
                 if (hasWireSource) {
