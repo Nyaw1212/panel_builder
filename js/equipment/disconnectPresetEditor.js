@@ -540,6 +540,177 @@ function getLDiscMaterialLibrary() {
     });
 }
 
+//----------------------------------
+// Concrete Pad Material Picker
+//----------------------------------
+
+function getMaterialCatalogNumber(entry) {
+  return String(
+    entry?.catalogNumber ||
+    entry?.CatalogNumber ||
+    ""
+  ).trim().toUpperCase();
+}
+
+function isL30303PadCatalog(catalogNumber) {
+  // L30303 and NTL30303 are the two catalog spellings currently used for
+  // the same 30 x 30 x 3 concrete equipment pad.
+  return /^(?:L|NTL)30303$/.test(
+    String(catalogNumber || "")
+      .trim()
+      .toUpperCase()
+  );
+}
+
+function getL30303PadEntries(item) {
+  const entries = Array.isArray(item?.materials)
+    ? item.materials
+    : [];
+
+  const presetEntries = !item?.preset ||
+    typeof getApiPresetMaterials !== "function"
+    ? []
+    : getApiPresetMaterials(item.preset);
+
+  return [...entries, ...presetEntries].filter(entry =>
+    isL30303PadCatalog(getMaterialCatalogNumber(entry))
+  );
+}
+
+function isL30303MaterialCard(item) {
+  return (
+    isL30303PadCatalog(getMaterialCatalogNumber(item?.data)) ||
+    getL30303PadEntries(item).length > 0
+  );
+}
+
+function getL30303MaterialLibrary() {
+  const catalog = [
+    ...(typeof getMaterials === "function" ? getMaterials() : []),
+    ...(typeof getEquipment === "function" ? getEquipment() : [])
+  ];
+
+  const unique = new Map();
+
+  catalog.forEach(material => {
+    const catalogNumber = getMaterialCatalogNumber(material);
+
+    if (
+      isL30303PadCatalog(catalogNumber) &&
+      !unique.has(catalogNumber)
+    ) {
+      unique.set(catalogNumber, material);
+    }
+  });
+
+  return Array.from(unique.values()).sort((first, second) =>
+    getMaterialCatalogNumber(first).localeCompare(
+      getMaterialCatalogNumber(second)
+    )
+  );
+}
+
+function replaceL30303Material(equipment, material) {
+  if (!equipment || !material || !isL30303PadCatalog(
+    getMaterialCatalogNumber(material)
+  )) {
+    return false;
+  }
+
+  const existingMaterials = Array.isArray(equipment.materials)
+    ? equipment.materials
+    : [];
+  let changed = false;
+
+  equipment.materials = existingMaterials.map(entry => {
+    if (!isL30303PadCatalog(getMaterialCatalogNumber(entry))) {
+      return entry;
+    }
+
+    changed = true;
+
+    return {
+      ...entry,
+      id: entry?.id || crypto.randomUUID(),
+      catalogNumber: material.CatalogNumber,
+      description: material.Description || "",
+      inventoryCategory: material.InventoryCategory || ""
+    };
+  });
+
+  // Older saved cards can get the pad only from their PRESET. Materialize
+  // that entry on first edit so BOM persistence has an explicit value.
+  if (!changed && getL30303PadEntries(equipment).length) {
+    equipment.materials.push({
+      id: crypto.randomUUID(),
+      catalogNumber: material.CatalogNumber,
+      description: material.Description || "",
+      inventoryCategory: material.InventoryCategory || "",
+      qty: 1
+    });
+    changed = true;
+  }
+
+  if (!changed) {
+    return false;
+  }
+
+  if (
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture === "function"
+  ) {
+    window.HistoryManagerV2.capture("Concrete equipment pad changed");
+  }
+
+  if (typeof drawCanvas === "function") {
+    drawCanvas();
+  }
+
+  const refreshedRuns = typeof refreshRunsForCanvasComponent === "function"
+    ? refreshRunsForCanvasComponent(equipment.id)
+    : false;
+
+  if (!refreshedRuns && typeof renderBOM === "function") {
+    renderBOM();
+  }
+
+  return true;
+}
+
+function openL30303MaterialPicker(equipment) {
+  if (!equipment || typeof openPickerModal !== "function") {
+    return;
+  }
+
+  const materials = getL30303MaterialLibrary();
+
+  console.group("[L30303 Pad Picker] Target and filter");
+  console.log("Clicked canvas card:", {
+    id: equipment.id,
+    preset: getItemPresetCode(equipment),
+    catalogNumber: equipment.data?.CatalogNumber || "",
+    padCatalogs: getL30303PadEntries(equipment).map(
+      getMaterialCatalogNumber
+    )
+  });
+  console.table(materials.map(material => ({
+    catalogNumber: material.CatalogNumber || "",
+    description: material.Description || ""
+  })));
+  console.groupEnd();
+
+  if (!materials.length) {
+    alert("No L30303 concrete equipment pad materials were found in MML.");
+    return;
+  }
+
+  openPickerModal(
+    "Choose 30×30 Concrete Equipment Pad",
+    materials,
+    material => replaceL30303Material(equipment, material)
+  );
+}
+
 function getLDiscPresetLibrary() {
   const seen = new Set();
   const lDiscPresetCodes =
@@ -1314,6 +1485,12 @@ window.isMDPMaterialCard =
 
 window.openMDPMaterialPicker =
   openMDPMaterialPicker;
+
+window.isL30303MaterialCard =
+  isL30303MaterialCard;
+
+window.openL30303MaterialPicker =
+  openL30303MaterialPicker;
 
 window.renderDisconnectPresetEditor =
   renderDisconnectPresetEditor;
