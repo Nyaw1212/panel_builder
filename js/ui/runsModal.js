@@ -2751,7 +2751,19 @@ function renderRunsModal() {
             }
         );
 
-        row.querySelector(".run-length-input")?.addEventListener(
+        const runLengthInput = row.querySelector(".run-length-input");
+
+        // A run length is normally replaced as a whole. Selecting the current
+        // value on focus lets the user simply type the new footage instead of
+        // deleting the old value first.
+        runLengthInput?.addEventListener(
+            "focus",
+            event => {
+                requestAnimationFrame(() => event.target.select());
+            }
+        );
+
+        runLengthInput?.addEventListener(
             "input",
             event => {
                 const run = findRun(runId);
@@ -2766,11 +2778,54 @@ function renderRunsModal() {
             }
         );
 
-        row.querySelector(".run-length-input")?.addEventListener(
+        runLengthInput?.addEventListener(
+            "keydown",
+            event => {
+                if (event.key !== "Enter") return;
+
+                event.preventDefault();
+
+                const run = findRun(runId);
+                if (!run) return;
+
+                const value = Math.max(0, Number(event.target.value || 0));
+                run.length = Number.isFinite(value) ? value : 0;
+                event.target.value = formatRunFeet(run.length);
+                // Moving focus fires a change event on this field. Mark it as
+                // committed so that event does not redraw the Runs modal and
+                // interrupt focus on the next length field.
+                event.target.dataset.runLengthCommitted = "true";
+
+                captureRunsHistory("Run length updated");
+                saveRunsDraft();
+                refreshRunsBOM();
+
+                const lengthInputs = Array.from(
+                    overlay.querySelectorAll(".run-length-input")
+                );
+                const currentIndex = lengthInputs.indexOf(event.target);
+                const nextInput = lengthInputs[currentIndex + 1];
+
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select();
+                }
+                else {
+                    event.target.blur();
+                }
+            }
+        );
+
+        runLengthInput?.addEventListener(
             "change",
             event => {
                 const run = findRun(runId);
                 if (!run) return;
+
+                if (event.target.dataset.runLengthCommitted === "true") {
+                    delete event.target.dataset.runLengthCommitted;
+                    return;
+                }
 
                 const value = Math.max(0, Number(event.target.value || 0));
                 run.length = Number.isFinite(value) ? value : 0;
