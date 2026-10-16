@@ -12,6 +12,7 @@ const MaterialDebugPanelV2 = (() => {
   let vanCount = null;
 
   let minimizeButton = null;
+  let refreshButton = null;
 
   let refreshTimer = null;
   let previousSignature = "";
@@ -36,6 +37,16 @@ const MaterialDebugPanelV2 = (() => {
           <h2>Project Materials</h2>
           <p>BOS and VAN summary</p>
         </div>
+
+        <button
+          type="button"
+          class="material-debug-panel-v2__refresh"
+          data-action="refresh"
+          aria-label="Refresh project materials"
+          title="Refresh project materials"
+        >
+          ↻
+        </button>
 
         <button
           type="button"
@@ -136,6 +147,16 @@ const MaterialDebugPanelV2 = (() => {
         '[data-action="minimize"]'
       );
 
+    refreshButton =
+      panel.querySelector(
+        '[data-action="refresh"]'
+      );
+
+    refreshButton.addEventListener(
+      "click",
+      () => refresh(true)
+    );
+
     minimizeButton.addEventListener(
       "click",
       toggleMinimize
@@ -214,78 +235,66 @@ const MaterialDebugPanelV2 = (() => {
   //----------------------------------
 
   function getProjectMaterials() {
-    const project =
-      getSerializedProject();
-
-    if (!project) {
+    if (typeof window.generateBOM !== "function") {
+      console.warn(
+        "MaterialDebugPanelV2: generateBOM() is not available."
+      );
       return [];
     }
 
-    //----------------------------------
-    // Serializer Material Summary
-    //----------------------------------
+    // This panel must show the same list as the BOM.  The previous version
+    // built a second list from the saved-project summary and preset rows,
+    // which could count an equipment card again.  Generate one live BOM and
+    // only enrich its rows with catalog details when they are missing.
+    const bom = window.generateBOM();
+    const bomMaterials = Object.values(bom || {})
+      .flatMap(group => Array.isArray(group) ? group : []);
 
-    const serializerMaterials =
-      Array.isArray(
-        project.materialSummary
-      )
-        ? project.materialSummary
-        : [];
+    return mergeMaterials(
+      bomMaterials.map(enrichBOMMaterial)
+    );
+  }
 
-    //----------------------------------
-    // API Preset BOM Materials
-    //----------------------------------
+  function enrichBOMMaterial(material) {
+    const catalogNumber = String(
+      material?.CatalogNumber ??
+      material?.catalogNumber ??
+      ""
+    ).trim();
 
-    const presetMaterials =
-      getProjectPresetMaterials(
-        project
-      );
+    const catalogMaterial =
+      typeof window.getMaterial === "function"
+        ? window.getMaterial(catalogNumber)
+        : null;
+    const equipment =
+      catalogMaterial ||
+      findEquipmentByCatalogNumber(catalogNumber);
 
-    //----------------------------------
-    // Prevent Existing Material Duplicate
-    //----------------------------------
-
-    const serializerCatalogs =
-      new Set(
-        serializerMaterials.map(
-          material =>
-            String(
-              material.CatalogNumber ??
-              material.catalogNumber ??
-              ""
-            )
-              .trim()
-              .toUpperCase()
-        )
-      );
-
-    const supplementalPresetMaterials =
-      presetMaterials.filter(material => {
-        const catalogNumber =
-          String(
-            material.CatalogNumber ??
-            material.catalogNumber ??
-            ""
-          )
-            .trim()
-            .toUpperCase();
-
-        return (
-          catalogNumber &&
-          !serializerCatalogs.has(
-            catalogNumber
-          )
-        );
-      });
-
-    //----------------------------------
-    // Combine And Aggregate
-    //----------------------------------
-
-    return mergeMaterials([
-      ...serializerMaterials,
-      ...supplementalPresetMaterials
-    ]);
+    return {
+      ...equipment,
+      ...material,
+      CatalogNumber: catalogNumber,
+      Qty: Number(
+        material?.Qty ??
+        material?.qty ??
+        material?.quantity ??
+        0
+      ) || 0,
+      Description:
+        material?.Description ??
+        material?.description ??
+        equipment?.Description ??
+        equipment?.description ??
+        "",
+      InventoryCategory:
+        material?.InventoryCategory ??
+        material?.inventoryCategory ??
+        material?.category ??
+        equipment?.InventoryCategory ??
+        equipment?.inventoryCategory ??
+        equipment?.category ??
+        ""
+    };
   }
 
   //----------------------------------
@@ -789,7 +798,7 @@ const MaterialDebugPanelV2 = (() => {
   // Refresh
   //----------------------------------
 
-  function refresh() {
+  function refresh(force = false) {
     init();
 
     const materials =
@@ -803,6 +812,7 @@ const MaterialDebugPanelV2 = (() => {
     //----------------------------------
 
     if (
+      !force &&
       signature === previousSignature
     ) {
       return;
