@@ -11,7 +11,11 @@ function deserializeProject(project) {
     //----------------------------------
 
     replaceLayout([]);
-    clearLinks();
+    // Project loading restores its saved runs immediately after this reset.
+    // Do not treat this internal clear as a user deleting canvas links.
+    clearLinks({
+        removeMaterialRuns: false
+    });
 
     //----------------------------------
     // Restore free-form material runs

@@ -252,9 +252,13 @@ function removeLink(
     options = {}
 ) {
 
+    const linkId = typeof id === "object"
+        ? id?.id
+        : id;
+
     console.log(
         "removeLink()",
-        id
+        linkId
     );
 
     console.log(
@@ -265,7 +269,7 @@ function removeLink(
     const index =
         links.findIndex(
             link =>
-                link.id === id
+                link.id === linkId
         );
 
     console.log(
@@ -326,6 +330,23 @@ function removeLink(
         index,
         1
     );
+
+    //----------------------------------
+    // Remove the matching material run
+    //----------------------------------
+
+    if (
+        options.removeMaterialRun !== false &&
+        typeof window.removeRunsForCanvasLink === "function"
+    ) {
+        window.removeRunsForCanvasLink(
+            link.id,
+            {
+                captureHistory: false,
+                render: options.refresh !== false
+            }
+        );
+    }
 
     console.log(
         "After:",
@@ -432,6 +453,7 @@ function clearLinks(
 
     const removedCount =
         links.length;
+    const removedLinkIds = links.map(link => link.id);
 
     links.forEach(
         link => {
@@ -459,6 +481,19 @@ function clearLinks(
 
     links.length =
         0;
+
+    if (
+        options.removeMaterialRuns !== false &&
+        typeof window.removeRunsForCanvasLinks === "function"
+    ) {
+        window.removeRunsForCanvasLinks(
+            removedLinkIds,
+            {
+                captureHistory: false,
+                render: false
+            }
+        );
+    }
 
     //----------------------------------
     // Clear Selection
