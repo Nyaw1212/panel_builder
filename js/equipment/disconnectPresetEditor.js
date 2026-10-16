@@ -353,34 +353,18 @@ function getItemPresetCode(item) {
 }
 
 function isLDiscMaterialCard(item) {
-  return getItemPresetCode(item)
+  const type = [
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category
+  ].join(" ")
     .replace(/[^A-Z0-9]/gi, "")
-    .toUpperCase() === "LDISC";
-}
+    .toUpperCase();
 
-function isDisconnectMaterial(item) {
-  return String(
-    item?.NodeType ||
-    item?.Type ||
-    item?.Category ||
-    ""
-  ).toUpperCase().includes("DISCONNECT");
+  return type.includes("LDISC");
 }
 
 function getLDiscMaterialLibrary() {
-  const presetCatalogs = new Set(
-    (typeof getApiPresetRows === "function"
-      ? getApiPresetRows("L-DISC")
-      : []
-    )
-      .map(row => String(
-        typeof getRowCatalogNumber === "function"
-          ? getRowCatalogNumber(row)
-          : row?.CatalogNumber
-      ).trim().toUpperCase())
-      .filter(Boolean)
-  );
-
   const catalog = [
     ...(typeof getMaterials === "function"
       ? getMaterials()
@@ -403,16 +387,9 @@ function getLDiscMaterialLibrary() {
   });
 
   return Array.from(unique.values())
-    .filter(isDisconnectMaterial)
-    .filter(material => {
-      // The PRESETS table is the L-DISC filter.  If it has not yet been
-      // configured with alternatives, keep the disconnect library usable.
-      return !presetCatalogs.size || presetCatalogs.has(
-        String(material.CatalogNumber || "")
-          .trim()
-          .toUpperCase()
-      );
-    })
+    // The MML NodeType is the real component category. D60 is a WireAss
+    // preset, while L-DISC identifies which materials may replace it.
+    .filter(isLDiscMaterialCard)
     .sort((first, second) => {
       const favoriteDifference =
         Number(second.Favorite || 0) -
@@ -429,7 +406,7 @@ function getLDiscMaterialLibrary() {
 }
 
 function replaceLDiscMaterial(equipment, material) {
-  if (!equipment || !material || !isDisconnectMaterial(material)) {
+  if (!equipment || !material || !isLDiscMaterialCard({ data: material })) {
     return false;
   }
 
@@ -458,7 +435,9 @@ function replaceLDiscMaterial(equipment, material) {
   equipment.data = structuredClone(material);
   equipment.width = Number(material.GridWidth || 1);
   equipment.height = Number(material.GridHeight || 1);
-  equipment.preset = "L-DISC";
+  // Keep the canvas preset (for example D60). WireAss uses that value;
+  // only the physical L-DISC component is being replaced.
+  equipment.preset = getItemPresetCode(equipment);
 
   const mainMaterial = {
     id: crypto.randomUUID(),
@@ -511,10 +490,6 @@ function openLDiscMaterialPicker(equipment) {
     return;
   }
 
-  const presetRows = typeof getApiPresetRows === "function"
-    ? getApiPresetRows("L-DISC")
-    : [];
-
   const materials = getLDiscMaterialLibrary();
 
   console.group("[L-DISC Picker] Target and filter");
@@ -525,17 +500,6 @@ function openLDiscMaterialPicker(equipment) {
     description: equipment.data?.Description || "",
     startCell: equipment.startCell
   });
-  console.table(presetRows.map(row => ({
-    preset: typeof getRowPresetCode === "function"
-      ? getRowPresetCode(row)
-      : row?.PRESET,
-    catalogNumber: typeof getRowCatalogNumber === "function"
-      ? getRowCatalogNumber(row)
-      : row?.CatalogNumber,
-    qty: typeof getRowQuantity === "function"
-      ? getRowQuantity(row)
-      : row?.Qty
-  })));
   console.table(materials.map(material => ({
     catalogNumber: material.CatalogNumber,
     description: material.Description || "",
@@ -546,7 +510,7 @@ function openLDiscMaterialPicker(equipment) {
 
   if (!materials.length) {
     console.warn(
-      "No L-DISC disconnect materials were found. Check PRESETS for L-DISC catalog numbers."
+      "No L-DISC materials were found. Check the MML NodeType column for L-DISC."
     );
   }
 
