@@ -575,6 +575,36 @@
     background: #172338;
 }
 
+.run-conduit-field {
+    display: flex;
+    min-width: 0;
+    gap: 5px;
+}
+
+.run-conduit-field .run-material-button {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.run-conduit-clear {
+    flex: 0 0 auto;
+    width: 28px;
+    min-height: 40px;
+    border: 1px solid rgba(248, 113, 113, .45);
+    border-radius: 7px;
+    color: #fecaca;
+    background: rgba(220, 38, 38, .16);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.run-conduit-clear:hover {
+    color: #fff;
+    border-color: #f87171;
+    background: var(--v2-red, #dc2626);
+}
+
 .run-wire-field {
     display: grid;
     gap: 4px;
