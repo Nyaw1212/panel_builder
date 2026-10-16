@@ -20,6 +20,59 @@ function getFittingBOM() {
 
     const map = {};
 
+    //----------------------------------
+    // Placed Components
+    //
+    // Use the materials stored on each canvas item. This keeps the BOM in
+    // sync when an existing component is replaced without deleting its links.
+    //----------------------------------
+
+    const layout = typeof getLayout === "function"
+        ? getLayout()
+        : [];
+    const seenEquipment = new Set();
+
+    (Array.isArray(layout) ? layout : []).forEach(item => {
+
+        if (!item?.id || seenEquipment.has(item.id)) return;
+        seenEquipment.add(item.id);
+
+        const itemMaterials = Array.isArray(item.materials)
+            ? item.materials
+            : [];
+        const mainCatalog = String(
+            item.data?.CatalogNumber || ""
+        ).trim().toUpperCase();
+        const hasMainMaterial = itemMaterials.some(material => {
+            return String(
+                material?.CatalogNumber || material?.catalogNumber || ""
+            ).trim().toUpperCase() === mainCatalog;
+        });
+
+        if (mainCatalog && !hasMainMaterial) {
+            mergeMaterial(map, {
+                ...item.data,
+                CatalogNumber: item.data.CatalogNumber,
+                qty: 1
+            });
+        }
+
+        itemMaterials.forEach(material => {
+            const catalogNumber = String(
+                material?.CatalogNumber || material?.catalogNumber || ""
+            ).trim();
+
+            if (!catalogNumber) return;
+
+            mergeMaterial(map, {
+                ...material,
+                CatalogNumber: catalogNumber,
+                Description: material.Description || material.description || ""
+            });
+        });
+
+    });
+
     links.forEach(link => {
 
         if (!link) return;

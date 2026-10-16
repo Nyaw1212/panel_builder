@@ -1395,6 +1395,47 @@ function refreshRunsBOM() {
 
 }
 
+// A component edit must not create a new Run endpoint.  Runs store the
+// canvas item ID, so keep that ID and only refresh the display/name that is
+// derived from the component's current catalog or preset.
+function refreshRunsForCanvasComponent(itemId) {
+
+    const targetId = String(itemId || "");
+    const runs = getEditableRuns();
+    const tags = getCanvasTagOptions();
+    let changed = false;
+
+    runs.forEach((run, index) => {
+        if (
+            String(run?.fromCanvasItemId || "") !== targetId &&
+            String(run?.toCanvasItemId || "") !== targetId
+        ) {
+            return;
+        }
+
+        updateRunCanvasName(run, index, tags);
+        changed = true;
+    });
+
+    if (changed) {
+        saveRunsDraft();
+    }
+
+    if (typeof renderBOM === "function") {
+        renderBOM();
+    }
+
+    if (
+        changed &&
+        runsModalElement?.style.display === "flex"
+    ) {
+        renderRunsModal();
+    }
+
+    return changed;
+
+}
+
 function saveRunsDraft() {
 
     if (typeof saveDraft === "function") {
@@ -2723,3 +2764,4 @@ function closeRunsModal() {
 window.openRunsModal = openRunsModal;
 window.closeRunsModal = closeRunsModal;
 window.autoCreateRunFromCanvasLink = autoCreateRunFromCanvasLink;
+window.refreshRunsForCanvasComponent = refreshRunsForCanvasComponent;

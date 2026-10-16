@@ -494,6 +494,15 @@ function replaceLDiscMaterial(equipment, material) {
     drawCanvas();
   }
 
+  if (
+    typeof refreshRunsForCanvasComponent === "function"
+  ) {
+    refreshRunsForCanvasComponent(equipment.id);
+  }
+  else if (typeof renderBOM === "function") {
+    renderBOM();
+  }
+
   return true;
 }
 
