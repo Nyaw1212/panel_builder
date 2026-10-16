@@ -43,10 +43,10 @@ const MaterialDebugPanelV2 = (() => {
           type="button"
           class="material-debug-panel-v2__used-materials"
           data-action="used-materials"
-          aria-label="Generate Used Materials spreadsheet"
-          title="Generate Used Materials spreadsheet"
+          aria-label="Download Used Materials XLS"
+          title="Download Used Materials XLS"
         >
-          Used
+          XLS
         </button>
 
         <button
@@ -319,8 +319,8 @@ const MaterialDebugPanelV2 = (() => {
   }
 
   async function generateUsedMaterialsFile() {
-    if (typeof window.generateUsedMaterials !== "function") {
-      alert("Used Materials is not available yet. Please reload the app.");
+    if (typeof window.downloadUsedMaterialsXls !== "function") {
+      alert("Used Materials XLS is not available yet. Please reload the app.");
       return;
     }
 
@@ -328,21 +328,13 @@ const MaterialDebugPanelV2 = (() => {
     usedMaterialsButton.disabled = true;
     usedMaterialsButton.textContent = "...";
 
-    const result = await window.generateUsedMaterials();
+    const result = await window.downloadUsedMaterialsXls();
 
     usedMaterialsButton.disabled = false;
     usedMaterialsButton.textContent = originalLabel;
 
     if (!result?.success) {
-      alert(result?.message || "Unable to generate Used Materials.");
-      return;
-    }
-
-    if (!result.usedMaterials?.success) {
-      alert(
-        result.usedMaterials?.message ||
-        "Project saved, but Used Materials was not generated."
-      );
+      alert(result?.message || "Unable to download Used Materials XLS.");
     }
   }
 
