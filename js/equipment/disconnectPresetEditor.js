@@ -566,11 +566,12 @@ function getL30303PadEntries(item) {
   const entries = Array.isArray(item?.materials)
     ? item.materials
     : [];
+  const presetCode = getItemPresetCode(item);
 
-  const presetEntries = !item?.preset ||
+  const presetEntries = !presetCode ||
     typeof getApiPresetMaterials !== "function"
     ? []
-    : getApiPresetMaterials(item.preset);
+    : getApiPresetMaterials(presetCode);
 
   return [...entries, ...presetEntries].filter(entry =>
     isL30303PadCatalog(getMaterialCatalogNumber(entry))
