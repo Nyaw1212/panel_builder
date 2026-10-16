@@ -19,6 +19,9 @@ function openEquipmentCardModal(item) {
     const hDiscMatch =
         typeof isHDiscMaterialCard === "function" &&
         isHDiscMaterialCard(item);
+    const mdpMatch =
+        typeof isMDPMaterialCard === "function" &&
+        isMDPMaterialCard(item);
 
     console.group("[Equipment card click]");
     console.log("Canvas item:", item);
@@ -30,7 +33,8 @@ function openEquipmentCardModal(item) {
         nodeType: item?.data?.NodeType || "",
         isLDisc: lDiscMatch,
         isMeter: meterMatch,
-        isHDisc: hDiscMatch
+        isHDisc: hDiscMatch,
+        isMDP: mdpMatch
     });
     console.groupEnd();
 
@@ -62,6 +66,17 @@ function openEquipmentCardModal(item) {
     ) {
 
         openHDiscMaterialPicker(item);
+
+        return;
+
+    }
+
+    if (
+        mdpMatch &&
+        typeof openMDPMaterialPicker === "function"
+    ) {
+
+        openMDPMaterialPicker(item);
 
         return;
 
