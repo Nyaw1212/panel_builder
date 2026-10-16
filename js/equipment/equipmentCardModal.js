@@ -22,9 +22,9 @@ function openEquipmentCardModal(item) {
     const mdpMatch =
         typeof isMDPMaterialCard === "function" &&
         isMDPMaterialCard(item);
-    const l30303Match =
-        typeof isL30303MaterialCard === "function" &&
-        isL30303MaterialCard(item);
+    const sonPlusMatch =
+        typeof isSonPlusMaterialCard === "function" &&
+        isSonPlusMaterialCard(item);
 
     console.group("[Equipment card click]");
     console.log("Canvas item:", item);
@@ -38,7 +38,7 @@ function openEquipmentCardModal(item) {
         isMeter: meterMatch,
         isHDisc: hDiscMatch,
         isMDP: mdpMatch,
-        isL30303Pad: l30303Match
+        isSonPlus: sonPlusMatch
     });
     console.groupEnd();
 
@@ -46,15 +46,15 @@ function openEquipmentCardModal(item) {
     // live target reference as the normal component editor.
     currentEquipment = item;
 
-    // The concrete pad belongs to the equipment assembly. Replacing it
-    // must not replace the canvas card, or links and WireAss targeting would
-    // be lost. The pad picker changes only the L30303 material entry.
+    // SON+ is a full PRESETS assembly. Applying its replacement follows the
+    // same path as MDP: it keeps the canvas item/link identity but replaces
+    // data and every BOM material, including the L30303 pad.
     if (
-        l30303Match &&
-        typeof openL30303MaterialPicker === "function"
+        sonPlusMatch &&
+        typeof openSonPlusMaterialPicker === "function"
     ) {
 
-        openL30303MaterialPicker(item);
+        openSonPlusMaterialPicker(item);
 
         return;
 
