@@ -29,6 +29,12 @@ function deserializeProject(project) {
             fromCanvasItemId: String(savedRun?.fromCanvasItemId || ""),
             toCanvasItemId: String(savedRun?.toCanvasItemId || ""),
             length: Math.max(0, Number(savedRun?.length || 0)),
+            conduitLength: savedRun?.conduitLength === "" ||
+                savedRun?.conduitLength === null ||
+                savedRun?.conduitLength === undefined ||
+                !Number.isFinite(Number(savedRun.conduitLength))
+                ? undefined
+                : Math.max(0, Number(savedRun.conduitLength)),
             conduit: savedRun?.conduit && typeof hydrateCatalogRecord === "function"
                 ? hydrateCatalogRecord(savedRun.conduit)
                 : (savedRun?.conduit || null),
