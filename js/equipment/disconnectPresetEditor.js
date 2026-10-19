@@ -1182,7 +1182,8 @@ function openLDiscMaterialPicker(equipment) {
       });
 
       return applyDisconnectPreset(preset.presetCode);
-    }
+    },
+    { presetMatrix: true }
   );
 }
 
@@ -1200,7 +1201,8 @@ function openHDiscMaterialPicker(equipment) {
   openPickerModal(
     "Choose H-DISC Preset",
     presets,
-    preset => applyDisconnectPreset(preset.presetCode)
+    preset => applyDisconnectPreset(preset.presetCode),
+    { presetMatrix: true }
   );
 }
 
