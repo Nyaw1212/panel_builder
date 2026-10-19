@@ -2049,6 +2049,26 @@ function formatRunFeet(value) {
 
 }
 
+// A run's wire route always uses its full length. Conduit can optionally stop
+// at a shared junction (for example, the stem of a Y). Older runs have no
+// override, so their conduit continues to use the full wire route.
+function getRunConduitLength(run) {
+
+    const fallback = Math.max(0, Number(run?.length || 0));
+    const override = run?.conduitLength;
+
+    if (override === "" || override === null || override === undefined) {
+        return fallback;
+    }
+
+    const value = Number(override);
+
+    return Number.isFinite(value) && value >= 0
+        ? value
+        : fallback;
+
+}
+
 function getRunMaterialLabel(material, emptyLabel) {
 
     if (!material) return emptyLabel;
@@ -2382,7 +2402,7 @@ function renderRunMaterialsModal() {
                 <span>Run / canvas link</span>
                 <span>Conduit</span>
                 <span>Fittings</span>
-                <span>Length</span>
+                <span>Conduit length</span>
                 <span>Conduit BOM</span>
                 <span></span>
             </div>
@@ -2390,11 +2410,11 @@ function renderRunMaterialsModal() {
             <div class="runs-list">
                 ${runs.length
                     ? runs.map((run, index) => {
-                        const length = Math.max(0, Number(run.length || 0));
+                        const conduitLength = getRunConduitLength(run);
                         const fromTag = run.fromCanvasItemId || "";
                         const toTag = run.toCanvasItemId || "";
                         const conduitQty = run.conduit
-                            ? `${formatRunFeet(length)} ft`
+                            ? `${formatRunFeet(conduitLength)} ft`
                             : "—";
 
                         return `
@@ -2412,12 +2432,14 @@ function renderRunMaterialsModal() {
                                     </div>
                                 </div>
                                 <div class="run-conduit-field">
+                                    <div class="run-conduit-picker">
                                     <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
                                         ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
                                     </button>
                                     ${run.conduit ? `
                                         <button class="run-conduit-clear" type="button" data-action="clear-conduit" title="Remove conduit" aria-label="Remove conduit">&times;</button>
                                     ` : ""}
+                                    </div>
                                 </div>
                                 <button class="run-material-button" type="button" data-action="fittings" title="Select run fittings">
                                     ${runModalEscape(getRunFittingsSummary(run))}
@@ -2429,8 +2451,8 @@ function renderRunMaterialsModal() {
                                         min="0"
                                         step="0.1"
                                         inputmode="decimal"
-                                        value="${runModalEscape(length)}"
-                                        aria-label="Run ${index + 1} length in feet"
+                                        value="${runModalEscape(conduitLength)}"
+                                        aria-label="Run ${index + 1} conduit length in feet"
                                     >
                                     <span>ft</span>
                                 </label>
@@ -2507,17 +2529,31 @@ function renderRunMaterialsModal() {
             const run = findRun(runId);
             if (!run) return;
 
+            if (event.target.value === "") {
+                delete run.conduitLength;
+                saveRunsDraft();
+                return;
+            }
+
             const value = Math.max(0, Number(event.target.value || 0));
-            run.length = Number.isFinite(value) ? value : 0;
+            run.conduitLength = Number.isFinite(value) ? value : 0;
             saveRunsDraft();
         });
         lengthInput?.addEventListener("change", event => {
             const run = findRun(runId);
             if (!run) return;
 
+            if (event.target.value === "") {
+                delete run.conduitLength;
+                captureRunsHistory("Run conduit length reset");
+                refreshRunsBOM();
+                renderRunMaterialsModal();
+                return;
+            }
+
             const value = Math.max(0, Number(event.target.value || 0));
-            run.length = Number.isFinite(value) ? value : 0;
-            captureRunsHistory("Run length updated");
+            run.conduitLength = Number.isFinite(value) ? value : 0;
+            captureRunsHistory("Run conduit length updated");
             refreshRunsBOM();
             renderRunMaterialsModal();
         });
@@ -2555,7 +2591,7 @@ function renderRunsModal() {
                 <span>Conduit</span>
                 <span>Wire</span>
                 <span>Fittings</span>
-                <span>Length</span>
+                <span>Wire length</span>
                 <span>Calculated BOM</span>
                 <span></span>
             </div>
@@ -2564,8 +2600,9 @@ function renderRunsModal() {
                 ${runs.length
                     ? runs.map((run, index) => {
                         const length = Math.max(0, Number(run.length || 0));
+                        const conduitLength = getRunConduitLength(run);
                         const conduitQty = run.conduit
-                            ? `${formatRunFeet(length)} ft`
+                            ? `${formatRunFeet(conduitLength)} ft`
                             : "—";
                         const wires = Array.isArray(run.wires)
                             ? run.wires
@@ -2608,12 +2645,27 @@ function renderRunsModal() {
                                     </div>
                                 </div>
                                 <div class="run-conduit-field">
-                                    <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
-                                        ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
-                                    </button>
-                                    ${run.conduit ? `
-                                        <button class="run-conduit-clear" type="button" data-action="clear-conduit" title="Remove conduit" aria-label="Remove conduit">&times;</button>
-                                    ` : ""}
+                                    <div class="run-conduit-picker">
+                                        <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
+                                            ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
+                                        </button>
+                                        ${run.conduit ? `
+                                            <button class="run-conduit-clear" type="button" data-action="clear-conduit" title="Remove conduit" aria-label="Remove conduit">&times;</button>
+                                        ` : ""}
+                                    </div>
+                                    <label class="run-conduit-length-field" title="Optional: enter only the conduit footage when it ends at a shared junction. Leave it as the wire length otherwise.">
+                                        <span>Conduit length</span>
+                                        <input
+                                            class="run-conduit-length-input"
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            inputmode="decimal"
+                                            value="${runModalEscape(conduitLength)}"
+                                            aria-label="Run ${index + 1} conduit length in feet"
+                                        >
+                                        <span>ft</span>
+                                    </label>
                                 </div>
                                 <div class="run-wire-field">
                                     <button class="run-material-button" type="button" data-action="wire" title="Select wire using ampacity filters">
@@ -3056,6 +3108,53 @@ function renderRunsModal() {
                 run.length = Number.isFinite(value) ? value : 0;
 
                 captureRunsHistory("Run length updated");
+                refreshRunsBOM();
+                renderRunsModal();
+            }
+        );
+
+        const conduitLengthInput = row.querySelector(".run-conduit-length-input");
+
+        conduitLengthInput?.addEventListener(
+            "focus",
+            event => requestAnimationFrame(() => event.target.select())
+        );
+
+        conduitLengthInput?.addEventListener(
+            "input",
+            event => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                if (event.target.value === "") {
+                    delete run.conduitLength;
+                    saveRunsDraft();
+                    return;
+                }
+
+                const value = Math.max(0, Number(event.target.value || 0));
+                run.conduitLength = Number.isFinite(value) ? value : 0;
+                saveRunsDraft();
+            }
+        );
+
+        conduitLengthInput?.addEventListener(
+            "change",
+            event => {
+                const run = findRun(runId);
+                if (!run) return;
+
+                if (event.target.value === "") {
+                    delete run.conduitLength;
+                    captureRunsHistory("Run conduit length reset");
+                    refreshRunsBOM();
+                    renderRunsModal();
+                    return;
+                }
+
+                const value = Math.max(0, Number(event.target.value || 0));
+                run.conduitLength = Number.isFinite(value) ? value : 0;
+                captureRunsHistory("Run conduit length updated");
                 refreshRunsBOM();
                 renderRunsModal();
             }
