@@ -151,14 +151,20 @@ function getFittingBOM() {
 
     runs.forEach(run => {
 
-        const length = Number(run?.length || 0);
+        const length = Math.max(0, Number(run?.length || 0));
+        const conduitOverride = run?.conduitLength;
+        const parsedConduitLength = Number(conduitOverride);
+        const conduitLength = conduitOverride === "" ||
+            conduitOverride === null ||
+            conduitOverride === undefined ||
+            !Number.isFinite(parsedConduitLength)
+            ? length
+            : Math.max(0, parsedConduitLength);
 
-        if (!Number.isFinite(length) || length <= 0) return;
-
-        if (run.conduit) {
+        if (run.conduit && Number.isFinite(conduitLength) && conduitLength > 0) {
             mergeMaterial(map, {
                 ...run.conduit,
-                qty: length
+                qty: conduitLength
             });
         }
 
@@ -166,13 +172,15 @@ function getFittingBOM() {
             ? run.wires
             : (run.wire ? [run.wire] : []);
 
-        wires.forEach(wire => {
-            mergeMaterial(map, {
-                ...wire,
-                // Two feet of service allowance at each end.
-                qty: length + 4
+        if (Number.isFinite(length) && length > 0) {
+            wires.forEach(wire => {
+                mergeMaterial(map, {
+                    ...wire,
+                    // Two feet of service allowance at each end.
+                    qty: length + 4
+                });
             });
-        });
+        }
 
         (Array.isArray(run.fittings) ? run.fittings : []).forEach(fitting => {
             mergeMaterial(map, {
