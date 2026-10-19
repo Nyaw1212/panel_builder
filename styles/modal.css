@@ -333,6 +333,105 @@ LIST
 }
 
 /*=====================================
+DISCONNECT PRESET MATRIX
+=====================================*/
+
+#modalList.preset-picker-matrix-list {
+    display: block;
+    overflow: auto;
+    padding: 4px 8px 12px 4px;
+}
+
+.preset-picker-matrix {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid #41506a;
+    border-radius: 12px;
+    background: #0d1828;
+}
+
+.preset-picker-matrix th,
+.preset-picker-matrix td {
+    padding: 9px;
+    border-right: 1px solid rgba(100, 116, 139, .3);
+    border-bottom: 1px solid rgba(100, 116, 139, .3);
+    text-align: center;
+}
+
+.preset-picker-matrix th:last-child,
+.preset-picker-matrix td:last-child {
+    border-right: 0;
+}
+
+.preset-picker-matrix tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.preset-picker-matrix th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: #bfdbfe;
+    background: #172944;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .05em;
+}
+
+.preset-picker-matrix td {
+    min-width: 112px;
+    background: rgba(15, 23, 42, .7);
+}
+
+.preset-picker-matrix .preset-matrix-type {
+    width: 58px;
+    min-width: 58px;
+    color: #a5f3fc;
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.preset-picker-matrix .preset-matrix-rating {
+    width: 74px;
+    min-width: 74px;
+    color: #f8fafc;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.preset-matrix-choice {
+    vertical-align: middle;
+}
+
+.preset-matrix-button {
+    width: 100%;
+    min-height: 38px;
+    margin: 2px 0;
+    border: 1px solid rgba(96, 165, 250, .52);
+    border-radius: 7px;
+    color: #eff6ff;
+    background: rgba(30, 64, 175, .32);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.preset-matrix-button:hover {
+    border-color: #7dd3fc;
+    color: #fff;
+    background: #1d4ed8;
+}
+
+.preset-matrix-empty {
+    padding: 28px;
+    color: var(--v2-text-muted, #7f91aa);
+    text-align: center;
+}
+
+/*=====================================
 ITEM ROW
 =====================================*/
 
