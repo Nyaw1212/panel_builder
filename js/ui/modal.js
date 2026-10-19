@@ -31,6 +31,31 @@ let modalPickerOptions = {};
 let currentCell = null;
 let currentConnection = null;
 
+function setModalHeaderAction(action) {
+
+    const header = modal?.querySelector(".modal-header");
+    if (!header) return;
+
+    header.querySelector(".modal-header-action")?.remove();
+
+    if (!action?.label || typeof action.onClick !== "function") {
+        return;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "modal-header-action";
+    button.textContent = action.label;
+    button.title = action.title || action.label;
+    button.addEventListener("click", event => {
+        event.preventDefault();
+        action.onClick(event);
+    });
+
+    header.insertBefore(button, closeModal);
+
+}
+
 //----------------------------------
 // Material Modal History
 //----------------------------------
@@ -470,6 +495,8 @@ function openPickerModal(
         ".modal-header h2"
     ).textContent = title;
 
+    setModalHeaderAction(options.headerAction);
+
     if (options.materialFilters) {
         if (typeof resetModalFilters === "function") {
             resetModalFilters();
@@ -531,6 +558,8 @@ function openModal(index) {
         ".modal-header h2"
     ).textContent = modalTitle;
 
+    setModalHeaderAction(null);
+
     buildModalList();
 
     modal.style.display = "flex";
@@ -591,6 +620,8 @@ async function openMaterialModal(connection, options = {}) {
     document.querySelector(
         ".modal-header h2"
     ).textContent = modalTitle;
+
+    setModalHeaderAction(null);
 
     buildModalList();
 
