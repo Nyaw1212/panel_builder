@@ -4,6 +4,35 @@
 
 let currentEquipment = null;
 
+function openPanelCircuitEditor(item) {
+
+    if (!item) return;
+
+    currentEquipment = item;
+
+    if (typeof resetPanelCircuitSelection === "function") {
+        resetPanelCircuitSelection();
+    }
+
+    const modal = document.getElementById("equipmentModal");
+    if (!modal) {
+        console.error("equipmentModal not found.");
+        return;
+    }
+
+    if (typeof setModalHeaderAction === "function") {
+        setModalHeaderAction(null);
+    }
+
+    document.getElementById("modalFilters").style.display = "none";
+    document.getElementById("equipmentFilters").style.display = "grid";
+
+    buildEquipmentComponentChips();
+    renderEquipmentComponents();
+    modal.style.display = "flex";
+
+}
+
 //----------------------------------
 // Open
 //----------------------------------
@@ -111,66 +140,7 @@ function openEquipmentCardModal(item) {
 
     }
 
-    //----------------------------------
-    // Store
-    //----------------------------------
-
-    currentEquipment = item;
-
-    if (typeof resetPanelCircuitSelection === "function") {
-
-        resetPanelCircuitSelection();
-
-    }
-
-    //----------------------------------
-    // Modal
-    //----------------------------------
-
-    const modal =
-        document.getElementById(
-            "equipmentModal"
-        );
-
-    if (!modal) {
-
-        console.error(
-            "equipmentModal not found."
-        );
-
-        return;
-
-    }
-
-    //----------------------------------
-    // Filters
-    //----------------------------------
-
-    document.getElementById(
-        "modalFilters"
-    ).style.display = "none";
-
-    document.getElementById(
-        "equipmentFilters"
-    ).style.display = "grid";
-
-    //----------------------------------
-    // Build Filters FIRST
-    //----------------------------------
-
-    buildEquipmentComponentChips();
-
-    //----------------------------------
-    // Render Library
-    //----------------------------------
-
-    renderEquipmentComponents();
-
-    //----------------------------------
-    // Show
-    //----------------------------------
-
-    modal.style.display = "flex";
+    openPanelCircuitEditor(item);
 
 }
 
@@ -299,6 +269,9 @@ function getCurrentEquipment() {
 
 window.openEquipmentCardModal =
     openEquipmentCardModal;
+
+window.openPanelCircuitEditor =
+    openPanelCircuitEditor;
 
 window.refreshEquipmentCardModal =
     refreshEquipmentCardModal;
