@@ -263,6 +263,13 @@ function serializeRuns() {
   return runs
     .map((run, index) => {
       const length = Number(run?.length || 0);
+      const rawConduitLength = run?.conduitLength;
+      const conduitLength = Number(rawConduitLength);
+      const hasConduitLength = rawConduitLength !== "" &&
+        rawConduitLength !== null &&
+        rawConduitLength !== undefined &&
+        Number.isFinite(conduitLength) &&
+        conduitLength >= 0;
 
       return {
         id: String(run?.id || ""),
@@ -271,6 +278,7 @@ function serializeRuns() {
         fromCanvasItemId: String(run?.fromCanvasItemId || ""),
         toCanvasItemId: String(run?.toCanvasItemId || ""),
         length: Number.isFinite(length) && length >= 0 ? length : 0,
+        ...(hasConduitLength ? { conduitLength } : {}),
         conduit: run?.conduit
           ? compactCatalogRecord(run.conduit)
           : null,
