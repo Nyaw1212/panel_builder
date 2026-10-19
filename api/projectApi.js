@@ -545,18 +545,31 @@ async function loadProject(jobName, address) {
 // Get Projects
 //----------------------------------
 
+let getProjectsError = "";
+
 async function getProjects() {
     const result = await apiRequest({
         action: "getProjects"
     });
 
     if (!result.success) {
-        console.error(result.message);
+        getProjectsError = String(
+            result.message ||
+            "The Project API did not return a project list."
+        );
+        console.error("Unable to load saved projects:", getProjectsError);
         return [];
     }
 
+    getProjectsError = "";
     return result.projects || [];
 }
+
+function getProjectsLoadError() {
+    return getProjectsError;
+}
+
+window.getProjectsLoadError = getProjectsLoadError;
 
 //----------------------------------
 // Delete Project
