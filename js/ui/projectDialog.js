@@ -170,11 +170,39 @@ function parseProjectDetails(text) {
 
     let values = [];
 
-    if (raw.includes("\t")) {
+    const tableRow = raw
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .find(line => {
+            if (!line.includes("|")) return false;
+            if (/^[|\s:-]+$/.test(line)) return false;
+
+            return line
+                .split("|")
+                .map(value => value.trim())
+                .filter(Boolean)
+                .length >= 2;
+        });
+
+    if (tableRow) {
+
+        values =
+            tableRow
+                .split("|")
+                .map(value => value.trim())
+                .filter(Boolean);
+
+    }
+    else if (raw.includes("\t")) {
 
         values =
             raw
-                .split(/\t+/)
+                .split(/\r?\n/)
+                .find(line => line.trim())
+                ?.split(/\t+/) || [];
+
+        values =
+            values
                 .map(value => value.trim())
                 .filter(Boolean);
 
@@ -332,6 +360,23 @@ function parseProjectDetails(text) {
         "in progress",
         "submitted"
     ];
+
+    // Standard job-row pattern:
+    // Project Name | Address | Electrician | Start | End | Status | Lender
+    // Start, End, and Status remain source information; the project record
+    // stores the four values that are used by Panel Builder and the BOM.
+    if (
+        values.length >= 7 &&
+        isDate(values[3]) &&
+        isDate(values[4])
+    ) {
+        return {
+            jobName: values[0] || "",
+            address: values[1] || "",
+            electrician: values[2] || "",
+            lender: values[6] || ""
+        };
+    }
 
     const jobName =
         values[0] || "";
@@ -590,7 +635,7 @@ function showProjectDialog(options = {}) {
         document.createElement("label");
 
     pasteLabel.textContent =
-        "Paste Project Details";
+        "Paste Job Row";
 
     styleProjectDialogLabel(
         pasteLabel
@@ -606,7 +651,7 @@ function showProjectDialog(options = {}) {
         4;
 
     pasteInput.placeholder =
-        "Paste tab-separated data or:\nJob Name / Address / Electrician / Lender";
+        "Paste: Project Name | Address | Electrician | Start | End | Status | Lender";
 
     styleProjectDialogInput(
         pasteInput
@@ -745,7 +790,7 @@ function showProjectDialog(options = {}) {
         document.createElement("label");
 
     modelLabel.textContent =
-        "Model";
+        "Project Template";
 
     styleProjectDialogLabel(
         modelLabel
@@ -761,7 +806,7 @@ function showProjectDialog(options = {}) {
         "text";
 
     modelInput.placeholder =
-        "Enter Model";
+        "Enter Project Template (e.g. Duracell)";
 
     styleProjectDialogInput(
         modelInput
