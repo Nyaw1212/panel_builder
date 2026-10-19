@@ -684,7 +684,196 @@ function buildModalList(searchText = "") {
         searchText
     );
 
+    const usePresetMatrix = modalMode === "picker" &&
+        modalPickerOptions.presetMatrix === true;
+
+    modalList.classList.toggle(
+        "preset-picker-matrix-list",
+        usePresetMatrix
+    );
+
+    if (usePresetMatrix) {
+        renderDisconnectPresetMatrix(list);
+        return;
+    }
+
     renderModalCards(list);
+
+}
+
+function getDisconnectPresetMatrixType(preset) {
+
+    const values = [
+        preset?.PresetType,
+        preset?.NodeType,
+        preset?.Type,
+        preset?.Category,
+        preset?.System,
+        preset?.Material,
+        preset?.Description
+    ]
+        .filter(Boolean)
+        .join(" ")
+        .replace(/[^A-Z0-9]/gi, "")
+        .toUpperCase();
+
+    return values.includes("HDISC") ? "H" : "L";
+
+}
+
+function getDisconnectPresetMatrixColumn(preset) {
+
+    const code = String(
+        preset?.PickerCardCode ||
+        preset?.presetCode ||
+        preset?.Code ||
+        ""
+    )
+        .trim()
+        .toUpperCase();
+
+    if (code.startsWith("3")) return "3";
+    if (code.startsWith("D")) return "D";
+    if (code.startsWith("E")) return "E";
+    if (code.startsWith("F") || code.startsWith("NF")) return "F";
+
+    return "Other";
+
+}
+
+function getDisconnectPresetMatrixRating(preset) {
+
+    const code = String(
+        preset?.PickerCardCode ||
+        preset?.presetCode ||
+        preset?.Code ||
+        ""
+    );
+    const codeMatch = code.match(/(\d+)(?!.*\d)/);
+    const rating = Number(
+        codeMatch?.[1] ||
+        preset?.Rating ||
+        preset?.Amps ||
+        0
+    );
+
+    return Number.isFinite(rating) ? rating : 0;
+
+}
+
+function selectDisconnectPresetFromMatrix(preset) {
+
+    if (typeof modalOnSelect === "function") {
+        modalOnSelect(preset);
+    }
+
+    closeActiveModal();
+
+}
+
+function renderDisconnectPresetMatrix(list) {
+
+    modalList.innerHTML = "";
+
+    const columns = ["3", "D", "E", "F"];
+    const entries = (Array.isArray(list) ? list : []).map(preset => ({
+        preset,
+        type: getDisconnectPresetMatrixType(preset),
+        column: getDisconnectPresetMatrixColumn(preset),
+        rating: getDisconnectPresetMatrixRating(preset),
+        code: String(
+            preset?.PickerCardCode ||
+            preset?.presetCode ||
+            preset?.Code ||
+            ""
+        ).trim()
+    }));
+    const hasOther = entries.some(entry => entry.column === "Other");
+
+    if (hasOther) columns.push("Other");
+
+    const rowsByKey = new Map();
+    entries.forEach(entry => {
+        const key = `${entry.type}:${entry.rating}`;
+        if (!rowsByKey.has(key)) {
+            rowsByKey.set(key, {
+                type: entry.type,
+                rating: entry.rating,
+                cells: new Map()
+            });
+        }
+
+        const row = rowsByKey.get(key);
+        const cell = row.cells.get(entry.column) || [];
+        cell.push(entry);
+        row.cells.set(entry.column, cell);
+    });
+
+    const rows = Array.from(rowsByKey.values()).sort((left, right) => {
+        const typeOrder = { L: 0, H: 1 };
+        const typeDifference = (typeOrder[left.type] ?? 9) -
+            (typeOrder[right.type] ?? 9);
+
+        return typeDifference || right.rating - left.rating;
+    });
+
+    if (!rows.length) {
+        const empty = document.createElement("div");
+        empty.className = "preset-matrix-empty";
+        empty.textContent = "No matching presets found.";
+        modalList.appendChild(empty);
+        return;
+    }
+
+    const table = document.createElement("table");
+    table.className = "preset-picker-matrix";
+    table.setAttribute("aria-label", "Disconnect preset choices");
+
+    const head = table.createTHead();
+    const headRow = head.insertRow();
+    ["Type", "Rating", ...columns].forEach(label => {
+        const cell = document.createElement("th");
+        cell.scope = "col";
+        cell.textContent = label;
+        headRow.appendChild(cell);
+    });
+
+    const body = table.createTBody();
+    rows.forEach(row => {
+        const tableRow = body.insertRow();
+        const typeCell = tableRow.insertCell();
+        typeCell.className = "preset-matrix-type";
+        typeCell.textContent = row.type;
+
+        const ratingCell = tableRow.insertCell();
+        ratingCell.className = "preset-matrix-rating";
+        ratingCell.textContent = row.rating ? `${row.rating}A` : "—";
+
+        columns.forEach(column => {
+            const cell = tableRow.insertCell();
+            cell.className = "preset-matrix-choice";
+            const choices = (row.cells.get(column) || [])
+                .sort((left, right) => left.code.localeCompare(right.code));
+
+            choices.forEach(entry => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "preset-matrix-button";
+                button.textContent = entry.code || "Select";
+                button.title = [
+                    entry.code,
+                    entry.preset?.Description,
+                    entry.preset?.CatalogNumber
+                ].filter(Boolean).join(" — ");
+                button.addEventListener("click", () =>
+                    selectDisconnectPresetFromMatrix(entry.preset)
+                );
+                cell.appendChild(button);
+            });
+        });
+    });
+
+    modalList.appendChild(table);
 
 }
 
@@ -699,6 +888,7 @@ modalSearch.addEventListener(
     () => {
 
         if (
+            modalMode === "equipment" &&
             typeof getCurrentEquipment === "function" &&
             getCurrentEquipment() &&
             typeof renderEquipmentComponents === "function"
