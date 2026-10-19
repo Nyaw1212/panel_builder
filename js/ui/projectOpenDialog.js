@@ -222,19 +222,27 @@ function renderOpenProjectResults() {
         matchesOpenProjectSearch(project, input.value)
     );
 
-    status.textContent = projectList.length
-        ? String(matches.length) + " of " + String(projectList.length) +
-            " saved project" + (projectList.length === 1 ? "" : "s")
-        : "No saved projects found.";
+    const loadError = typeof getProjectsLoadError === "function"
+        ? getProjectsLoadError()
+        : "";
+
+    status.textContent = loadError
+        ? "Could not load saved projects: " + loadError
+        : projectList.length
+            ? String(matches.length) + " of " + String(projectList.length) +
+                " saved project" + (projectList.length === 1 ? "" : "s")
+            : "No saved projects found in the PROJECTS sheet.";
     openButton.disabled = !selectedOpenProjectId;
     openButton.style.opacity = selectedOpenProjectId ? "1" : ".5";
     results.replaceChildren();
 
     if (!matches.length) {
         const empty = document.createElement("div");
-        empty.textContent = projectList.length
-            ? "No projects match this search."
-            : "No saved projects found.";
+        empty.textContent = loadError
+            ? "The saved-project list could not be loaded. Open DevTools Console for the exact API error."
+            : projectList.length
+                ? "No projects match this search."
+                : "No saved projects found in the PROJECTS sheet.";
         applyOpenProjectStyles(empty, {
             padding: "24px 12px",
             border: "1px dashed #475569",
