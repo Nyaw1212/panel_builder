@@ -37,7 +37,11 @@ function getEquipmentEditorType(equipment) {
     presetType.includes("DISCONNECT") ||
     /(?:^|[-_\s])DISC(?:ONNECT)?(?:$|[-_\s])/i.test(presetCode)
   ) return "DISCONNECT";
-  if (type.includes("PANEL") || type.includes("FSU")) return "PANEL";
+  if (
+    type.includes("PANEL") ||
+    type.includes("FSU") ||
+    type.includes("MDP")
+  ) return "PANEL";
 
   return "GENERIC";
 }
@@ -1232,7 +1236,21 @@ function openMDPMaterialPicker(equipment) {
   openPickerModal(
     "Choose MDP Preset",
     presets,
-    preset => applyMDPPreset(preset.presetCode)
+    preset => applyMDPPreset(preset.presetCode),
+    {
+      headerAction: {
+        label: "⚡ Configure breakers",
+        title: "Add, remove, or arrange MDP breakers",
+        onClick: () => {
+          if (typeof openPanelCircuitEditor !== "function") {
+            alert("The panel breaker editor is not available.");
+            return;
+          }
+
+          openPanelCircuitEditor(equipment);
+        }
+      }
+    }
   );
 }
 
