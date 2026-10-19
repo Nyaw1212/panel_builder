@@ -645,11 +645,26 @@ function getProjects() {
     .getValues();
 
   return values
-    .filter(row => idColumn && row[idColumn - 1])
-    .map(row => {
+    .map((row, index) => {
       const project = jsonColumn
         ? parseProjectJSON(row[jsonColumn - 1])
         : null;
+
+      const projectId = idColumn
+        ? String(row[idColumn - 1] || "").trim()
+        : "";
+      const jobName = jobColumn
+        ? String(row[jobColumn - 1] || "").trim()
+        : "";
+      const address = addressColumn
+        ? String(row[addressColumn - 1] || "").trim()
+        : "";
+
+      // Older saved projects can predate the ProjectID column. They are still
+      // valid project rows, so list them instead of hiding them from Open.
+      if (!projectId && !jobName && !address && !project) {
+        return null;
+      }
 
       if (project) {
         project.model = project.model || (modelColumn ? String(row[modelColumn - 1] || "").trim() : "");
@@ -658,9 +673,11 @@ function getProjects() {
       }
 
       return {
-        projectId: String(row[idColumn - 1] || ""),
-        jobName: jobColumn ? String(row[jobColumn - 1] || "") : "",
-        address: addressColumn ? String(row[addressColumn - 1] || "") : "",
+        // Use a row-specific temporary key for legacy rows. Their JSON can be
+        // opened directly; the UI also falls back to JobName + Address.
+        projectId: projectId || "legacy-row-" + (index + 2),
+        jobName,
+        address,
         model: modelColumn ? String(row[modelColumn - 1] || "") : "",
         lender: lenderColumn ? String(row[lenderColumn - 1] || "") : "",
         electrician: electricianColumn ? String(row[electricianColumn - 1] || "") : "",
@@ -668,7 +685,8 @@ function getProjects() {
         modified: modifiedColumn ? row[modifiedColumn - 1] : null,
         project
       };
-    });
+    })
+    .filter(Boolean);
 
 }
 
