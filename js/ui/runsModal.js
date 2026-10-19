@@ -20,6 +20,7 @@ let runCanvasLinkModalElement = null;
 let runsModalScrollTop = 0;
 let runMaterialsModalScrollTop = 0;
 let fittingReturnModal = "runs";
+let draggedRunId = "";
 
 function rememberRunsModalScroll() {
 
@@ -1965,6 +1966,77 @@ function saveRunsDraft() {
 
 }
 
+function bindRunRowReordering(container, rowSelector, render) {
+
+    if (!container) return;
+
+    const rows = Array.from(container.querySelectorAll(rowSelector));
+
+    const clearDragState = () => {
+        draggedRunId = "";
+        rows.forEach(row => {
+            row.classList.remove("is-dragging", "is-drop-target");
+        });
+    };
+
+    rows.forEach(row => {
+        const handle = row.querySelector("[data-action='reorder-run']");
+        const runId = String(row.dataset.runId || "");
+
+        handle?.addEventListener("dragstart", event => {
+            draggedRunId = runId;
+            row.classList.add("is-dragging");
+            event.dataTransfer?.setData("text/plain", runId);
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+        });
+
+        handle?.addEventListener("dragend", clearDragState);
+
+        row.addEventListener("dragover", event => {
+            if (!draggedRunId || draggedRunId === runId) return;
+
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+            row.classList.add("is-drop-target");
+        });
+
+        row.addEventListener("dragleave", event => {
+            if (!row.contains(event.relatedTarget)) {
+                row.classList.remove("is-drop-target");
+            }
+        });
+
+        row.addEventListener("drop", event => {
+            event.preventDefault();
+
+            const sourceId = String(
+                draggedRunId || event.dataTransfer?.getData("text/plain") || ""
+            );
+            clearDragState();
+
+            if (!sourceId || sourceId === runId) return;
+
+            const runs = getEditableRuns();
+            const sourceIndex = runs.findIndex(run => String(run?.id || "") === sourceId);
+            const targetIndex = runs.findIndex(run => String(run?.id || "") === runId);
+
+            if (sourceIndex < 0 || targetIndex < 0) return;
+
+            const [movedRun] = runs.splice(sourceIndex, 1);
+            const insertionIndex = sourceIndex < targetIndex
+                ? targetIndex - 1
+                : targetIndex;
+            runs.splice(insertionIndex, 0, movedRun);
+
+            captureRunsHistory("Run order updated");
+            saveRunsDraft();
+            if (typeof renderBOM === "function") renderBOM();
+            render();
+        });
+    });
+
+}
+
 function formatRunFeet(value) {
 
     const number = Number(value || 0);
@@ -2329,6 +2401,7 @@ function renderRunMaterialsModal() {
                             <article class="run-materials-row" data-run-id="${runModalEscape(run.id)}">
                                 <div class="run-name">
                                     <div class="run-name-line">
+                                        <button class="run-reorder-handle" type="button" draggable="true" data-action="reorder-run" title="Drag to reorder run ${index + 1}" aria-label="Drag to reorder run ${index + 1}">⠿</button>
                                         <span class="run-number" aria-label="Run ${index + 1}">${index + 1}</span>
                                         <strong>${runModalEscape(run.name || `Run ${index + 1}`)}</strong>
                                     </div>
@@ -2395,6 +2468,12 @@ function renderRunMaterialsModal() {
     overlay.querySelector(".runs-done")?.addEventListener(
         "click",
         closeRunMaterialsModal
+    );
+
+    bindRunRowReordering(
+        overlay,
+        ".run-materials-row",
+        renderRunMaterialsModal
     );
 
     overlay.querySelectorAll(".run-materials-row").forEach(row => {
@@ -2503,6 +2582,7 @@ function renderRunsModal() {
                             <article class="run-row" data-run-id="${runModalEscape(run.id)}">
                                 <div class="run-name">
                                     <div class="run-name-line">
+                                        <button class="run-reorder-handle" type="button" draggable="true" data-action="reorder-run" title="Drag to reorder run ${index + 1}" aria-label="Drag to reorder run ${index + 1}">⠿</button>
                                         <span class="run-number" aria-label="Run ${index + 1}">${index + 1}</span>
                                         <input
                                             class="run-name-input"
@@ -2715,6 +2795,12 @@ function renderRunsModal() {
     overlay.querySelector("#clearAllRunMaterialsButton")?.addEventListener(
         "click",
         clearAllRunConduitAndFittings
+    );
+
+    bindRunRowReordering(
+        overlay,
+        ".run-row",
+        renderRunsModal
     );
 
     overlay.querySelector("#addRunButton")?.addEventListener(
