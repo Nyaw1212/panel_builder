@@ -1806,6 +1806,44 @@ function clearAllRunConduitAndFittings() {
 
 }
 
+function resetAllRunLengths() {
+
+    const runs = getEditableRuns();
+    const gutters = getEditableGutters();
+    const hasLengths = runs.some(run =>
+        Number(run?.length || 0) > 0 ||
+        run?.conduitLength !== "" &&
+        run?.conduitLength !== null &&
+        run?.conduitLength !== undefined
+    ) || gutters.some(gutter => Number(gutter?.length || 0) > 0);
+
+    if (!hasLengths) {
+        alert("There are no run or gutter lengths to reset.");
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "Reset all run and gutter lengths to 0 ft?\n\n" +
+        "Conduit, wire, and fitting selections will stay unchanged."
+    );
+
+    if (!confirmed) return;
+
+    runs.forEach(run => {
+        run.length = 0;
+        delete run.conduitLength;
+    });
+
+    gutters.forEach(gutter => {
+        gutter.length = 0;
+    });
+
+    captureRunsHistory("All run lengths reset");
+    refreshRunsBOM();
+    renderRunsModal();
+
+}
+
 function removeRunsForCanvasLinks(canvasLinkIds, options = {}) {
     const linkIds = new Set(
         (Array.isArray(canvasLinkIds) ? canvasLinkIds : [canvasLinkIds])
@@ -2824,6 +2862,9 @@ function renderRunsModal() {
                 <button id="clearAllRunMaterialsButton" class="runs-clear-materials" type="button">
                     Clear conduit &amp; fittings
                 </button>
+                <button id="resetAllRunLengthsButton" class="runs-clear-materials" type="button">
+                    Reset lengths
+                </button>
                 <div class="runs-rule">Wire BOM = run length + 4 ft</div>
                 <button id="doneRunsButton" class="runs-done" type="button">Done</button>
             </footer>
@@ -2847,6 +2888,11 @@ function renderRunsModal() {
     overlay.querySelector("#clearAllRunMaterialsButton")?.addEventListener(
         "click",
         clearAllRunConduitAndFittings
+    );
+
+    overlay.querySelector("#resetAllRunLengthsButton")?.addEventListener(
+        "click",
+        resetAllRunLengths
     );
 
     bindRunRowReordering(
