@@ -4,6 +4,7 @@
 
 let projectPhotosOverlay = null;
 let projectPhotoZoomLevels = [100, 100, 100, 100];
+let activeProjectPhotoIndex = 0;
 
 function isDetachedProjectPhotosWindow() {
 
@@ -73,6 +74,10 @@ function extractGoogleDriveFileId(value) {
 
 function getProjectPhotoPreviewUrl(link) {
 
+    if (/^data:image\//i.test(String(link || ""))) {
+        return link;
+    }
+
     const fileId = extractGoogleDriveFileId(link);
     if (!fileId) return "";
 
@@ -83,6 +88,10 @@ function getProjectPhotoPreviewUrl(link) {
 }
 
 function getProjectPhotoFallbackUrl(link) {
+
+    if (/^data:image\//i.test(String(link || ""))) {
+        return "";
+    }
 
     const fileId = extractGoogleDriveFileId(link);
     if (!fileId) return "";
@@ -163,9 +172,37 @@ function ensureProjectPhotosModal() {
             closeProjectPhotos();
         }
     });
+    document.addEventListener("paste", event => {
+        if (projectPhotosOverlay.style.display !== "flex") return;
+
+        const imageItem = Array.from(event.clipboardData?.items || [])
+            .find(item => item.type.startsWith("image/"));
+        const imageFile = imageItem?.getAsFile();
+
+        if (!imageFile) return;
+
+        event.preventDefault();
+        pasteClipboardProjectPhoto(imageFile, activeProjectPhotoIndex);
+    });
     document.body.appendChild(projectPhotosOverlay);
 
     return projectPhotosOverlay;
+
+}
+
+function pasteClipboardProjectPhoto(file, index) {
+
+    if (!file || !file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+        const imageData = String(reader.result || "");
+        if (!/^data:image\//i.test(imageData)) return;
+
+        updateProjectPhotoLink(index, imageData);
+        renderProjectPhotos();
+    });
+    reader.readAsDataURL(file);
 
 }
 
@@ -191,10 +228,25 @@ function createProjectPhotoPanel(index, link) {
     const panel = document.createElement("section");
     panel.className = "project-photo-panel";
     panel.dataset.photoIndex = String(index);
+    panel.tabIndex = 0;
+
+    if (index === activeProjectPhotoIndex) {
+        panel.classList.add("is-active");
+    }
+
+    panel.addEventListener("click", () => {
+        activeProjectPhotoIndex = index;
+        projectPhotosOverlay?.querySelectorAll(".project-photo-panel").forEach(item => {
+            item.classList.toggle("is-active", Number(item.dataset.photoIndex) === index);
+        });
+    });
+    panel.addEventListener("focus", () => {
+        activeProjectPhotoIndex = index;
+    });
 
     const canvas = document.createElement("div");
     canvas.className = "project-photo-canvas";
-    canvas.title = "Drop a Google Drive image link here. Ctrl + mouse wheel zooms this photo.";
+    canvas.title = "Click this panel, then Ctrl + V to paste a screenshot. Ctrl + mouse wheel zooms this photo.";
 
     panel.addEventListener("dragover", event => {
         event.preventDefault();
@@ -237,13 +289,13 @@ function createProjectPhotoPanel(index, link) {
         empty.className = "project-photo-empty";
         const hint = document.createElement("span");
         hint.textContent = link
-            ? "Paste a valid Google Drive image link"
-            : "Paste a Google Drive image link";
+            ? "Paste a screenshot or valid Google Drive image link"
+            : "Click this panel, then Ctrl + V a screenshot";
 
         const input = document.createElement("input");
         input.type = "text";
         input.className = "project-photo-link-input";
-        input.placeholder = "Ctrl + V link, then Enter";
+        input.placeholder = "Or paste Drive link, then Enter";
         input.setAttribute("aria-label", `Google Drive link for photo ${index + 1}`);
 
         const submitLink = () => {
@@ -356,7 +408,7 @@ function renderProjectPhotos() {
     const header = document.createElement("header");
     header.className = "project-photos-header";
     const heading = document.createElement("div");
-    heading.innerHTML = "<h2>Project Photos</h2><p>Paste or drop Drive links on a panel · Ctrl + wheel zooms each panel</p>";
+    heading.innerHTML = "<h2>Project Photos</h2><p>Click a panel, Ctrl + V screenshot · Paste or drop Drive links · Ctrl + wheel zooms</p>";
     header.appendChild(heading);
 
     if (!detached) {
