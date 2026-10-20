@@ -69,6 +69,21 @@ function buildProject() {
         address:
             project.address,
 
+        electrician:
+            project.electrician,
+
+        lender:
+            project.lender,
+
+        model:
+            project.model,
+
+        photoLinks: Array.isArray(project.photoLinks)
+            ? project.photoLinks
+                .slice(0, 4)
+                .map(link => String(link || "").trim())
+            : [],
+
         layout:
             getLayout(),
 
@@ -548,7 +563,10 @@ async function loadCurrentProject(
                 result.project?.usedMaterialsSpreadsheetId || "",
 
             usedMaterialsSpreadsheetUrl:
-                result.project?.usedMaterialsSpreadsheetUrl || ""
+                result.project?.usedMaterialsSpreadsheetUrl || "",
+
+            photoLinks:
+                result.project?.photoLinks || []
 
         });
 
