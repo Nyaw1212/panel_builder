@@ -379,6 +379,9 @@ function initializeToolbar() {
     const runMaterialsButton =
         document.getElementById("runMaterialsButton");
 
+    const projectPhotosButton =
+        document.getElementById("projectPhotosButton");
+
     const reloadMMLButton =
         document.getElementById("reloadMMLButton");
 
@@ -500,6 +503,17 @@ function initializeToolbar() {
             else {
                 console.error("Conduit & Fittings modal was not loaded.");
                 alert("Conduit & Fittings is still loading. Please refresh the page, then try again.");
+            }
+        });
+    }
+
+    if (projectPhotosButton) {
+        projectPhotosButton.addEventListener("click", () => {
+            if (typeof window.openProjectPhotos === "function") {
+                window.openProjectPhotos();
+            }
+            else {
+                alert("Project Photos is still loading. Please refresh the page, then try again.");
             }
         });
     }
