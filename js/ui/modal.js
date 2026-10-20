@@ -686,14 +686,25 @@ function buildModalList(searchText = "") {
 
     const usePresetMatrix = modalMode === "picker" &&
         modalPickerOptions.presetMatrix === true;
+    const useConduitMatrix = modalMode === "picker" &&
+        modalPickerOptions.conduitMatrix === true;
 
     modalList.classList.toggle(
         "preset-picker-matrix-list",
         usePresetMatrix
     );
+    modalList.classList.toggle(
+        "conduit-picker-matrix-list",
+        useConduitMatrix
+    );
 
     if (usePresetMatrix) {
         renderDisconnectPresetMatrix(list);
+        return;
+    }
+
+    if (useConduitMatrix) {
+        renderConduitPickerMatrix(list);
         return;
     }
 
@@ -870,6 +881,164 @@ function renderDisconnectPresetMatrix(list) {
                 );
                 cell.appendChild(button);
             });
+        });
+    });
+
+    modalList.appendChild(table);
+
+}
+
+function getConduitMatrixType(item) {
+
+    const color = String(item?.Color || "").trim().toUpperCase();
+    const description = String(item?.Description || "").toUpperCase();
+
+    if (color === "EMT" || description.includes(" EMT ")) return "EMT";
+    if (color === "PVC" || description.includes(" PVC ")) return "PVC";
+    if (color === "LT" || description.includes(" L/T")) return "LT";
+
+    return "";
+
+}
+
+function getConduitMatrixSize(item) {
+
+    return String(item?.Size || "")
+        .trim()
+        .replace(/\s+/g, "")
+        .replace("1-/1/2", "1-1/2");
+
+}
+
+function selectConduitFromMatrix(item) {
+
+    if (typeof modalOnSelect === "function") {
+        modalOnSelect(item);
+    }
+
+    closeActiveModal();
+
+}
+
+function buildConduitMatrixChoice(item) {
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "conduit-matrix-choice";
+    button.title = [
+        item?.CatalogNumber,
+        item?.Description
+    ].filter(Boolean).join(" — ");
+
+    const imageWrap = document.createElement("span");
+    imageWrap.className = "conduit-matrix-image material-card-image-wrap";
+
+    const localImage = typeof getModalLocalImage === "function"
+        ? getModalLocalImage(item)
+        : "";
+    const driveImage = typeof getModalDriveImage === "function"
+        ? getModalDriveImage(item)
+        : "";
+    const placeholderImage = "images/placeholder.png";
+    const image = document.createElement("img");
+    image.className = "conduit-matrix-image-element material-card-image";
+    image.src = localImage || driveImage || placeholderImage;
+    image.alt = String(item?.Description || item?.CatalogNumber || "Conduit");
+    image.loading = "lazy";
+    image.dataset.fallbackStage = localImage ? "0" : driveImage ? "1" : "2";
+    image.dataset.driveImage = driveImage;
+    image.dataset.placeholderImage = placeholderImage;
+
+    if (typeof handleModalMaterialImageError === "function") {
+        image.addEventListener("error", handleModalMaterialImageError);
+    }
+
+    imageWrap.appendChild(image);
+
+    const code = document.createElement("span");
+    code.className = "conduit-matrix-code";
+    code.textContent = String(item?.PickerCardCode || item?.CatalogNumber || "Select");
+
+    button.append(imageWrap, code);
+    button.addEventListener("click", () => selectConduitFromMatrix(item));
+
+    return button;
+
+}
+
+function renderConduitPickerMatrix(list) {
+
+    modalList.innerHTML = "";
+
+    const entries = (Array.isArray(list) ? list : [])
+        .map(item => ({
+            item,
+            type: getConduitMatrixType(item),
+            size: getConduitMatrixSize(item)
+        }))
+        .filter(entry => entry.type && entry.size);
+
+    if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "preset-matrix-empty";
+        empty.textContent = "No matching conduit materials found.";
+        modalList.appendChild(empty);
+        return;
+    }
+
+    const preferredSizes = ["2\"", "1\"", "3/4\""];
+    const allSizes = [...new Set(entries.map(entry => entry.size))];
+    const sizes = [
+        ...preferredSizes.filter(size => allSizes.includes(size)),
+        ...allSizes
+            .filter(size => !preferredSizes.includes(size))
+            .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }))
+    ];
+    const types = ["EMT", "PVC", "LT"];
+    const choices = new Map();
+
+    entries.forEach(entry => {
+        const key = `${entry.type}:${entry.size}`;
+        const current = choices.get(key);
+        const currentPriority = Number(current?.Favorite || 0);
+        const nextPriority = Number(entry.item?.Favorite || 0);
+
+        if (!current || nextPriority > currentPriority) {
+            choices.set(key, entry.item);
+        }
+    });
+
+    const table = document.createElement("table");
+    table.className = "conduit-picker-matrix";
+    table.setAttribute("aria-label", "Conduit choices by type and size");
+
+    const head = table.createTHead();
+    const headRow = head.insertRow();
+    ["Type", ...sizes].forEach(label => {
+        const cell = document.createElement("th");
+        cell.scope = "col";
+        cell.textContent = label;
+        headRow.appendChild(cell);
+    });
+
+    const body = table.createTBody();
+    types.forEach(type => {
+        const row = body.insertRow();
+        const typeCell = row.insertCell();
+        typeCell.className = "conduit-matrix-type";
+        typeCell.textContent = type;
+
+        sizes.forEach(size => {
+            const cell = row.insertCell();
+            cell.className = "conduit-matrix-cell";
+            const item = choices.get(`${type}:${size}`);
+
+            if (item) {
+                cell.appendChild(buildConduitMatrixChoice(item));
+            }
+            else {
+                cell.textContent = "—";
+            }
         });
     });
 
