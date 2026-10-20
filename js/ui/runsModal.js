@@ -3371,7 +3371,14 @@ async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
     const nodeType = "PIPE";
 
     const source = (Array.isArray(materials) ? materials : [])
-        .filter(item => String(item?.NodeType || "").toUpperCase() === nodeType);
+        .filter(item => {
+            const nodeTypeValue = String(item?.NodeType || "").toUpperCase();
+            const color = String(item?.Color || "").toUpperCase();
+            const description = String(item?.Description || "").toUpperCase();
+
+            return nodeTypeValue === nodeType ||
+                (color === "LT" && description.includes("MET L/T"));
+        });
 
     if (source.length === 0) {
         alert(`No ${materialType} materials are available.`);
@@ -3400,8 +3407,7 @@ async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
             refreshRunsBOM();
         },
         {
-            materialFilters: true,
-            category: nodeType,
+            conduitMatrix: true,
             onClose: () => {
                 if (returnTo === "materials") {
                     openRunMaterialsModal();
