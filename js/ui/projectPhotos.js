@@ -235,9 +235,44 @@ function createProjectPhotoPanel(index, link) {
     if (!preview) {
         const empty = document.createElement("div");
         empty.className = "project-photo-empty";
-        empty.textContent = link
-            ? "Drop a valid Google Drive image link here."
-            : "Drop a Google Drive image link here";
+        const hint = document.createElement("span");
+        hint.textContent = link
+            ? "Paste a valid Google Drive image link"
+            : "Paste a Google Drive image link";
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "project-photo-link-input";
+        input.placeholder = "Ctrl + V link, then Enter";
+        input.setAttribute("aria-label", `Google Drive link for photo ${index + 1}`);
+
+        const submitLink = () => {
+            const value = input.value.trim();
+
+            if (!extractGoogleDriveFileId(value)) {
+                panel.classList.add("is-drop-invalid");
+                input.focus();
+                input.select();
+                window.setTimeout(() => panel.classList.remove("is-drop-invalid"), 700);
+                return;
+            }
+
+            updateProjectPhotoLink(index, value);
+            renderProjectPhotos();
+        };
+
+        input.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                submitLink();
+            }
+        });
+        input.addEventListener("change", submitLink);
+        input.addEventListener("paste", () => {
+            window.setTimeout(submitLink, 0);
+        });
+
+        empty.append(hint, input);
         canvas.appendChild(empty);
     }
     else {
@@ -321,7 +356,7 @@ function renderProjectPhotos() {
     const header = document.createElement("header");
     header.className = "project-photos-header";
     const heading = document.createElement("div");
-    heading.innerHTML = "<h2>Project Photos</h2><p>Drop Drive links on a panel · Ctrl + wheel zooms each panel</p>";
+    heading.innerHTML = "<h2>Project Photos</h2><p>Paste or drop Drive links on a panel · Ctrl + wheel zooms each panel</p>";
     header.appendChild(heading);
 
     if (!detached) {
