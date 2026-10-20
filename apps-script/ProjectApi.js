@@ -464,6 +464,11 @@ function saveProject(request) {
   const usedMaterialsSpreadsheetId = String(
     forceNew ? "" : request.usedMaterialsSpreadsheetId || ""
   ).trim();
+  const photoLinks = Array.isArray(request.photoLinks)
+    ? request.photoLinks
+      .slice(0, 4)
+      .map(function(link) { return String(link || "").trim(); })
+    : [];
 
   let projectId = forceNew
     ? ""
@@ -503,6 +508,7 @@ function saveProject(request) {
     lender,
     model,
     usedMaterialsSpreadsheetId,
+    photoLinks,
     layout: Array.isArray(request.layout) ? request.layout : [],
     links: Array.isArray(request.links) ? request.links : [],
     runs: Array.isArray(request.runs) ? request.runs : [],
