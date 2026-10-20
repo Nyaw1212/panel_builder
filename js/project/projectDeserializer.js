@@ -6,6 +6,18 @@ function deserializeProject(project) {
 
     if (!project) return;
 
+    // Photo links are project metadata rather than canvas components. Keep
+    // them in project state so the independent four-panel viewer can restore
+    // the exact photos after Open, history restore, or a page refresh.
+    if (typeof getProjectState === "function") {
+        const state = getProjectState();
+        state.photoLinks = Array.isArray(project.photoLinks)
+            ? project.photoLinks
+                .slice(0, 4)
+                .map(link => String(link || "").trim())
+            : [];
+    }
+
     //----------------------------------
     // Clear Existing
     //----------------------------------
