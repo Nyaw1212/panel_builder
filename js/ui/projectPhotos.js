@@ -5,20 +5,43 @@
 let projectPhotosOverlay = null;
 let projectPhotoZoomLevels = [100, 100, 100, 100];
 
+function isDetachedProjectPhotosWindow() {
+
+    return new URLSearchParams(window.location.search).get("projectPhotos") === "1";
+
+}
+
+function getSavedProjectPhotoLinks() {
+
+    try {
+        const draft = JSON.parse(localStorage.getItem("PanelBuilderDraft") || "null");
+        return Array.isArray(draft?.photoLinks) ? draft.photoLinks : [];
+    }
+    catch {
+        return [];
+    }
+
+}
+
 function getProjectPhotoLinks() {
 
     const project = typeof getProjectState === "function"
         ? getProjectState()
         : null;
+    const savedLinks = getSavedProjectPhotoLinks();
+    const stateLinks = Array.isArray(project?.photoLinks)
+        ? project.photoLinks
+        : [];
+    const projectLinks = stateLinks.some(Boolean) || !savedLinks.some(Boolean)
+        ? stateLinks
+        : savedLinks;
 
-    if (!project) return ["", "", "", ""];
-
-    if (!Array.isArray(project.photoLinks)) {
+    if (project && !Array.isArray(project.photoLinks)) {
         project.photoLinks = [];
     }
 
     return Array.from({ length: 4 }, (_, index) =>
-        String(project.photoLinks[index] || "").trim()
+        String(projectLinks[index] || "").trim()
     );
 
 }
@@ -28,8 +51,6 @@ function extractGoogleDriveFileId(value) {
     const source = String(value || "").trim();
     if (!source) return "";
 
-    // Allow the file ID itself, as well as common Drive share, open, and
-    // thumbnail links copied from a browser.
     if (/^[a-zA-Z0-9_-]{15,}$/.test(source)) {
         return source;
     }
@@ -53,7 +74,6 @@ function extractGoogleDriveFileId(value) {
 function getProjectPhotoPreviewUrl(link) {
 
     const fileId = extractGoogleDriveFileId(link);
-
     if (!fileId) return "";
 
     return typeof getDriveImageUrl === "function"
@@ -65,7 +85,6 @@ function getProjectPhotoPreviewUrl(link) {
 function getProjectPhotoFallbackUrl(link) {
 
     const fileId = extractGoogleDriveFileId(link);
-
     if (!fileId) return "";
 
     return typeof getDriveImageFallbackUrl === "function"
@@ -108,6 +127,31 @@ function updateProjectPhotoLink(index, value, options = {}) {
 
 }
 
+function getDroppedProjectPhotoLink(dataTransfer) {
+
+    if (!dataTransfer) return "";
+
+    const uriList = dataTransfer.getData("text/uri-list")
+        .split(/\r?\n/)
+        .find(value => value && !value.startsWith("#"));
+    const plainText = dataTransfer.getData("text/plain").trim();
+    const html = dataTransfer.getData("text/html");
+    const href = html.match(/\bhref\s*=\s*["']([^"']+)["']/i)?.[1] || "";
+    const candidates = [uriList, plainText, href]
+        .map(value => String(value || "").trim())
+        .filter(Boolean);
+
+    for (const value of candidates) {
+        if (extractGoogleDriveFileId(value)) return value;
+
+        const url = value.match(/https?:\/\/[^\s"'<>]+/i)?.[0];
+        if (url && extractGoogleDriveFileId(url)) return url;
+    }
+
+    return "";
+
+}
+
 function ensureProjectPhotosModal() {
 
     if (projectPhotosOverlay) return projectPhotosOverlay;
@@ -132,7 +176,13 @@ function setProjectPhotoZoom(index, nextZoom) {
         Math.min(300, Math.round(Number(nextZoom) || 100))
     );
 
-    renderProjectPhotos();
+    const image = projectPhotosOverlay?.querySelector(
+        `[data-photo-index="${index}"] .project-photo-image`
+    );
+
+    if (image) {
+        image.style.width = `${projectPhotoZoomLevels[index]}%`;
+    }
 
 }
 
@@ -140,91 +190,54 @@ function createProjectPhotoPanel(index, link) {
 
     const panel = document.createElement("section");
     panel.className = "project-photo-panel";
-    const header = document.createElement("header");
-    header.className = "project-photo-panel-header";
-    const title = document.createElement("strong");
-    title.textContent = `Photo ${index + 1}`;
-    const controls = document.createElement("div");
-    controls.className = "project-photo-zoom-controls";
-
-    const decrease = document.createElement("button");
-    decrease.type = "button";
-    decrease.textContent = "−";
-    decrease.title = "Zoom out";
-    decrease.addEventListener("click", () =>
-        setProjectPhotoZoom(index, projectPhotoZoomLevels[index] - 25)
-    );
-
-    const zoom = document.createElement("span");
-    zoom.textContent = `${projectPhotoZoomLevels[index]}%`;
-    zoom.title = "Reset zoom";
-    zoom.addEventListener("click", () => setProjectPhotoZoom(index, 100));
-
-    const increase = document.createElement("button");
-    increase.type = "button";
-    increase.textContent = "+";
-    increase.title = "Zoom in";
-    increase.addEventListener("click", () =>
-        setProjectPhotoZoom(index, projectPhotoZoomLevels[index] + 25)
-    );
-
-    controls.append(decrease, zoom, increase);
-    header.append(title, controls);
-
-    const linkRow = document.createElement("div");
-    linkRow.className = "project-photo-link-row";
-    const input = document.createElement("input");
-    input.type = "url";
-    input.value = link;
-    input.placeholder = "Paste Google Drive image link";
-    input.setAttribute("aria-label", `Photo ${index + 1} Google Drive link`);
-    input.addEventListener("input", () =>
-        updateProjectPhotoLink(index, input.value, { capture: false })
-    );
-    input.addEventListener("change", () => {
-        updateProjectPhotoLink(index, input.value);
-        renderProjectPhotos();
-    });
-    input.addEventListener("keydown", event => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            input.blur();
-        }
-    });
-
-    const open = document.createElement("a");
-    open.className = "project-photo-open";
-    open.textContent = "Open";
-    open.target = "_blank";
-    open.rel = "noopener noreferrer";
-    open.href = link || "#";
-    if (!link) {
-        open.setAttribute("aria-disabled", "true");
-        open.addEventListener("click", event => event.preventDefault());
-    }
-
-    const clear = document.createElement("button");
-    clear.type = "button";
-    clear.className = "project-photo-clear";
-    clear.textContent = "×";
-    clear.title = `Remove Photo ${index + 1} link`;
-    clear.addEventListener("click", () => {
-        updateProjectPhotoLink(index, "");
-        renderProjectPhotos();
-    });
-
-    linkRow.append(input, open, clear);
+    panel.dataset.photoIndex = String(index);
 
     const canvas = document.createElement("div");
     canvas.className = "project-photo-canvas";
+    canvas.title = "Drop a Google Drive image link here. Ctrl + mouse wheel zooms this photo.";
+
+    panel.addEventListener("dragover", event => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        panel.classList.add("is-drop-target");
+    });
+    panel.addEventListener("dragleave", event => {
+        if (!panel.contains(event.relatedTarget)) {
+            panel.classList.remove("is-drop-target");
+        }
+    });
+    panel.addEventListener("drop", event => {
+        event.preventDefault();
+        panel.classList.remove("is-drop-target");
+
+        const droppedLink = getDroppedProjectPhotoLink(event.dataTransfer);
+        if (!droppedLink) {
+            panel.classList.add("is-drop-invalid");
+            window.setTimeout(() => panel.classList.remove("is-drop-invalid"), 700);
+            return;
+        }
+
+        updateProjectPhotoLink(index, droppedLink);
+        renderProjectPhotos();
+    });
+    canvas.addEventListener("wheel", event => {
+        if (!event.ctrlKey) return;
+
+        event.preventDefault();
+        setProjectPhotoZoom(
+            index,
+            projectPhotoZoomLevels[index] + (event.deltaY < 0 ? 25 : -25)
+        );
+    }, { passive: false });
+
     const preview = getProjectPhotoPreviewUrl(link);
 
     if (!preview) {
         const empty = document.createElement("div");
         empty.className = "project-photo-empty";
         empty.textContent = link
-            ? "Use a Google Drive image link or file ID."
-            : "Paste a Google Drive image link to preview it here.";
+            ? "Drop a valid Google Drive image link here."
+            : "Drop a Google Drive image link here";
         canvas.appendChild(empty);
     }
     else {
@@ -244,14 +257,51 @@ function createProjectPhotoPanel(index, link) {
             canvas.innerHTML = "";
             const error = document.createElement("div");
             error.className = "project-photo-empty";
-            error.textContent = "Preview unavailable. Make sure this Drive image is shared with your signed-in Google account.";
+            error.textContent = "Preview unavailable. Check that the Drive image is shared with your signed-in Google account.";
             canvas.appendChild(error);
         });
         canvas.appendChild(image);
     }
 
-    panel.append(header, linkRow, canvas);
+    panel.appendChild(canvas);
+
+    if (link) {
+        const clear = document.createElement("button");
+        clear.type = "button";
+        clear.className = "project-photo-clear";
+        clear.textContent = "×";
+        clear.title = `Remove photo ${index + 1}`;
+        clear.setAttribute("aria-label", `Remove photo ${index + 1}`);
+        clear.addEventListener("click", () => {
+            updateProjectPhotoLink(index, "");
+            renderProjectPhotos();
+        });
+        panel.appendChild(clear);
+    }
+
     return panel;
+
+}
+
+function detachProjectPhotos() {
+
+    saveProjectPhotoLinks();
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("projectPhotos", "1");
+
+    const photoWindow = window.open(
+        url.toString(),
+        "panelBuilderProjectPhotos",
+        "popup=yes,width=1500,height=950,resizable=yes,scrollbars=no"
+    );
+
+    if (!photoWindow) {
+        alert("Your browser blocked the photo window. Allow pop-ups for Panel Builder, then try Detach again.");
+        return;
+    }
+
+    photoWindow.focus();
 
 }
 
@@ -259,6 +309,7 @@ function renderProjectPhotos() {
 
     const overlay = ensureProjectPhotosModal();
     const links = getProjectPhotoLinks();
+    const detached = isDetachedProjectPhotosWindow();
 
     overlay.innerHTML = "";
     const dialog = document.createElement("section");
@@ -270,14 +321,26 @@ function renderProjectPhotos() {
     const header = document.createElement("header");
     header.className = "project-photos-header";
     const heading = document.createElement("div");
-    heading.innerHTML = "<h2>Project Photos</h2><p>Paste up to four Google Drive image links. Each panel zooms and scrolls independently.</p>";
+    heading.innerHTML = "<h2>Project Photos</h2><p>Drop Drive links on a panel · Ctrl + wheel zooms each panel</p>";
+    header.appendChild(heading);
+
+    if (!detached) {
+        const detach = document.createElement("button");
+        detach.type = "button";
+        detach.className = "project-photos-detach";
+        detach.textContent = "↗ Detach";
+        detach.title = "Open this photo board in its own window";
+        detach.addEventListener("click", detachProjectPhotos);
+        header.appendChild(detach);
+    }
+
     const close = document.createElement("button");
     close.type = "button";
     close.className = "project-photos-close";
     close.innerHTML = "&times;";
-    close.title = "Close Project Photos";
+    close.title = detached ? "Close photo window" : "Close Project Photos";
     close.addEventListener("click", closeProjectPhotos);
-    header.append(heading, close);
+    header.appendChild(close);
 
     const grid = document.createElement("div");
     grid.className = "project-photos-grid";
@@ -298,11 +361,30 @@ function openProjectPhotos() {
 
 function closeProjectPhotos() {
 
+    if (isDetachedProjectPhotosWindow() && window.opener) {
+        window.close();
+        return;
+    }
+
     if (projectPhotosOverlay) {
         projectPhotosOverlay.style.display = "none";
     }
 
 }
 
+function openDetachedProjectPhotosOnLoad() {
+
+    if (!isDetachedProjectPhotosWindow()) return;
+
+    // The popup shares the local draft with the main window. Waiting until the
+    // application finishes restoring it makes the four panels appear populated.
+    window.addEventListener("load", () => {
+        window.setTimeout(openProjectPhotos, 500);
+    }, { once: true });
+
+}
+
 window.openProjectPhotos = openProjectPhotos;
 window.closeProjectPhotos = closeProjectPhotos;
+
+openDetachedProjectPhotosOnLoad();
