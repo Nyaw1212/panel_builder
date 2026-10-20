@@ -521,6 +521,11 @@ function serializeProjectCore() {
     model: project.model || "",
     usedMaterialsSpreadsheetId: project.usedMaterialsSpreadsheetId || "",
     usedMaterialsSpreadsheetUrl: project.usedMaterialsSpreadsheetUrl || "",
+    photoLinks: Array.isArray(project.photoLinks)
+      ? project.photoLinks
+        .slice(0, 4)
+        .map(link => String(link || "").trim())
+      : [],
     usedMaterialsOutput: "xlsx",
     layout: serializeLayout(),
     links: serializeLinks(),
