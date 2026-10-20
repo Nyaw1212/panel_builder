@@ -342,6 +342,12 @@ DISCONNECT PRESET MATRIX
     padding: 4px 8px 12px 4px;
 }
 
+#modalList.conduit-picker-matrix-list {
+    display: block;
+    overflow: auto;
+    padding: 4px 8px 12px 4px;
+}
+
 .preset-picker-matrix {
     width: 100%;
     min-width: 700px;
@@ -429,6 +435,105 @@ DISCONNECT PRESET MATRIX
     padding: 28px;
     color: var(--v2-text-muted, #7f91aa);
     text-align: center;
+}
+
+/*=====================================
+CONDUIT PICKER MATRIX
+=====================================*/
+
+.conduit-picker-matrix {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid #41506a;
+    border-radius: 12px;
+    background: #0d1828;
+}
+
+.conduit-picker-matrix th,
+.conduit-picker-matrix td {
+    padding: 8px;
+    border-right: 1px solid rgba(100, 116, 139, .3);
+    border-bottom: 1px solid rgba(100, 116, 139, .3);
+    text-align: center;
+}
+
+.conduit-picker-matrix th:last-child,
+.conduit-picker-matrix td:last-child {
+    border-right: 0;
+}
+
+.conduit-picker-matrix tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.conduit-picker-matrix th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: #bfdbfe;
+    background: #172944;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: .05em;
+}
+
+.conduit-picker-matrix td {
+    min-width: 142px;
+    background: rgba(15, 23, 42, .7);
+}
+
+.conduit-picker-matrix .conduit-matrix-type {
+    width: 84px;
+    min-width: 84px;
+    color: #a5f3fc;
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.conduit-matrix-cell {
+    color: var(--v2-text-muted, #7f91aa);
+    font-size: 17px;
+}
+
+.conduit-matrix-choice {
+    width: 100%;
+    min-height: 130px;
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    border: 1px solid rgba(96, 165, 250, .42);
+    border-radius: 8px;
+    padding: 8px;
+    color: #eff6ff;
+    background: rgba(30, 64, 175, .18);
+    cursor: pointer;
+}
+
+.conduit-matrix-choice:hover {
+    border-color: #7dd3fc;
+    background: rgba(29, 78, 216, .62);
+}
+
+.conduit-matrix-image.material-card-image-wrap {
+    width: 86px;
+    height: 86px;
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+.conduit-matrix-image-element.material-card-image {
+    padding: 3px;
+}
+
+.conduit-matrix-code {
+    max-width: 100%;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 900;
+    overflow-wrap: anywhere;
 }
 
 /*=====================================
