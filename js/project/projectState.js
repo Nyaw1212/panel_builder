@@ -20,6 +20,8 @@ const projectState = {
 
     usedMaterialsSpreadsheetUrl: "",
 
+    photoLinks: [],
+
     created: null,
 
     modified: null,
@@ -106,6 +108,12 @@ function setProjectState(project) {
     projectState.usedMaterialsSpreadsheetUrl =
         String(project.usedMaterialsSpreadsheetUrl || "").trim();
 
+    projectState.photoLinks = Array.isArray(project.photoLinks)
+        ? project.photoLinks
+            .slice(0, 4)
+            .map(link => String(link || "").trim())
+        : [];
+
     projectState.created =
         project.created || null;
 
@@ -146,6 +154,8 @@ function clearProjectState() {
     projectState.usedMaterialsSpreadsheetId = "";
 
     projectState.usedMaterialsSpreadsheetUrl = "";
+
+    projectState.photoLinks = [];
 
     projectState.created = null;
 
