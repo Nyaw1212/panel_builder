@@ -6,6 +6,7 @@
     <title>Panel Builder</title>
 
     <link rel="stylesheet" href="styles/toolbar.css" />
+    <link rel="stylesheet" href="styles/projectPhotos.css?v=project-photos-v1" />
     <link rel="stylesheet" href="styles/reset.css" />
     <link rel="stylesheet" href="styles/layout.css" />
     <link rel="stylesheet" href="styles/library.css?v=square-images-v2" />
@@ -76,6 +77,8 @@
           <button id="runsButton">📏 Runs</button>
 
           <button id="runMaterialsButton">🧰 Conduit &amp; Fittings</button>
+
+          <button id="projectPhotosButton">🖼️ Photos</button>
 
           <button id="reloadMMLButton" title="Clear the local MML cache and load the latest material catalog">
             🔄 Reload MML
@@ -407,12 +410,13 @@
 
     <script src="engine/sortEngine.js"></script>
 
-    <script src="js/project/projectSerializer.js?v=run-conduit-length-v1"></script>
-    <script src="js/project/projectDeserializer.js?v=run-conduit-length-v1"></script>
-    <script src="js/project/projectState.js"></script>
+    <script src="js/project/projectSerializer.js?v=project-photos-v1"></script>
+    <script src="js/project/projectDeserializer.js?v=project-photos-v1"></script>
+    <script src="js/project/projectState.js?v=project-photos-v1"></script>
     <script src="js/ui/runsModal.js?v=run-conduit-length-v2"></script>
+    <script src="js/ui/projectPhotos.js?v=project-photos-v1"></script>
     <script src="js/project/projectCache.js"></script>
-    <script src="js/project/projectManager.js?v=used-materials-parser-v1"></script>
+    <script src="js/project/projectManager.js?v=project-photos-v1"></script>
     <script src="js/project/projectDraft.js"></script>
     <script src="js/project/projectNew.js"></script>
 
@@ -442,7 +446,7 @@
 
     <script src="js/ui/projectDialog.js?v=project-row-parser-v1"></script>
     <script src="js/ui/projectOpenDialog.js?v=open-project-search-v2"></script>
-    <script src="js/ui/toolbar.js?v=run-materials-v1"></script>
+    <script src="js/ui/toolbar.js?v=project-photos-v1"></script>
 
     <!-- ========================================= -->
     <!-- Application -->
