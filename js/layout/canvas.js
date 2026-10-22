@@ -873,9 +873,38 @@ function getCanvasDisconnectPresetRating(item) {
   );
 }
 
+function getCanvasMDPPresetRating(item) {
+  const presetCode = String(
+    item?.preset ||
+    item?.data?.PRESET ||
+    item?.data?.Preset ||
+    ""
+  ).trim();
+  const type = [
+    item?.data?.Type,
+    item?.data?.NodeType,
+    item?.data?.Category
+  ].join(" ").toUpperCase();
+
+  if (
+    !presetCode ||
+    !(
+      type.includes("PANEL") ||
+      type.includes("FSU") ||
+      type.includes("MDP")
+    ) ||
+    typeof window.getPresetMDPRating !== "function"
+  ) {
+    return 0;
+  }
+
+  return Number(window.getPresetMDPRating(presetCode) || 0);
+}
+
 function getCanvasItemRatingLabel(item) {
   const data = item?.data || {};
-  const presetRating = getCanvasDisconnectPresetRating(item);
+  const presetRating = getCanvasMDPPresetRating(item) ||
+    getCanvasDisconnectPresetRating(item);
 
   if (presetRating > 0) {
     return `${presetRating}A`;
