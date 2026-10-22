@@ -160,6 +160,39 @@ function getPresetAssemblyRating(preset, allowedTypes = []) {
   return getRowPresetRating(row);
 }
 
+// MDP assemblies can carry their operating rating on the CSR main-breaker
+// row. That PRESETS value is authoritative for the panel and its feeder.
+// Standalone MDP presets without a CSR row keep using their own MDP rating.
+function getPresetMDPRating(preset) {
+  const presetAliases = getPresetCodeAliases(preset);
+  if (!presetAliases.length) return 0;
+
+  const rows = (Array.isArray(window.presets) ? window.presets : [])
+    .filter(candidate => presetAliases.includes(
+      normalizePresetCode(getRowPresetCode(candidate))
+    ));
+
+  const csrRating = rows
+    .filter(row => /^CSR/i.test(getRowCatalogNumber(row)))
+    .map(getRowPresetRating)
+    .find(rating => rating > 0);
+
+  if (csrRating) return csrRating;
+
+  const mdpRating = rows
+    .filter(row => {
+      const type = normalizePresetAssemblyType(
+        row?.TYPE ?? row?.Type ?? row?.type ?? ""
+      );
+
+      return type === "MDP" || /^MDP/i.test(getRowCatalogNumber(row));
+    })
+    .map(getRowPresetRating)
+    .find(rating => rating > 0);
+
+  return mdpRating || 0;
+}
+
 //----------------------------------
 // Get Row Catalog Number
 //----------------------------------
@@ -774,6 +807,9 @@ window.getApiPresetRows =
 
 window.getPresetAssemblyRating =
   getPresetAssemblyRating;
+
+window.getPresetMDPRating =
+  getPresetMDPRating;
 
 window.getApiPresetMaterials =
   getApiPresetMaterials;
