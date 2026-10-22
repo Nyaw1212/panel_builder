@@ -528,6 +528,18 @@ function getCanvasItemWireRating(item) {
         item?.data?.Preset ||
         ""
     ).trim();
+    const itemType = [
+        item?.data?.Type,
+        item?.data?.NodeType,
+        item?.data?.Category
+    ].map(value => String(value || "").toUpperCase()).join(" ");
+    const mdpPresetRating = presetCode &&
+        (itemType.includes("PANEL") ||
+            itemType.includes("FSU") ||
+            itemType.includes("MDP")) &&
+        typeof window.getPresetMDPRating === "function"
+        ? Number(window.getPresetMDPRating(presetCode) || 0)
+        : 0;
     const disconnectPresetRating = presetCode &&
         typeof window.getPresetAssemblyRating === "function"
         ? Number(
@@ -537,6 +549,10 @@ function getCanvasItemWireRating(item) {
             ) || 0
         )
         : 0;
+
+    if (mdpPresetRating > 0) {
+        return mdpPresetRating;
+    }
 
     if (disconnectPresetRating > 0) {
         return disconnectPresetRating;
@@ -691,13 +707,19 @@ function getRunPanelMainBreakers(run) {
             ensurePresetMainBreakerSlot(panel);
         }
 
+        const panelPreset = String(panel?.preset || panel?.data?.PRESET || "").trim();
+        const panelPresetRating = panelPreset &&
+            typeof window.getPresetMDPRating === "function"
+            ? Number(window.getPresetMDPRating(panelPreset) || 0)
+            : 0;
         const panelLabel = String(panel?.preset || panel?.data?.CatalogNumber || "Panel").trim();
         return (Array.isArray(panel.materials) ? panel.materials : [])
             .filter(component => component?.panelSlot?.section === "main")
             .map(component => {
                 const catalogNumber = String(component?.catalogNumber || component?.CatalogNumber || "").trim();
                 const material = findRunCircuitMaterial(catalogNumber) || component;
-                const rating = Number(material?.RATING ?? material?.Rating ?? material?.rating ?? 0) ||
+                const rating = panelPresetRating ||
+                    Number(material?.RATING ?? material?.Rating ?? material?.rating ?? 0) ||
                     (typeof getBreakerAmperage === "function" ? Number(getBreakerAmperage(material) || 0) : 0);
 
                 return { panelId, panelLabel, catalogNumber, rating };
