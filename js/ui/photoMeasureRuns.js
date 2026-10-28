@@ -1,7 +1,7 @@
 /* Native photo measuring for Material Runs. Lengths are in feet. */
 (() => {
 "use strict";
-let host, canvas, ctx, image, imageURL, points=[], corners=[], mode="measure", runIndex=0, runs=[], transform={scale:1,x:0,y:0,rotation:0}, pan=false, drag=null, hover=null, calibration=null, measured=null, tracing=false;
+let host, canvas, ctx, image, imageURL, points=[], corners=[], mode="measure", runIndex=0, runs=[], transform={scale:1,x:0,y:0,rotation:0}, pan=false, drag=null, hover=null, calibration=null, measured=null, tracing=false, runPaths={};
 const $ = id => host?.querySelector("#"+id);
 // Store the original uploaded image as a Blob in IndexedDB, not in project JSON.
 // Cache is scoped to this browser origin and the active project.
@@ -34,13 +34,18 @@ async function readCachedPhoto(){
   req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
  });}finally{db.close();}
 }
+const settingsKey=()=>PHOTO_DB+":settings:"+projectPhotoKey();
+function cacheSettings(){try{localStorage.setItem(settingsKey(),JSON.stringify({width:$("pm-width")?.value,height:$("pm-height")?.value,corners,calibration,runPaths,runIndex,rotation:transform.rotation}))}catch(e){console.warn(e)}}
+function restoreSettings(){try{const x=JSON.parse(localStorage.getItem(settingsKey())||"null");if(!x)return;if(x.width)$("pm-width").value=x.width;if(x.height)$("pm-height").value=x.height;corners=Array.isArray(x.corners)?x.corners:[];calibration=Array.isArray(x.calibration)&&x.calibration.length===8?x.calibration:null;runPaths=x.runPaths&&typeof x.runPaths==="object"?x.runPaths:{};runIndex=Math.max(0,Math.min(runs.length-1,Number(x.runIndex)||0));transform.rotation=Number(x.rotation)||0}catch(e){console.warn(e)}}
+function rememberRun(){const r=currentRun();if(r&&points.length>=2&&Number.isFinite(measured))runPaths[String(r.id)]={points:points.map(p=>({...p})),length:measured};cacheSettings()}
+function restoreRun(){const saved=runPaths[String(currentRun()?.id)];points=Array.isArray(saved?.points)?saved.points.map(p=>({...p})):[];measured=Number.isFinite(saved?.length)?saved.length:null;hover=null;tracing=false;label();draw()}
 function loadPhotoBlob(blob,name){
  if(imageURL)URL.revokeObjectURL(imageURL);
  imageURL=URL.createObjectURL(blob);
  const im=new Image();
  im.onload=()=>{
   image=im;corners=[];points=[];tracing=false;calibration=null;measured=null;
-  fit();label();status("Loaded "+name+". Set the reference rectangle to calibrate.");
+  fit();restoreRun();status("Loaded "+name+(calibration?". Calibration and measurements restored.":". Set the reference rectangle."));
  };
  im.onerror=()=>status("Unable to open cached photo.");
  im.src=imageURL;
@@ -77,15 +82,15 @@ function draw(){
 }
 function fit(){if(!image)return;const rect=canvas.getBoundingClientRect();transform.scale=Math.min(rect.width/image.width,rect.height/image.height)*0.92;transform.x=0;transform.y=0;draw();}
 function solve(A,b){for(let i=0;i<8;i++){let k=i;for(let j=i+1;j<8;j++)if(Math.abs(A[j][i])>Math.abs(A[k][i]))k=j;[A[i],A[k]]=[A[k],A[i]];[b[i],b[k]]=[b[k],b[i]];let pivot=A[i][i];if(Math.abs(pivot)<1e-10)throw Error("Invalid reference rectangle");for(let j=i;j<8;j++)A[i][j]/=pivot;b[i]/=pivot;for(let k2=0;k2<8;k2++){if(k2===i)continue;const v=A[k2][i];for(let j=i;j<8;j++)A[k2][j]-=v*A[i][j];b[k2]-=v*b[i]}}return b;}
-function calibrate(){const w=Number($("pm-width").value),h=Number($("pm-height").value);if(!(w>0&&h>0)||corners.length!==4)return;const targets=[[0,0],[w,0],[w,h],[0,h]],A=[],b=[];corners.forEach((p,i)=>{const [X,Y]=targets[i];A.push([p.x,p.y,1,0,0,0,-X*p.x,-X*p.y]);b.push(X);A.push([0,0,0,p.x,p.y,1,-Y*p.x,-Y*p.y]);b.push(Y)});calibration=solve(A,b);status("Reference calibrated. Press Q to start tracing.");mode="measure";}
+function calibrate(){const w=Number($("pm-width").value),h=Number($("pm-height").value);if(!(w>0&&h>0)||corners.length!==4)return;const targets=[[0,0],[w,0],[w,h],[0,h]],A=[],b=[];corners.forEach((p,i)=>{const [X,Y]=targets[i];A.push([p.x,p.y,1,0,0,0,-X*p.x,-X*p.y]);b.push(X);A.push([0,0,0,p.x,p.y,1,-Y*p.x,-Y*p.y]);b.push(Y)});calibration=solve(A,b);status("Reference calibrated. Press Q to start tracing.");mode="measure";cacheSettings();}
 function physical(p){const h=calibration,d=h[6]*p.x+h[7]*p.y+1;if(Math.abs(d)<1e-8)throw Error("Measurement outside calibrated plane");return{x:(h[0]*p.x+h[1]*p.y+h[2])/d,y:(h[3]*p.x+h[4]*p.y+h[5])/d};}
 function measure(){
  if(!calibration)return status("Calibrate the reference rectangle first.");
  try{let sum=0;for(let i=1;i<points.length;i++){const a=physical(points[i-1]),b=physical(points[i]);sum+=Math.hypot(b.x-a.x,b.y-a.y)}
- measured=sum;label();status("Click another point to extend the run, or press Q to finish and save.");
+ measured=sum;label();rememberRun();status("Click another point to extend the run, or press Q to finish and save.");
  }catch(e){measured=null;status(e.message)}
 }
-function setRun(i){runIndex=Math.max(0,Math.min(runs.length-1,i));points=[];hover=null;measured=null;tracing=false;label();draw();status("Press Q to start tracing this run.");}
+function setRun(i){runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
 function confirm(){
  if(!currentRun()||points.length<2||!Number.isFinite(measured))return status("Add at least two points.");
  const run=currentRun(),actual=typeof window.findRun==="function"?window.findRun(run.id):null;
@@ -93,14 +98,14 @@ function confirm(){
  actual.length=Math.round(measured*1000)/1000;
  try{window.captureRunsHistory?.("Photo-measured multipoint run");window.saveRunsDraft?.();window.refreshRunsBOM?.();window.renderRunsModal?.();}
  catch(e){status("Could not refresh Runs: "+e.message);return}
- const saved="Saved "+actual.length+" ft to "+run.name;
+ rememberRun();const saved="Saved "+actual.length+" ft to "+run.name;
  if(runIndex<runs.length-1){setRun(runIndex+1);status(saved+". Press Q to start next run.");}
  else{points=[];hover=null;tracing=false;measured=null;label();draw();status(saved+". All runs measured.");}
 }
 function toggleTrace(){
  if(!image)return status("Upload a photo first.");
  if(!calibration)return status("Calibrate the reference rectangle first.");
- if(!tracing){points=[];hover=null;measured=null;tracing=true;label();draw();status("Tracing started. Click the start point, then every bend. Press Q again to finish.");}
+ if(!tracing){points=[];hover=null;measured=null;delete runPaths[String(currentRun()?.id)];cacheSettings();tracing=true;label();draw();status("Tracing started. Click the start point, then every bend. Press Q again to finish.");}
  else if(points.length<2)status("Click at least two points before finishing.");
  else{tracing=false;confirm();}
 }
@@ -136,10 +141,10 @@ host.innerHTML=`<style>
  <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main>
 </div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
- loadPhotoBlob(f,f.name);
+ corners=[];calibration=null;runPaths={};runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
  try{await cachePhoto(f);status("Photo attached to local cache for this project. Set the reference rectangle.");}
  catch(err){console.warn("Photo cache unavailable",err);status("Photo loaded, but local cache failed: "+err.message);}
-};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw()};$("pm-right").onclick=()=>{transform.rotation+=90;draw()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};setRun(0);requestAnimationFrame(draw);
+};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;cacheSettings();status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw();cacheSettings()};$("pm-right").onclick=()=>{transform.rotation+=90;draw();cacheSettings()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;delete runPaths[String(currentRun()?.id)];cacheSettings();mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}cacheSettings()};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};restoreSettings();restoreRun();requestAnimationFrame(draw);
  readCachedPhoto().then(entry=>{
   if(!host||image||!entry?.blob)return;
   loadPhotoBlob(entry.blob,entry.name||"cached photo");
