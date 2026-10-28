@@ -24,46 +24,6 @@ function getOrCreateProjectExportSheet_(spreadsheet, name) {
   return sheet;
 }
 
-// Resolve export prices from the live MML sheet at report generation time.
-// Catalog numbers are treated as text to preserve leading zeroes.
-function getUsedMaterialsMmlPrices_() {
-  const sheet = getProjectSpreadsheet().getSheetByName("MML");
-  if (!sheet) throw new Error("MML sheet not found; Used Materials prices cannot be resolved.");
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) throw new Error("MML has no material rows.");
-  const norm = value => String(value == null ? "" : value).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-  const headers = data[0].map(norm);
-  const col = (...names) => names.map(name => headers.indexOf(norm(name))).find(index => index >= 0) ?? -1;
-  const catalogCol = col("CatalogNumber", "Catalog Number");
-  const unitCol = col("UnitPrice", "Unit Price", "Price");
-  const packageCol = col("PackagePrice", "Package Price");
-  const quantityCol = col("PackageQuantity", "Package Quantity", "PackQty", "Pack Qty");
-  if (catalogCol < 0) throw new Error("MML is missing CatalogNumber.");
-  if (unitCol < 0 && (packageCol < 0 || quantityCol < 0)) {
-    throw new Error("MML requires UnitPrice/Price or PackagePrice and PackageQuantity.");
-  }
-  const money = value => {
-    if (typeof value === "number") return Number.isFinite(value) ? value : null;
-    const cleaned = String(value == null ? "" : value).replace(/[$,\s]/g, "");
-    if (!cleaned) return null;
-    const number = Number(cleaned);
-    return Number.isFinite(number) ? number : null;
-  };
-  const lookup = new Map();
-  data.slice(1).forEach(row => {
-    const catalog = String(row[catalogCol] == null ? "" : row[catalogCol]).trim().toUpperCase();
-    if (!catalog) return;
-    let price = unitCol >= 0 ? money(row[unitCol]) : null;
-    if (price === null && packageCol >= 0 && quantityCol >= 0) {
-      const packagePrice = money(row[packageCol]);
-      const packageQty = money(row[quantityCol]);
-      if (packagePrice !== null && packageQty > 0) price = packagePrice / packageQty;
-    }
-    if (price !== null) lookup.set(catalog, price);
-  });
-  return lookup;
-}
-
 function aggregateUsedMaterials_(materials) {
   const byCatalog = {};
 
@@ -87,7 +47,7 @@ function aggregateUsedMaterials_(materials) {
       inventoryCategory: String(
         material?.InventoryCategory || material?.inventoryCategory || ""
       ).trim().toUpperCase(),
-        price: null,
+        price: Number(material?.Price ?? material?.price ?? 0) || 0,
         qty: 0
       };
     }
@@ -146,16 +106,6 @@ function saveProjectUsedMaterials(
   }
 
   const rows = aggregateUsedMaterials_(materials);
-  const mmlPrices = getUsedMaterialsMmlPrices_();
-  rows.forEach(item => {
-    item.price = mmlPrices.has(item.catalog.toUpperCase())
-      ? mmlPrices.get(item.catalog.toUpperCase())
-      : null;
-  });
-  const missingPrices = rows.filter(item => item.price === null).map(item => item.catalog);
-  if (missingPrices.length) {
-    Logger.log("MML prices missing for catalog numbers: " + missingPrices.join(", "));
-  }
 
   //----------------------------------
   // Used materials summary
@@ -183,8 +133,8 @@ function saveProjectUsedMaterials(
         item.description,
         item.catalog,
         item.qty,
-        item.price === null ? "" : item.price,
-        item.price === null ? "" : item.qty * item.price
+        item.price,
+        item.qty * item.price
       ])
     );
     outputRow += rows.length;
@@ -255,10 +205,10 @@ function saveProjectUsedMaterials(
         item.catalog,
         item.vendorCode,
         item.description,
-        item.price === null ? "" : item.price,
+        item.price,
         "Used",
         item.qty,
-        item.price === null ? "" : item.qty * item.price
+        item.qty * item.price
       ])
     );
   }
