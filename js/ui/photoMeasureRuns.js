@@ -207,11 +207,17 @@ function confirm(){
  if(!currentRun()||points.length<2||!Number.isFinite(measured))return status("Add at least two points.");
  const run=currentRun(),actual=typeof window.findRun==="function"?window.findRun(run.id):null;
  if(!actual)return status("Run no longer exists; reopen the tool.");
+ // Photo measurements represent the wire route, not the conduit footage.
+ // Freeze the current conduit footage before changing the wire length,
+ // otherwise getRunConduitLength() implicitly follows run.length.
+ if(actual.conduitLength===""||actual.conduitLength===null||actual.conduitLength===undefined){
+  actual.conduitLength=Math.max(0,Number(actual.length)||0);
+ }
  actual.length=Math.ceil(Math.max(0,measured));
  try{window.captureRunsHistory?.("Photo-measured multipoint run");window.saveRunsDraft?.();window.refreshRunsBOM?.();window.renderRunsModal?.();}
  catch(e){status("Could not refresh Runs: "+e.message);return}
  rememberRun();
- status("Saved "+actual.length+" ft. Select or edit conduit and fittings in the right sidebar.");
+ status("Saved wire run length: "+actual.length+" ft. Conduit length unchanged. Select or edit materials in the right sidebar.");
  showMaterials();
 }
 function toggleTrace(){
