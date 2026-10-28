@@ -134,13 +134,20 @@ async function showFittings(){
  if(!api||!run)return;
  const target=$("pm-fitting-grid");
  target.textContent="Loading fittings…";
- const items=await api.listFittings(run.id);
- if(!host||!materialsMode)return;
- materialCatalog=items;
- target.innerHTML=items.length?items.map((m,i)=>{
-  const qty=api.getFittingQty(run.id,m),src=api.getImage(m);
-  return `<div class="pm-fitting-tile"><img src="${escape(src)}" alt="" onerror="this.style.display='none'"><div class="pm-fitting-desc" title="${escape(m.Description||"")}">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-row"><button data-fit="${i}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${i}" data-delta="1">+</button></div></div>`;
- }).join(""):"No fittings for the selected size.";
+ const matrix=await api.fittingMatrix(run.id);
+ if(!host||!materialsMode||run.id!==currentRun()?.id)return;
+ materialCatalog=[];
+ const headers='<th class="pm-matrix-corner">SYSTEM</th>'+matrix.columns.map(c=>`<th>${escape(c.label)}</th>`).join("");
+ const rows=matrix.rows.map((row,ri)=>{
+  const cells=matrix.columns.map((col,ci)=>{
+   const m=matrix.cells[ri]?.[ci];
+   if(!m)return '<td class="pm-matrix-empty">—</td>';
+   const index=materialCatalog.push(m)-1,qty=api.getFittingQty(run.id,m),src=api.getImage(m);
+   return `<td><div class="pm-matrix-item" title="${escape(m.Description||"")}"><div class="pm-matrix-image">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:""}</div><div class="pm-matrix-code">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
+  }).join("");
+  return `<tr><th scope="row">${escape(row.label)}</th>${cells}</tr>`;
+ }).join("");
+ target.innerHTML=`<table class="pm-matrix"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
  target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
   const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
   api.setFitting(run.id,material,Number(btn.dataset.delta));
@@ -194,11 +201,21 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-materials{display:none;width:min(1200px, 55vw);flex:0 0 min(1200px, 55vw);height:100%;min-height:0;align-self:stretch;flex-direction:column;overflow-y:auto;background:#172236;border-left:1px solid #334155}
 #photoMeasureModal .pm-materials .pm-group{padding:14px}
 #photoMeasureModal #pm-conduit{width:100%;padding:10px;background:#0e1726;color:white;border:1px solid #4b617d;font-size:16px}
-#photoMeasureModal .pm-fitting-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-#photoMeasureModal .pm-fitting-tile{border:1px solid #3a4b62;border-radius:6px;padding:5px;min-width:0}
-#photoMeasureModal .pm-fitting-tile img{height:65px;width:100%;object-fit:contain;background:#edf2f7}
-#photoMeasureModal .pm-fitting-desc{font-size:12px;overflow-wrap:anywhere;padding:4px 0}
-#photoMeasureModal .pm-fitting-tile button{padding:5px}
+#photoMeasureModal .pm-fitting-grid{display:block;overflow:auto;max-width:100%;min-height:0;border:1px solid #334155}
+#photoMeasureModal .pm-matrix{border-collapse:separate;border-spacing:0;width:100%;min-width:920px;table-layout:fixed;font-size:12px}
+#photoMeasureModal .pm-matrix th,#photoMeasureModal .pm-matrix td{border-right:1px solid #334155;border-bottom:1px solid #334155;padding:5px;vertical-align:middle;text-align:center}
+#photoMeasureModal .pm-matrix thead th{position:sticky;top:0;z-index:2;background:#183047;color:#c4e5fa;text-transform:uppercase;font-size:11px}
+#photoMeasureModal .pm-matrix thead th:first-child{left:0;z-index:4}
+#photoMeasureModal .pm-matrix tbody th{position:sticky;left:0;z-index:1;background:#17263b;color:#dbeafe;text-align:left;width:92px}
+#photoMeasureModal .pm-matrix .pm-matrix-corner{width:92px}
+#photoMeasureModal .pm-matrix-empty{color:#8ca1b7}
+#photoMeasureModal .pm-matrix-item{display:flex;flex-direction:column;gap:3px;min-width:0}
+#photoMeasureModal .pm-matrix-image{height:55px;display:flex;align-items:center;justify-content:center}
+#photoMeasureModal .pm-matrix-image img{max-width:100%;height:55px;object-fit:contain;border-radius:3px;background:#e9eef3}
+#photoMeasureModal .pm-matrix-code{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+#photoMeasureModal .pm-matrix-qty{display:flex;align-items:center;justify-content:center;gap:3px}
+#photoMeasureModal .pm-matrix-qty button{padding:3px 7px;min-width:26px}
+#photoMeasureModal .pm-matrix-qty strong{min-width:16px}
 #photoMeasureModal .pm-endpoints{display:flex;align-items:stretch;gap:6px}
 #photoMeasureModal .pm-endpoint{flex:1;min-width:0;border:1px solid #354b65;border-radius:5px;padding:8px;display:flex;align-items:center;gap:8px}
 #photoMeasureModal .pm-endpoint-role{font-size:12px;color:#8fa5c1;font-weight:700}
