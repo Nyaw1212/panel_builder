@@ -568,8 +568,9 @@ function saveProject(request) {
     row = findProjectRowByDetails(sheet, jobName, address);
   }
 
-  const idColumn = projectColumn_(map, "ProjectID", "Project ID");
-  const createdColumn = projectColumn_(map, "Created");
+  const initialMap = ensureProjectHeaders_(sheet).map;
+  const idColumn = projectColumn_(initialMap, "ProjectID", "Project ID");
+  const createdColumn = projectColumn_(initialMap, "Created");
 
   if (row && idColumn) {
     const existingProjectId = String(
