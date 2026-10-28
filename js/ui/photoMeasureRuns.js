@@ -143,7 +143,7 @@ async function showFittings(){
    const m=matrix.cells[ri]?.[ci];
    if(!m)return '<td class="pm-matrix-empty">—</td>';
    const index=materialCatalog.push(m)-1,qty=api.getFittingQty(run.id,m),src=api.getImage(m);
-   return `<td><div class="pm-matrix-item" title="${escape(m.Description||"")}"><div class="pm-matrix-image">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:""}</div><div class="pm-matrix-code">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
+   return `<td><div class="pm-matrix-item" title="${escape(m.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(m.CatalogNumber||"fitting")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:"<span>+</span>"}</button><div class="pm-matrix-code">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
   }).join("");
   return `<tr><th scope="row">${escape(row.label)}</th>${cells}</tr>`;
  }).join("");
@@ -211,7 +211,7 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-matrix-empty{color:#8ca1b7}
 #photoMeasureModal .pm-matrix-item{display:flex;flex-direction:column;gap:3px;min-width:0}
 #photoMeasureModal .pm-matrix-image{height:55px;display:flex;align-items:center;justify-content:center}
-#photoMeasureModal .pm-matrix-image img{max-width:100%;height:55px;object-fit:contain;border-radius:3px;background:#e9eef3}
+#photoMeasureModal .pm-matrix-add{width:100%;border:0;background:transparent;padding:0;cursor:pointer;border-radius:4px}\n#photoMeasureModal .pm-matrix-add:hover{outline:2px solid #60a5fa;background:#243d5b}\n#photoMeasureModal .pm-matrix-add:focus-visible{outline:2px solid #93c5fd}\n#photoMeasureModal .pm-matrix-image img{max-width:100%;height:55px;object-fit:contain;border-radius:3px;background:#e9eef3}
 #photoMeasureModal .pm-matrix-code{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
 #photoMeasureModal .pm-matrix-qty{display:flex;align-items:center;justify-content:center;gap:3px}
 #photoMeasureModal .pm-matrix-qty button{padding:3px 7px;min-width:26px}
