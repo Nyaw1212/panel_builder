@@ -3,6 +3,49 @@
 "use strict";
 let host, canvas, ctx, image, imageURL, points=[], corners=[], mode="measure", runIndex=0, runs=[], transform={scale:1,x:0,y:0,rotation:0}, pan=false, drag=null, hover=null, calibration=null, measured=null, tracing=false;
 const $ = id => host?.querySelector("#"+id);
+// Store the original uploaded image as a Blob in IndexedDB, not in project JSON.
+// Cache is scoped to this browser origin and the active project.
+const PHOTO_DB="PanelBuilderPhotoMeasureCache",PHOTO_STORE="photos";
+function projectPhotoKey(){
+ const project=typeof window.getProjectState==="function"?window.getProjectState():null;
+ const id=String(project?.id||"").trim(),name=String(project?.jobName||"").trim();
+ return id?"id:"+id:name?"job:"+name:"unsaved-project";
+}
+function openPhotoDb(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(PHOTO_DB,1);
+  req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(PHOTO_STORE))req.result.createObjectStore(PHOTO_STORE)};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error);
+ });
+}
+async function cachePhoto(file){
+ const db=await openPhotoDb();
+ try{await new Promise((resolve,reject)=>{
+  const tx=db.transaction(PHOTO_STORE,"readwrite");
+  tx.objectStore(PHOTO_STORE).put({blob:file,name:file.name,modified:Date.now()},projectPhotoKey());
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+ });}finally{db.close();}
+}
+async function readCachedPhoto(){
+ const db=await openPhotoDb();
+ try{return await new Promise((resolve,reject)=>{
+  const tx=db.transaction(PHOTO_STORE,"readonly"),req=tx.objectStore(PHOTO_STORE).get(projectPhotoKey());
+  req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
+ });}finally{db.close();}
+}
+function loadPhotoBlob(blob,name){
+ if(imageURL)URL.revokeObjectURL(imageURL);
+ imageURL=URL.createObjectURL(blob);
+ const im=new Image();
+ im.onload=()=>{
+  image=im;corners=[];points=[];tracing=false;calibration=null;measured=null;
+  fit();label();status("Loaded "+name+". Set the reference rectangle to calibrate.");
+ };
+ im.onerror=()=>status("Unable to open cached photo.");
+ im.src=imageURL;
+}
+
 const escape = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function currentRun(){return runs[runIndex];}
 function status(message){if($("pm-status"))$("pm-status").textContent=message;}
@@ -91,6 +134,17 @@ host.innerHTML=`<style>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Mouse wheel: zoom · Q: start · Click multiple points · Q: finish/save</span></div>
  </aside>
  <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main>
-</div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=e=>{const f=e.target.files[0];if(!f)return;if(imageURL)URL.revokeObjectURL(imageURL);imageURL=URL.createObjectURL(f);const im=new Image();im.onload=()=>{image=im;corners=[];points=[];tracing=false;calibration=null;measured=null;fit();label();};im.src=imageURL};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw()};$("pm-right").onclick=()=>{transform.rotation+=90;draw()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};setRun(0);requestAnimationFrame(draw);}
+</div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ loadPhotoBlob(f,f.name);
+ try{await cachePhoto(f);status("Photo attached to local cache for this project. Set the reference rectangle.");}
+ catch(err){console.warn("Photo cache unavailable",err);status("Photo loaded, but local cache failed: "+err.message);}
+};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw()};$("pm-right").onclick=()=>{transform.rotation+=90;draw()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};setRun(0);requestAnimationFrame(draw);
+ readCachedPhoto().then(entry=>{
+  if(!host||image||!entry?.blob)return;
+  loadPhotoBlob(entry.blob,entry.name||"cached photo");
+  status("Restored cached project photo.");
+ }).catch(err=>{console.warn("Photo cache read failed",err);});
+}
 document.addEventListener("keydown",e=>{if(!host)return;if(e.code==="Space"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();pan=true;canvas.style.cursor="grab";return}if(["q","Q"].includes(e.key)&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(!e.repeat)toggleTrace()}else if(e.key==="Enter"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(tracing&&points.length>=2){tracing=false;confirm()}}if(e.key==="Escape"){$("pm-close").click()}});document.addEventListener("keyup",e=>{if(e.code==="Space"){pan=false;if(canvas)canvas.style.cursor="crosshair"}});window.addEventListener("resize",()=>{if(host)draw()});window.openPhotoMeasureRuns=open;
 })();
