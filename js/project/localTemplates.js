@@ -20,7 +20,15 @@
     const all = read();
     const existing = Object.keys(all).find(key => key.toLowerCase() === name.toLowerCase());
     if (existing && !window.confirm('Replace existing template "' + existing + '"?')) return;
-    const project = buildProject();
+    // buildProject() includes live canvas objects with circular connection references.
+    // Use the existing compact, JSON-safe project serializers instead.
+    const project = {
+      ...buildProject(),
+      layout: serializeLayout(),
+      links: serializeLinks(),
+      runs: typeof serializeRuns === "function" ? serializeRuns() : [],
+      gutters: typeof serializeGutters === "function" ? serializeGutters() : []
+    };
     project.id = "";
     project.jobName = "";
     project.address = "";
