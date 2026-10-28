@@ -3887,6 +3887,37 @@ function closeRunMaterialsModal() {
 }
 
 // Expose the toolbar entry point only after this module has fully evaluated.
+// Shared material logic for the embedded photo measuring sidebar.
+window.photoRunMaterialsAPI = {
+ async listConduits(){
+  const materials=typeof getMaterials==="function"?await getMaterials():[];
+  return (Array.isArray(materials)?materials:[]).filter(m=>String(m?.NodeType||"").toUpperCase()==="PIPE"||(String(m?.Color||"").toUpperCase()==="LT"&&String(m?.Description||"").toUpperCase().includes("MET L/T")));
+ },
+ async listFittings(runId){
+  const run=findRun(runId);if(!run)return [];
+  const materials=typeof getMaterials==="function"?await getMaterials():[];
+  const sizes=[String(run?.conduit?.Size||"")];
+  const items=[];
+  for(const col of FITTING_MATRIX_COLUMNS)for(const row of FITTING_MATRIX_ROWS){
+   const material=getFittingCandidates(materials,run,row,col,sizes)[0];
+   if(material&&!items.some(m=>m.CatalogNumber===material.CatalogNumber))items.push(material);
+  }
+  return items;
+ },
+ getRun:runId=>findRun(runId),
+ setConduit(runId,material){
+  const run=findRun(runId);if(!run)return;
+  run.conduit=material?structuredClone(material):null;
+  captureRunsHistory("Photo run conduit updated");saveRunsDraft();refreshRunsBOM();renderRunsModal();
+ },
+ setFitting(runId,material,delta){
+  const run=findRun(runId);if(!run)return;
+  if(delta>0)addRunFitting(run,material);else removeRunFitting(run,material);
+  captureRunsHistory("Photo run fittings updated");saveRunsDraft();refreshRunsBOM();renderRunsModal();
+ },
+ getFittingQty:(runId,material)=>{const run=findRun(runId);return run?getFittingQuantity(run,material):0;},
+ getImage:material=>getFittingImage(material)
+};
 window.openPhotoRunConduitPicker = runId => openRunMaterialPicker(runId, "conduit", "photo");
 window.openRunsModal = openRunsModal;
 window.closeRunsModal = closeRunsModal;
