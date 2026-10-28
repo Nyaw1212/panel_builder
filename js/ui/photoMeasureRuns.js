@@ -109,6 +109,14 @@ function measure(){
  }catch(e){measured=null;status(e.message)}
 }
 function setRun(i){runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
+function finishMaterialSelection(){
+ if(!host)return;
+ host.style.display="flex";
+ if(runIndex<runs.length-1){setRun(runIndex+1);status("Conduit and fittings updated. Press Q to start the next run.");}
+ else{tracing=false;label();draw();status("Conduit and fittings updated. All runs measured.");}
+ requestAnimationFrame(draw);
+}
+window.photoMeasureMaterialsDone=finishMaterialSelection;
 function confirm(){
  if(!currentRun()||points.length<2||!Number.isFinite(measured))return status("Add at least two points.");
  const run=currentRun(),actual=typeof window.findRun==="function"?window.findRun(run.id):null;
@@ -116,9 +124,17 @@ function confirm(){
  actual.length=Math.ceil(Math.max(0,measured));
  try{window.captureRunsHistory?.("Photo-measured multipoint run");window.saveRunsDraft?.();window.refreshRunsBOM?.();window.renderRunsModal?.();}
  catch(e){status("Could not refresh Runs: "+e.message);return}
- rememberRun();const saved="Saved "+actual.length+" ft to "+run.name;
- if(runIndex<runs.length-1){setRun(runIndex+1);status(saved+". Press Q to start next run.");}
- else{tracing=false;rememberRun();label();draw();status(saved+". All runs measured.");}
+ rememberRun();
+ status("Saved "+actual.length+" ft. Select conduit, then fittings.");
+ if(typeof window.openPhotoRunConduitPicker==="function"){
+  host.style.display="none";
+  Promise.resolve(window.openPhotoRunConduitPicker(run.id)).catch(err=>{
+   host.style.display="flex";status("Could not open conduit picker: "+err.message);
+  });
+ }else{
+  status("Conduit picker unavailable; measurement saved.");
+  finishMaterialSelection();
+ }
 }
 function toggleTrace(){
  if(!image)return status("Upload a photo first.");
