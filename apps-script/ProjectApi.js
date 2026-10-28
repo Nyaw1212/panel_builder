@@ -417,6 +417,47 @@ function ensureProjectHeaders_(sheet) {
 
 }
 
+const PROJECT_JSON_CHUNK_SIZE_ = 40000;
+function ensureProjectJsonColumns_(sheet, length) {
+  const count = Math.max(1, Math.ceil(length / PROJECT_JSON_CHUNK_SIZE_));
+  if (count > 100) throw new Error("Project exceeds maximum supported size.");
+  let meta = ensureProjectHeaders_(sheet);
+  const missing = [];
+  for (let i = 2; i <= count; i++) if (!projectColumn_(meta.map, "JSON Part " + i)) missing.push("JSON Part " + i);
+  if (missing.length) {
+    sheet.getRange(1, meta.headers.length + 1, 1, missing.length).setValues([missing]);
+    meta = ensureProjectHeaders_(sheet);
+  }
+  return meta;
+}
+function writeProjectJsonToOutput_(output, map, project) {
+  const json = JSON.stringify(project);
+  const base = projectColumn_(map, "JSON", "Project JSON");
+  output[base - 1] = json.slice(0, PROJECT_JSON_CHUNK_SIZE_);
+  for (let i = 2; i <= 100; i++) {
+    const col = projectColumn_(map, "JSON Part " + i);
+    if (col) output[col - 1] = json.slice((i - 1) * PROJECT_JSON_CHUNK_SIZE_, i * PROJECT_JSON_CHUNK_SIZE_);
+  }
+}
+function readProjectJsonFromRow_(row, map) {
+  const base = projectColumn_(map, "JSON", "Project JSON");
+  let json = base ? String(row[base - 1] || "") : "";
+  for (let i = 2; i <= 100; i++) {
+    const col = projectColumn_(map, "JSON Part " + i);
+    if (!col || !row[col - 1]) break;
+    json += String(row[col - 1]);
+  }
+  return json;
+}
+function writeProjectJsonToSheet_(sheet, row, project) {
+  const json = JSON.stringify(project);
+  const { map } = ensureProjectJsonColumns_(sheet, json.length);
+  sheet.getRange(row, projectColumn_(map, "JSON", "Project JSON")).setValue(json.slice(0, PROJECT_JSON_CHUNK_SIZE_));
+  for (let i = 2; i <= 100; i++) {
+    const col = projectColumn_(map, "JSON Part " + i);
+    if (col) sheet.getRange(row, col).setValue(json.slice((i - 1) * PROJECT_JSON_CHUNK_SIZE_, i * PROJECT_JSON_CHUNK_SIZE_));
+  }
+}
 function projectColumn_(map, ...aliases) {
 
   for (const alias of aliases) {
@@ -452,7 +493,7 @@ function saveProject(request) {
 
   const start = Date.now();
   const sheet = getProjectSheet();
-  const { headers, map } = ensureProjectHeaders_(sheet);
+  const { headers, map } = ensureProjectJsonColumns_(sheet, JSON.stringify(project).length);
 
   const jobName = String(request.jobName || "").trim();
   const address = String(request.address || "").trim();
@@ -573,7 +614,7 @@ function saveProject(request) {
   setByHeader(address, "Address");
   setByHeader(created, "Created");
   setByHeader(now, "Modified");
-  setByHeader(JSON.stringify(project), "JSON", "Project JSON");
+  writeProjectJsonToOutput_(output, map, project);
   setByHeader(model, "Model");
   setByHeader(lender, "Lender");
   setByHeader(electrician, "Electrician");
@@ -606,7 +647,7 @@ function saveProject(request) {
 
     const jsonColumn = projectColumn_(map, "JSON", "Project JSON");
     if (jsonColumn) {
-      sheet.getRange(row, jsonColumn).setValue(JSON.stringify(project));
+      writeProjectJsonToSheet_(sheet, row, project);
     }
   }
 
@@ -653,7 +694,7 @@ function getProjects() {
   return values
     .map((row, index) => {
       const project = jsonColumn
-        ? parseProjectJSON(row[jsonColumn - 1])
+        ? parseProjectJSON(readProjectJsonFromRow_(row, map))
         : null;
 
       const projectId = idColumn
@@ -888,7 +929,7 @@ function buildLoadedProjectResponse(
     : "";
 
   const json = jsonColumn
-    ? sheet.getRange(row, jsonColumn).getValue()
+    ? readProjectJsonFromRow_(sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0], map)
     : "";
 
   const project = parseProjectJSON(json);
