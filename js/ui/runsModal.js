@@ -1040,6 +1040,10 @@ function getWireAssignmentRule(panelPreset) {
     // Panel catalog presets such as FSU40/200 use the generic FSU WireAss row.
     if (/^FSU\d/.test(compactTarget)) acceptedPresets.add("FSU");
 
+    // EG (emergency generator) follows GEN WireAss behavior when no
+    // dedicated EG rule exists. Keep the direct EG match first.
+    if (compactTarget === "EG") acceptedPresets.add("GEN");
+
     return (Array.isArray(window.wireAssignments) ? window.wireAssignments : [])
         .find(rule => {
             const preset = String(rule?.["Panel Preset"] || "").trim().toUpperCase();
