@@ -3889,6 +3889,18 @@ function closeRunMaterialsModal() {
 // Expose the toolbar entry point only after this module has fully evaluated.
 // Shared material logic for the embedded photo measuring sidebar.
 window.photoRunMaterialsAPI = {
+ async fittingMatrix(runId){
+  const run=findRun(runId);
+  if(!run)return {rows:[],columns:[],cells:[]};
+  const materials=typeof getMaterials==="function"?await getMaterials():[];
+  const sizes=[String(run?.conduit?.Size||"")];
+  return {
+   rows:FITTING_MATRIX_COLUMNS.map(c=>({key:c.key,label:c.label})),
+   columns:FITTING_MATRIX_ROWS.map(c=>({key:c.key,label:c.label})),
+   cells:FITTING_MATRIX_COLUMNS.map(col=>FITTING_MATRIX_ROWS.map(row=>getFittingCandidates(materials,run,row,col,sizes)[0]||null))
+  };
+ },
+
  async listConduits(){
   const materials=typeof getMaterials==="function"?await getMaterials():[];
   return (Array.isArray(materials)?materials:[]).filter(m=>String(m?.NodeType||"").toUpperCase()==="PIPE"||(String(m?.Color||"").toUpperCase()==="LT"&&String(m?.Description||"").toUpperCase().includes("MET L/T")));
