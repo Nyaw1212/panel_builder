@@ -113,7 +113,7 @@ function confirm(){
  if(!currentRun()||points.length<2||!Number.isFinite(measured))return status("Add at least two points.");
  const run=currentRun(),actual=typeof window.findRun==="function"?window.findRun(run.id):null;
  if(!actual)return status("Run no longer exists; reopen the tool.");
- actual.length=Math.round(measured*1000)/1000;
+ actual.length=Math.ceil(Math.max(0,measured));
  try{window.captureRunsHistory?.("Photo-measured multipoint run");window.saveRunsDraft?.();window.refreshRunsBOM?.();window.renderRunsModal?.();}
  catch(e){status("Could not refresh Runs: "+e.message);return}
  rememberRun();const saved="Saved "+actual.length+" ft to "+run.name;
