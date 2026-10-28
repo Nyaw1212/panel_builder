@@ -100,6 +100,21 @@
     document.body.appendChild(overlay);
     select.focus();
   });
+  // The large workspace title doubles as a shortcut to the existing
+  // template dropdown, so there is only one picker to maintain.
+  if (title) {
+    title.setAttribute("role", "button");
+    title.setAttribute("tabindex", "0");
+    title.setAttribute("aria-label", "Choose a saved template");
+    title.setAttribute("title", "Click to choose a saved template");
+    title.addEventListener("click", () => openButton?.click());
+    title.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openButton?.click();
+      }
+    });
+  }
   // Keep the canvas title synchronized when project state changes on Open/New.
   const originalSet = window.setProjectState;
   if (typeof originalSet === "function") {
