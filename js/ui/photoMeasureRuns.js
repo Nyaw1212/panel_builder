@@ -37,15 +37,15 @@ async function readCachedPhoto(){
 const settingsKey=()=>PHOTO_DB+":settings:"+projectPhotoKey();
 function cacheSettings(){try{localStorage.setItem(settingsKey(),JSON.stringify({width:$("pm-width")?.value,height:$("pm-height")?.value,corners,calibration,runPaths,runIndex,rotation:transform.rotation}))}catch(e){console.warn(e)}}
 function restoreSettings(){try{const x=JSON.parse(localStorage.getItem(settingsKey())||"null");if(!x)return;if(x.width)$("pm-width").value=x.width;if(x.height)$("pm-height").value=x.height;corners=Array.isArray(x.corners)?x.corners:[];calibration=Array.isArray(x.calibration)&&x.calibration.length===8?x.calibration:null;runPaths=x.runPaths&&typeof x.runPaths==="object"?x.runPaths:{};runIndex=Math.max(0,Math.min(runs.length-1,Number(x.runIndex)||0));transform.rotation=Number(x.rotation)||0}catch(e){console.warn(e)}}
-function rememberRun(){const r=currentRun();if(r&&points.length>=2&&Number.isFinite(measured))runPaths[String(r.id)]={points:points.map(p=>({...p})),length:measured};cacheSettings()}
+function rememberRun(){const r=currentRun();if(r&&points.length){runPaths[String(r.id)]={points:points.map(p=>({...p})),length:Number.isFinite(measured)?measured:null};}cacheSettings()}
 function restoreRun(){const saved=runPaths[String(currentRun()?.id)];points=Array.isArray(saved?.points)?saved.points.map(p=>({...p})):[];measured=Number.isFinite(saved?.length)?saved.length:null;hover=null;tracing=false;label();draw()}
 function loadPhotoBlob(blob,name){
  if(imageURL)URL.revokeObjectURL(imageURL);
  imageURL=URL.createObjectURL(blob);
  const im=new Image();
  im.onload=()=>{
-  image=im;corners=[];points=[];tracing=false;calibration=null;measured=null;
-  fit();restoreRun();status("Loaded "+name+(calibration?". Calibration and measurements restored.":". Set the reference rectangle."));
+  image=im;tracing=false;hover=null;
+  fit();restoreRun();status("Loaded "+name+(calibration?". Cached reference and plotted points restored.":". Set the reference rectangle."));
  };
  im.onerror=()=>status("Unable to open cached photo.");
  im.src=imageURL;
@@ -118,12 +118,12 @@ function confirm(){
  catch(e){status("Could not refresh Runs: "+e.message);return}
  rememberRun();const saved="Saved "+actual.length+" ft to "+run.name;
  if(runIndex<runs.length-1){setRun(runIndex+1);status(saved+". Press Q to start next run.");}
- else{points=[];hover=null;tracing=false;measured=null;label();draw();status(saved+". All runs measured.");}
+ else{tracing=false;rememberRun();label();draw();status(saved+". All runs measured.");}
 }
 function toggleTrace(){
  if(!image)return status("Upload a photo first.");
  if(!calibration)return status("Calibrate the reference rectangle first.");
- if(!tracing){points=[];hover=null;measured=null;delete runPaths[String(currentRun()?.id)];cacheSettings();tracing=true;label();draw();status("Tracing started. Click the start point, then every bend. Press Q again to finish.");}
+ if(!tracing){if(points.length>=2){status("Existing plotted points restored. Use Remeasure Current Run to replace them, or Q to start a new trace.");return;}points=[];hover=null;measured=null;tracing=true;label();draw();status("Tracing started. Click the start point, then every bend. Press Q again to finish.");}
  else if(points.length<2)status("Click at least two points before finishing.");
  else{tracing=false;confirm();}
 }
@@ -169,7 +169,7 @@ host.innerHTML=`<style>
  corners=[];calibration=null;runPaths={};runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
  try{await cachePhoto(f);status("Photo attached to local cache for this project. Set the reference rectangle.");}
  catch(err){console.warn("Photo cache unavailable",err);status("Photo loaded, but local cache failed: "+err.message);}
-};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;cacheSettings();status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw();cacheSettings()};$("pm-right").onclick=()=>{transform.rotation+=90;draw();cacheSettings()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;delete runPaths[String(currentRun()?.id)];cacheSettings();mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}cacheSettings()};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};restoreSettings();restoreRun();requestAnimationFrame(draw);
+};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;cacheSettings();status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw();cacheSettings()};$("pm-right").onclick=()=>{transform.rotation+=90;draw();cacheSettings()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;delete runPaths[String(currentRun()?.id)];cacheSettings();mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}cacheSettings()};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();rememberRun();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};restoreSettings();restoreRun();requestAnimationFrame(draw);
  readCachedPhoto().then(entry=>{
   if(!host||image||!entry?.blob)return;
   loadPhotoBlob(entry.blob,entry.name||"cached photo");
