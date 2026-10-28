@@ -22,6 +22,8 @@ let commandLineSuggestionIndex = -1;
 
 const PANEL_COMMANDS = [
   { value: "HELP", label: "HELP", detail: "Show available commands" },
+  { value: "RR", label: "RR", detail: "Open Material Runs" },
+  { value: "MM", label: "MM", detail: "Open Measure Photo" },
   { value: "PLACE ", label: "PLACE", detail: "Place a preset" },
   { value: "CELL ", label: "CELL", detail: "Choose target cell" },
   { value: "UNDO", label: "UNDO", detail: "Undo last change" },
@@ -590,9 +592,30 @@ async function executePanelCommand(rawCommand) {
 
   if (keyword === "HELP" || keyword === "?") {
     setCommandLineStatus(
-      "Preset code | PLACE code | CELL n | UNDO | REDO | CLEAR",
+      "Preset code | RR (Runs) | MM (Measure Photo) | PLACE code | CELL n | UNDO | REDO | CLEAR",
       "success"
     );
+    return true;
+  }
+
+  if (keyword === "RR" || keyword === "MM") {
+    if (keyword === "RR") {
+      if (typeof window.openRunsModal !== "function") {
+        setCommandLineStatus("Runs page is unavailable.", "error");
+        return false;
+      }
+      window.openRunsModal();
+      setCommandLineStatus("Opened Material Runs.", "success");
+      return true;
+    }
+    if (typeof window.openPhotoMeasureRuns !== "function") {
+      setCommandLineStatus("Measure Photo is unavailable.", "error");
+      return false;
+    }
+    // Measure Photo is normally launched from Runs, so preserve that context.
+    if (typeof window.openRunsModal === "function") window.openRunsModal();
+    window.openPhotoMeasureRuns();
+    setCommandLineStatus("Opened Measure Photo.", "success");
     return true;
   }
 
