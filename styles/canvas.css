@@ -860,7 +860,7 @@ SCROLLBAR
 }
 
 /* Floating Runs shortcut: stays in the visible window, above template caption. */
-.workspace > #runsButton.workspace-floating-runs {
+#runsButton.workspace-floating-runs {
     position: fixed;
     right: 24px;
     bottom: 116px;
@@ -874,12 +874,12 @@ SCROLLBAR
     box-shadow: 0 5px 18px rgba(0,0,0,.45);
     cursor: pointer;
 }
-.workspace > #runsButton.workspace-floating-runs:hover {
+#runsButton.workspace-floating-runs:hover {
     background: #315b86;
 }
 
 /* Lower-left square light-green Runs shortcut. */
-.workspace > #runsButton.workspace-floating-runs {
+#runsButton.workspace-floating-runs {
     left: 24px;
     right: auto;
     bottom: 24px;
@@ -896,7 +896,10 @@ SCROLLBAR
     color: #153d27;
     font: 800 16px Arial, sans-serif;
 }
-.workspace > #runsButton.workspace-floating-runs:hover {
+#runsButton.workspace-floating-runs:hover {
     background: #c3f4d0;
     border-color: #b1e8bf;
 }
+
+/* Runs shortcut is a direct child of body, independent of canvas zoom/pan. */
+body > #runsButton.workspace-floating-runs { position: fixed; left: 20px; bottom: 20px; right: auto; top: auto; z-index: 999; }
