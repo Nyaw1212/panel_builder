@@ -54,7 +54,25 @@ function loadPhotoBlob(blob,name){
 const escape = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function currentRun(){return runs[runIndex];}
 function status(message){if($("pm-status"))$("pm-status").textContent=message;}
-function label(){const r=currentRun();$("pm-run").textContent=r?`Run ${runIndex+1} of ${runs.length}: ${r.name||"Run"}`:"No runs available";$("pm-value").textContent=measured==null?"—":measured.toFixed(3)+" ft";}
+function endpointDetails(id){
+ const item=typeof getCanvasItem==="function"?getCanvasItem(id):null;
+ if(!item)return {name:"Not assigned",image:""};
+ const name=String(item.preset||item.data?.CatalogNumber||item.data?.Description||"Canvas item").trim();
+ const image=typeof getRunCanvasComponentImage==="function"?getRunCanvasComponentImage(item):"";
+ return {name,image};
+}
+function endpointCard(id,side){
+ const item=endpointDetails(id);
+ const image=item.image?`<img src="${escape(item.image)}" alt="" style="width:66px;height:66px;object-fit:contain;background:#f1f5f9;border-radius:4px" onerror="this.style.display='none'">`:`<span style="width:66px;height:66px;display:grid;place-items:center;background:#23364b;border-radius:4px">—</span>`;
+ return `<div class="pm-endpoint"><span class="pm-endpoint-role">${side}</span>${image}<strong class="pm-endpoint-name">${escape(item.name)}</strong></div>`;
+}
+function label(){
+ const r=currentRun();
+ $("pm-run").textContent=r?`Run ${runIndex+1} of ${runs.length}: ${r.name||"Run"}`:"No runs available";
+ $("pm-value").textContent=measured==null?"—":measured.toFixed(3)+" ft";
+ const el=$("pm-endpoints");
+ if(el)el.innerHTML=r?`${endpointCard(r.fromCanvasItemId,"FROM")}<span class="pm-endpoint-arrow">→</span>${endpointCard(r.toCanvasItemId,"TO")}`:"";
+}
 function position(p){const cx=canvas.clientWidth/2,cy=canvas.clientHeight/2,a=transform.rotation*Math.PI/180;let x=(p.x-image.width/2)*transform.scale,y=(p.y-image.height/2)*transform.scale;return {x:cx+transform.x+x*Math.cos(a)-y*Math.sin(a),y:cy+transform.y+x*Math.sin(a)+y*Math.cos(a)};}
 function unposition(p){const a=-transform.rotation*Math.PI/180,x=(p.x-canvas.clientWidth/2-transform.x)/transform.scale,y=(p.y-canvas.clientHeight/2-transform.y)/transform.scale;return {x:(x*Math.cos(a)-y*Math.sin(a))+image.width/2,y:(x*Math.sin(a)+y*Math.cos(a))+image.height/2};}
 function draw(){
@@ -109,7 +127,7 @@ function toggleTrace(){
  else if(points.length<2)status("Click at least two points before finishing.");
  else{tracing=false;confirm();}
 }
-function open(){if(host){host.style.display="flex";return}runs=typeof window.getProjectRuns==="function"?window.getProjectRuns().map(r=>({id:r.id,name:r.name})):[];if(!runs.length){alert("Add a Material Run first.");return}host=document.createElement("div");host.id="photoMeasureModal";host.style.cssText="position:fixed;inset:0;z-index:2147483000;background:#0b1220;color:#e5edf8;display:flex;flex-direction:column;font:22px Arial,sans-serif";
+function open(){if(host){host.style.display="flex";return}runs=typeof window.getProjectRuns==="function"?window.getProjectRuns().map(r=>({id:r.id,name:r.name,fromCanvasItemId:r.fromCanvasItemId,toCanvasItemId:r.toCanvasItemId})):[];if(!runs.length){alert("Add a Material Run first.");return}host=document.createElement("div");host.id="photoMeasureModal";host.style.cssText="position:fixed;inset:0;z-index:2147483000;background:#0b1220;color:#e5edf8;display:flex;flex-direction:column;font:22px Arial,sans-serif";
 host.innerHTML=`<style>
 #photoMeasureModal *{box-sizing:border-box}
 #photoMeasureModal button{background:#243449;color:#e5edf8;border:1px solid #3a4b62;border-radius:5px;padding:9px 11px;cursor:pointer;font-size:20px}
@@ -120,6 +138,13 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-heading{font-size:18px;letter-spacing:1.5px;color:#9db0c8;font-weight:700}
 #photoMeasureModal .pm-side{width:400px;flex:0 0 400px;overflow-y:auto;background:#172236;border-right:1px solid #334155}
 #photoMeasureModal .pm-row{display:flex;gap:8px}
+#photoMeasureModal .pm-endpoints{display:flex;align-items:stretch;gap:6px}
+#photoMeasureModal .pm-endpoint{flex:1;min-width:0;border:1px solid #354b65;border-radius:5px;padding:8px;display:flex;align-items:center;gap:8px}
+#photoMeasureModal .pm-endpoint-role{font-size:12px;color:#8fa5c1;font-weight:700}
+#photoMeasureModal .pm-endpoint-name{font-size:14px;overflow-wrap:anywhere;min-width:0}
+#photoMeasureModal .pm-endpoint-arrow{align-self:center;font-size:22px;color:#74bdf2}
+#photoMeasureModal .pm-endpoint img{flex-shrink:0}
+
 #photoMeasureModal .pm-row button{flex:1}
 #photoMeasureModal .pm-side label{font-size:20px;color:#bdcce0;display:block}
 #photoMeasureModal .pm-side label input{margin-top:6px}
@@ -135,7 +160,7 @@ host.innerHTML=`<style>
  <aside class="pm-side">
   <div class="pm-group"><span class="pm-heading">PHOTO</span><input id="pm-file" type="file" accept="image/*"><div class="pm-row"><button id="pm-fit">Fit Image</button><button id="pm-left">↶ 90°</button><button id="pm-right">90° ↷</button></div></div>
   <div class="pm-group"><span class="pm-heading">CALIBRATION</span><label>Reference width (ft)<input id="pm-width" type="number" value="1.3333" step=".001" min=".001"></label><label>Reference height (ft)<input id="pm-height" type="number" value="2.125" step=".001" min=".001"></label><button id="pm-cal">Set Reference Rectangle</button><span style="font-size:19px;color:#93a7c1">Click 4 corners clockwise, starting at the top-left.</span></div>
-  <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><button id="pm-confirm" class="primary">Finish & Next · Q / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button></div>
+  <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><button id="pm-confirm" class="primary">Finish & Next · Q / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button></div>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Mouse wheel: zoom · Q: start · Click multiple points · Q: finish/save</span></div>
  </aside>
  <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main>
