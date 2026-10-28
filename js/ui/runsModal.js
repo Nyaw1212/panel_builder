@@ -3897,7 +3897,8 @@ window.photoRunMaterialsAPI = {
   return {
    rows:FITTING_MATRIX_COLUMNS.map(c=>({key:c.key,label:c.label})),
    columns:FITTING_MATRIX_ROWS.map(c=>({key:c.key,label:c.label})),
-   cells:FITTING_MATRIX_COLUMNS.map(col=>FITTING_MATRIX_ROWS.map(row=>getFittingCandidates(materials,run,row,col,sizes)[0]||null))
+   cells:FITTING_MATRIX_COLUMNS.map(col=>FITTING_MATRIX_ROWS.map(row=>getFittingCandidates(materials,run,row,col,sizes)[0]||null)),
+    nippleOptions:FITTING_MATRIX_COLUMNS.map(col=>getFittingCandidates(materials,run,FITTING_MATRIX_ROWS.find(row=>row.key==="NIPPLE"),col,sizes))
   };
  },
 
