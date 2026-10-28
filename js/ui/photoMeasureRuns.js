@@ -1,7 +1,7 @@
 /* Native photo measuring for Material Runs. Lengths are in feet. */
 (() => {
 "use strict";
-let host, canvas, ctx, image, imageURL, points=[], corners=[], mode="measure", runIndex=0, runs=[], transform={scale:1,x:0,y:0,rotation:0}, pan=false, drag=null, hover=null, calibration=null, measured=null, tracing=false, runPaths={};
+let host, canvas, ctx, image, imageURL, points=[], corners=[], mode="measure", runIndex=0, runs=[], transform={scale:1,x:0,y:0,rotation:0}, pan=false, drag=null, hover=null, calibration=null, measured=null, tracing=false, runPaths={}, materialsMode=false, materialCatalog=[];
 const $ = id => host?.querySelector("#"+id);
 // Store the original uploaded image as a Blob in IndexedDB, not in project JSON.
 // Cache is scoped to this browser origin and the active project.
@@ -108,7 +108,52 @@ function measure(){
  measured=sum;label();rememberRun();status("Click another point to extend the run, or press Q to finish and save.");
  }catch(e){measured=null;status(e.message)}
 }
-function setRun(i){runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
+function setRun(i){if(materialsMode){materialsMode=false;if($("pm-materials"))$("pm-materials").style.display="none";}runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
+async function showMaterials(){
+ const api=window.photoRunMaterialsAPI,run=currentRun();
+ if(!api||!run)return status("Material sidebar unavailable.");
+ materialsMode=true;
+ const side=$("pm-materials");side.style.display="flex";
+ $("pm-material-title").textContent="Run "+(runIndex+1)+" · Conduit & Fittings";
+ $("pm-material-status").textContent="Loading materials…";
+ try{
+  const conduits=await api.listConduits();
+  if(!host||!materialsMode)return;
+  const actual=api.getRun(run.id),select=$("pm-conduit");
+  const esc=v=>escape(v);
+  select.innerHTML='<option value="">Select conduit</option>'+conduits.map((m,i)=>`<option value="${i}">${esc([m.CatalogNumber,m.Description,m.Size].filter(Boolean).join(" · "))}</option>`).join("");
+  const current=String(actual?.conduit?.CatalogNumber||"");
+  const ix=conduits.findIndex(m=>String(m.CatalogNumber)===current);
+  select.value=ix>=0?String(ix):"";
+  select.onchange=async()=>{api.setConduit(run.id,select.value===""?null:conduits[Number(select.value)]);await showFittings();};
+  await showFittings();
+ }catch(e){$("pm-material-status").textContent="Could not load materials: "+e.message;}
+}
+async function showFittings(){
+ const api=window.photoRunMaterialsAPI,run=currentRun();
+ if(!api||!run)return;
+ const target=$("pm-fitting-grid");
+ target.textContent="Loading fittings…";
+ const items=await api.listFittings(run.id);
+ if(!host||!materialsMode)return;
+ materialCatalog=items;
+ target.innerHTML=items.length?items.map((m,i)=>{
+  const qty=api.getFittingQty(run.id,m),src=api.getImage(m);
+  return `<div class="pm-fitting-tile"><img src="${escape(src)}" alt="" onerror="this.style.display='none'"><div class="pm-fitting-desc" title="${escape(m.Description||"")}">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-row"><button data-fit="${i}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${i}" data-delta="1">+</button></div></div>`;
+ }).join(""):"No fittings for the selected size.";
+ target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
+  const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
+  api.setFitting(run.id,material,Number(btn.dataset.delta));
+  showFittings();
+ });
+ $("pm-material-status").textContent="Changes save directly to Material Runs.";
+}
+function closeMaterials(){
+ materialsMode=false;$("pm-materials").style.display="none";
+ if(runIndex<runs.length-1){setRun(runIndex+1);status("Materials saved. Press Q for next run.");}
+ else status("Materials saved. All runs complete.");
+ requestAnimationFrame(draw);
+}
 function finishMaterialSelection(){
  if(!host)return;
  host.style.display="flex";
@@ -125,16 +170,8 @@ function confirm(){
  try{window.captureRunsHistory?.("Photo-measured multipoint run");window.saveRunsDraft?.();window.refreshRunsBOM?.();window.renderRunsModal?.();}
  catch(e){status("Could not refresh Runs: "+e.message);return}
  rememberRun();
- status("Saved "+actual.length+" ft. Select conduit, then fittings.");
- if(typeof window.openPhotoRunConduitPicker==="function"){
-  host.style.display="none";
-  Promise.resolve(window.openPhotoRunConduitPicker(run.id)).catch(err=>{
-   host.style.display="flex";status("Could not open conduit picker: "+err.message);
-  });
- }else{
-  status("Conduit picker unavailable; measurement saved.");
-  finishMaterialSelection();
- }
+ status("Saved "+actual.length+" ft. Select or edit conduit and fittings in the right sidebar.");
+ showMaterials();
 }
 function toggleTrace(){
  if(!image)return status("Upload a photo first.");
@@ -154,6 +191,14 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-heading{font-size:18px;letter-spacing:1.5px;color:#9db0c8;font-weight:700}
 #photoMeasureModal .pm-side{width:400px;flex:0 0 400px;overflow-y:auto;background:#172236;border-right:1px solid #334155}
 #photoMeasureModal .pm-row{display:flex;gap:8px}
+#photoMeasureModal .pm-materials{display:none;width:460px;flex:0 0 460px;flex-direction:column;overflow-y:auto;background:#172236;border-left:1px solid #334155}
+#photoMeasureModal .pm-materials .pm-group{padding:14px}
+#photoMeasureModal #pm-conduit{width:100%;padding:10px;background:#0e1726;color:white;border:1px solid #4b617d;font-size:16px}
+#photoMeasureModal .pm-fitting-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#photoMeasureModal .pm-fitting-tile{border:1px solid #3a4b62;border-radius:6px;padding:7px;min-width:0}
+#photoMeasureModal .pm-fitting-tile img{height:76px;width:100%;object-fit:contain;background:#edf2f7}
+#photoMeasureModal .pm-fitting-desc{font-size:13px;overflow-wrap:anywhere;padding:5px 0}
+#photoMeasureModal .pm-fitting-tile button{padding:5px}
 #photoMeasureModal .pm-endpoints{display:flex;align-items:stretch;gap:6px}
 #photoMeasureModal .pm-endpoint{flex:1;min-width:0;border:1px solid #354b65;border-radius:5px;padding:8px;display:flex;align-items:center;gap:8px}
 #photoMeasureModal .pm-endpoint-role{font-size:12px;color:#8fa5c1;font-weight:700}
@@ -176,16 +221,16 @@ host.innerHTML=`<style>
  <aside class="pm-side">
   <div class="pm-group"><span class="pm-heading">PHOTO</span><input id="pm-file" type="file" accept="image/*"><div class="pm-row"><button id="pm-fit">Fit Image</button><button id="pm-left">↶ 90°</button><button id="pm-right">90° ↷</button></div></div>
   <div class="pm-group"><span class="pm-heading">CALIBRATION</span><label>Reference width (ft)<input id="pm-width" type="number" value="1.3333" step=".001" min=".001"></label><label>Reference height (ft)<input id="pm-height" type="number" value="2.125" step=".001" min=".001"></label><button id="pm-cal">Set Reference Rectangle</button><span style="font-size:19px;color:#93a7c1">Click 4 corners clockwise, starting at the top-left.</span></div>
-  <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><button id="pm-confirm" class="primary">Finish & Next · Q / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button></div>
+  <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><button id="pm-confirm" class="primary">Finish & Next · Q / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button><button id="pm-edit-materials">Edit Conduit & Fittings</button></div>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Mouse wheel: zoom · Q: start · Click multiple points · Q: finish/save</span></div>
  </aside>
- <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main>
-</div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
+ <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><span class="pm-heading">CONDUIT</span><select id="pm-conduit"></select></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div id="pm-fitting-grid" class="pm-fitting-grid"></div></div></aside>
+</div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{materialsMode=false;host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  corners=[];calibration=null;runPaths={};runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
  try{await cachePhoto(f);status("Photo attached to local cache for this project. Set the reference rectangle.");}
  catch(err){console.warn("Photo cache unavailable",err);status("Photo loaded, but local cache failed: "+err.message);}
-};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;cacheSettings();status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw();cacheSettings()};$("pm-right").onclick=()=>{transform.rotation+=90;draw();cacheSettings()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;delete runPaths[String(currentRun()?.id)];cacheSettings();mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}cacheSettings()};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();rememberRun();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};restoreSettings();restoreRun();requestAnimationFrame(draw);
+};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;cacheSettings();status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw();cacheSettings()};$("pm-right").onclick=()=>{transform.rotation+=90;draw();cacheSettings()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;delete runPaths[String(currentRun()?.id)];cacheSettings();mode="measure";label();draw();status("Press Q to start tracing.")};$("pm-confirm").onclick=confirm;$("pm-material-done").onclick=closeMaterials;$("pm-edit-materials").onclick=showMaterials;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}cacheSettings()};$("pm-height").onchange=$("pm-width").onchange;canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q to start measuring.");return;}points.push(q);measure();rememberRun();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};restoreSettings();restoreRun();requestAnimationFrame(draw);
  readCachedPhoto().then(entry=>{
   if(!host||image||!entry?.blob)return;
   loadPhotoBlob(entry.blob,entry.name||"cached photo");
