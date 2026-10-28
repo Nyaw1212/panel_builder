@@ -170,14 +170,25 @@ async function showFittings(){
  const rows=matrix.rows.map((row,ri)=>{
   const cells=matrix.columns.map((col,ci)=>{
    const m=matrix.cells[ri]?.[ci];
+   const variants=row.key==="NIPPLE"?(matrix.nippleOptions?.[ri]||[]):[];
    if(!m)return '<td class="pm-matrix-empty">—</td>';
    const index=materialCatalog.push(m)-1,qty=api.getFittingQty(run.id,m),src=api.getImage(m);
-   return `<td><div class="pm-matrix-item" title="${escape(m.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(m.CatalogNumber||"fitting")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:"<span>+</span>"}</button><div class="pm-matrix-code">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
+    const variantCards=variants.length>1?`<div class="pm-nipple-popover"><strong>Available nipple sizes / lengths</strong><div class="pm-nipple-variants">${variants.map(v=>{const vi=materialCatalog.push(v)-1,vq=api.getFittingQty(run.id,v),vs=api.getImage(v);return `<div class="pm-nipple-card"><button type="button" data-fit="${vi}" data-delta="1" title="${escape(v.Description||"")}">${vs?`<img src="${escape(vs)}" alt="">`:""}<strong>${escape(v.CatalogNumber||"Nipple")}</strong><span>${escape(v.Size||"")} · ${escape(v.Description||"")}</span></button><div class="pm-matrix-qty"><button data-fit="${vi}" data-delta="-1">−</button><strong>${vq}</strong><button data-fit="${vi}" data-delta="1">+</button></div></div>`}).join("")}</div></div>`:"";
+   return `<td><div class="pm-matrix-item" title="${escape(m.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(m.CatalogNumber||"fitting")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:"<span>+</span>"}</button><div class="pm-matrix-code">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div>${variantCards}</div></td>`;
   }).join("");
   return `<tr><th scope="row">${escape(row.label)}</th>${cells}</tr>`;
  }).join("");
  target.innerHTML=`<table class="pm-matrix"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
- target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
+ target.querySelectorAll(".pm-matrix-item").forEach(item=>{
+   const pop=item.querySelector(".pm-nipple-popover");if(!pop)return;
+   item.classList.add("pm-has-nipple-variants");
+   let hideTimer;
+   const show=()=>{clearTimeout(hideTimer);const rect=item.getBoundingClientRect();pop.style.display="block";const width=pop.offsetWidth,height=pop.offsetHeight;pop.style.left=Math.max(8,Math.min(innerWidth-width-8,rect.left-width-8))+"px";pop.style.top=Math.max(8,Math.min(innerHeight-height-8,rect.top))+"px";};
+   const hide=()=>{hideTimer=setTimeout(()=>pop.style.display="none",180);};
+   item.addEventListener("mouseenter",show);item.addEventListener("mouseleave",hide);
+   pop.addEventListener("mouseenter",()=>clearTimeout(hideTimer));pop.addEventListener("mouseleave",hide);
+  });
+  target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
   const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
   api.setFitting(run.id,material,Number(btn.dataset.delta));
   showFittings();
@@ -259,6 +270,15 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-matrix .pm-matrix-corner{width:92px}
 #photoMeasureModal .pm-matrix-empty{color:#8ca1b7}
 #photoMeasureModal .pm-matrix-item{display:flex;flex-direction:column;gap:3px;min-width:0}
+#photoMeasureModal .pm-has-nipple-variants{cursor:default}
+#photoMeasureModal .pm-nipple-popover{display:none;position:fixed;z-index:2147483005;width:min(490px,70vw);max-height:330px;overflow:auto;background:#14243a;border:1px solid #76a9df;border-radius:8px;box-shadow:0 15px 35px #000b;padding:10px;text-align:left}
+#photoMeasureModal .pm-nipple-popover>strong{display:block;font-size:13px;margin-bottom:8px}
+#photoMeasureModal .pm-nipple-variants{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px}
+#photoMeasureModal .pm-nipple-card{background:#1d304a;border:1px solid #405977;border-radius:6px;padding:5px}
+#photoMeasureModal .pm-nipple-card>button{display:flex;flex-direction:column;align-items:center;width:100%;gap:3px;padding:5px;font-size:11px}
+#photoMeasureModal .pm-nipple-card img{height:48px;max-width:100%;object-fit:contain;background:#fff}
+#photoMeasureModal .pm-nipple-card span{font-size:10px;max-height:42px;overflow:hidden}
+
 #photoMeasureModal .pm-matrix-image{height:55px;display:flex;align-items:center;justify-content:center}
 #photoMeasureModal .pm-matrix-add{width:100%;border:0;background:transparent;padding:0;cursor:pointer;border-radius:4px}\n#photoMeasureModal .pm-matrix-add:hover{outline:2px solid #60a5fa;background:#243d5b}\n#photoMeasureModal .pm-matrix-add:focus-visible{outline:2px solid #93c5fd}\n#photoMeasureModal .pm-matrix-image img{max-width:100%;height:55px;object-fit:contain;border-radius:3px;background:#e9eef3}
 #photoMeasureModal .pm-matrix-code{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
