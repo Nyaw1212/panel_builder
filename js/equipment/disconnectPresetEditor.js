@@ -1192,14 +1192,21 @@ function openHDiscMaterialPicker(equipment) {
     return;
   }
 
-  const presets = getHDiscPresetLibrary();
+  // Show both disconnect families in the same preset matrix.
+  // Reuse the existing preset application logic for either family.
+  const presets = [
+    ...getLDiscPresetLibrary(),
+    ...getHDiscPresetLibrary()
+  ].filter((preset, index, all) =>
+    all.findIndex(item => item.presetCode === preset.presetCode) === index
+  );
   if (!presets.length) {
-    alert("No H-DISC presets were found. Add TYPE = H-DISC on the PRESETS sheet.");
+    alert("No L-DISC or H-DISC presets were found. Check the PRESETS sheet.");
     return;
   }
 
   openPickerModal(
-    "Choose H-DISC Preset",
+    "Choose L-DISC / H-DISC Preset",
     presets,
     preset => applyDisconnectPreset(preset.presetCode),
     { presetMatrix: true }
