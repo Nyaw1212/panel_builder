@@ -2887,6 +2887,7 @@ function renderRunsModal() {
                 <button id="resetAllRunLengthsButton" class="runs-clear-materials" type="button">
                     Reset lengths
                 </button>
+                <button id="measurePhotoRunsButton" class="runs-add" type="button">📷 Measure Photo</button>
                 <div class="runs-rule">Wire BOM = run length + 4 ft</div>
                 <button id="doneRunsButton" class="runs-done" type="button">Done</button>
             </footer>
@@ -2911,6 +2912,8 @@ function renderRunsModal() {
         "click",
         clearAllRunConduitAndFittings
     );
+
+    overlay.querySelector("#measurePhotoRunsButton")?.addEventListener("click", () => window.openPhotoMeasureRuns?.());
 
     overlay.querySelector("#resetAllRunLengthsButton")?.addEventListener(
         "click",
