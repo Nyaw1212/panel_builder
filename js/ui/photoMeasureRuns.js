@@ -191,7 +191,7 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-heading{font-size:18px;letter-spacing:1.5px;color:#9db0c8;font-weight:700}
 #photoMeasureModal .pm-side{width:400px;flex:0 0 400px;overflow-y:auto;background:#172236;border-right:1px solid #334155}
 #photoMeasureModal .pm-row{display:flex;gap:8px}
-#photoMeasureModal .pm-materials{display:none;width:460px;flex:0 0 460px;flex-direction:column;overflow-y:auto;background:#172236;border-left:1px solid #334155}
+#photoMeasureModal .pm-materials{display:none;width:620px;flex:0 0 620px;flex-direction:column;overflow-y:auto;background:#172236;border-left:1px solid #334155}
 #photoMeasureModal .pm-materials .pm-group{padding:14px}
 #photoMeasureModal #pm-conduit{width:100%;padding:10px;background:#0e1726;color:white;border:1px solid #4b617d;font-size:16px}
 #photoMeasureModal .pm-fitting-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
