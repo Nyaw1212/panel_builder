@@ -187,6 +187,9 @@ async function showFittings(){
  target.querySelectorAll(".pm-matrix-item").forEach(item=>{
    const pop=item.querySelector(".pm-nipple-popover");if(!pop)return;
    item.classList.add("pm-has-nipple-variants");
+   // Portal the popup out of the horizontally scrolling fitting table.
+   // Otherwise its overflow clips the card, even with a large z-index.
+   host.appendChild(pop);
    let hideTimer;
    const show=()=>{clearTimeout(hideTimer);const rect=item.getBoundingClientRect();pop.style.display="block";const width=pop.offsetWidth,height=pop.offsetHeight;pop.style.left=Math.max(8,Math.min(innerWidth-width-8,rect.left-width-8>=8?rect.left-width-8:rect.right+8))+"px";pop.style.top=Math.max(8,Math.min(innerHeight-height-8,rect.top))+"px";};
    const hide=()=>{hideTimer=setTimeout(()=>pop.style.display="none",180);};
