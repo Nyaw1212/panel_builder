@@ -2,6 +2,10 @@
 (() => {
   const KEY = "panelBuilderNamedTemplatesV1";
   const title = document.getElementById("canvasTemplateName");
+  // Place the caption in the visible workspace rather than the oversized
+  // scrollable canvas. Its position follows the workspace viewport.
+  const workspace = document.querySelector(".workspace");
+  if (title && workspace) workspace.appendChild(title);
   const saveButton = document.getElementById("saveAsTemplateButton");
   const openButton = document.getElementById("openTemplateButton");
   const read = () => {
