@@ -493,8 +493,6 @@ function saveProject(request) {
 
   const start = Date.now();
   const sheet = getProjectSheet();
-  const { headers, map } = ensureProjectJsonColumns_(sheet, JSON.stringify(project).length);
-
   const jobName = String(request.jobName || "").trim();
   const address = String(request.address || "").trim();
   const electrician = String(request.electrician || "").trim();
@@ -592,6 +590,8 @@ function saveProject(request) {
   if (!row) {
     row = Math.max(sheet.getLastRow() + 1, 2);
   }
+
+  const { headers, map } = ensureProjectJsonColumns_(sheet, JSON.stringify(project).length);
 
   const existingRow = row <= sheet.getLastRow()
     ? sheet.getRange(row, 1, 1, headers.length).getValues()[0]
