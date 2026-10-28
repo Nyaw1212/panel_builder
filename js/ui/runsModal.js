@@ -3418,7 +3418,7 @@ async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
         ? ensureRunMaterialsModal()
         : ensureRunsModal();
     if (returnTo === "runs") rememberRunsModalScroll();
-    overlay.style.display = "none";
+    if (returnTo !== "photo") overlay.style.display = "none";
 
     openPickerModal(
         "Select Conduit",
@@ -3438,7 +3438,10 @@ async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
         {
             conduitMatrix: true,
             onClose: () => {
-                if (returnTo === "materials") {
+                if (returnTo === "photo") {
+                    openRunFittingModal(runId, "photo");
+                }
+                else if (returnTo === "materials") {
                     openRunMaterialsModal();
                 }
                 else {
@@ -3832,7 +3835,12 @@ function closeRunFittingModal() {
 
     activeFittingTarget = null;
 
-    if (fittingReturnModal === "materials") {
+    if (fittingReturnModal === "photo") {
+        saveRunsDraft();
+        refreshRunsBOM();
+        window.photoMeasureMaterialsDone?.();
+    }
+    else if (fittingReturnModal === "materials") {
         openRunMaterialsModal();
     }
     else {
@@ -3879,6 +3887,7 @@ function closeRunMaterialsModal() {
 }
 
 // Expose the toolbar entry point only after this module has fully evaluated.
+window.openPhotoRunConduitPicker = runId => openRunMaterialPicker(runId, "conduit", "photo");
 window.openRunsModal = openRunsModal;
 window.closeRunsModal = closeRunsModal;
 window.openRunMaterialsModal = openRunMaterialsModal;
