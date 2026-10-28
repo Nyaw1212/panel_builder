@@ -3898,7 +3898,19 @@ window.photoRunMaterialsAPI = {
    rows:FITTING_MATRIX_COLUMNS.map(c=>({key:c.key,label:c.label})),
    columns:FITTING_MATRIX_ROWS.map(c=>({key:c.key,label:c.label})),
    cells:FITTING_MATRIX_COLUMNS.map(col=>FITTING_MATRIX_ROWS.map(row=>getFittingCandidates(materials,run,row,col,sizes)[0]||null)),
-    nippleOptions:FITTING_MATRIX_COLUMNS.map(col=>getFittingCandidates(materials,run,FITTING_MATRIX_ROWS.find(row=>row.key==="NIPPLE"),col,sizes))
+    // Hover choices intentionally include every catalog size/length for this
+    // fitting family, not only the currently checked 1"/2" matrix filter.
+    nippleOptions:FITTING_MATRIX_COLUMNS.map(col=>{
+     const nipple=FITTING_MATRIX_ROWS.find(row=>row.key==="NIPPLE");
+     const allSizes=Array.from(new Set(materials.map(item=>String(item?.Size||"").trim()).filter(Boolean)));
+     const candidates=getFittingCandidates(materials,run,nipple,col,allSizes);
+     const seen=new Set();
+     return candidates.filter(item=>{
+      const key=String(item?.CatalogNumber||"").trim().toUpperCase();
+      if(!key||seen.has(key))return false;
+      seen.add(key);return true;
+     });
+    })
   };
  },
 
