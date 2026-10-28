@@ -138,7 +138,7 @@ function openConduitTable(runId,conduits) {
  const groups=new Map();
  conduits.forEach((m,i)=>{
   const group=String(m.Size||"Other size").trim()||"Other size";
-  const key=group.replace(/\\s/g,"").replace(/"/g,"");
+  const key=group.replace(/\s/g,"").replace(/"/g,"");
   if(!(enabled.has(key)||(key!=="1"&&key!=="2"&&enabled.has("all"))))return;
   if(!groups.has(group))groups.set(group,[]);
   groups.get(group).push({m,i});
@@ -146,9 +146,9 @@ function openConduitTable(runId,conduits) {
  const rows=Array.from(groups,([size,entries])=>{
   const cells=entries.map(({m,i})=>{
    const src=api.getImage(m),active=String(m.CatalogNumber||"")===selected;
-   return `<td><button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${i}" title="${escape(m.Description||"")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:""}<strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button></td>`;
+   return `<div class="pm-conduit-cell"><button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${i}" title="${escape(m.Description||"")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:""}<strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button></div>`;
   }).join("");
-  return `<tr><th scope="row">${escape(size)}</th><td colspan="5"><div class="pm-conduit-items">${cells.replace(/<td>/g,"<div class='pm-conduit-cell'>").replace(/<\\/td>/g,"</div>")}</div></td></tr>`;
+  return `<tr><th scope="row">${escape(size)}</th><td colspan="5"><div class="pm-conduit-items">${cells}</div></td></tr>`;
  }).join("");
  target.innerHTML=`<table class="pm-conduit-table"><thead><tr><th>SIZE</th><th>CONDUIT MATERIALS · CLICK TO SELECT</th></tr></thead><tbody>${rows||'<tr><td colspan="2">No conduit matches these size filters.</td></tr>'}</tbody></table>`;
  target.querySelectorAll("[data-conduit]").forEach(btn=>btn.onclick=async()=>{
