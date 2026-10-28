@@ -3932,6 +3932,16 @@ window.photoRunMaterialsAPI = {
  getImage:material=>getFittingImage(material)
 };
 window.openPhotoRunConduitPicker = runId => openRunMaterialPicker(runId, "conduit", "photo");
+// Escape closes the Runs workspace through its normal cleanup path,
+// instead of hiding only its DOM node and leaving an empty overlay.
+document.addEventListener("keydown", event => {
+ if(event.key!=="Escape"||!runsModalElement||runsModalElement.style.display==="none")return;
+ const photo=document.getElementById("photoMeasureModal");
+ if(photo&&photo.style.display!=="none")return;
+ event.preventDefault();
+ event.stopImmediatePropagation();
+ closeRunsModal();
+},true);
 window.openRunsModal = openRunsModal;
 window.closeRunsModal = closeRunsModal;
 window.openRunMaterialsModal = openRunMaterialsModal;
