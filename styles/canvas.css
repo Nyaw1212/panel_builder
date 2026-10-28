@@ -831,3 +831,15 @@ SCROLLBAR
     overflow-wrap: anywhere;
     text-shadow: 0 3px 10px rgba(0, 0, 0, .8);
 }
+
+/* Keep the template caption visible even when the wide grid scrolls horizontally.
+   The original absolute positioning placed it beyond the visible right edge. */
+#canvasTemplateName {
+    position: fixed;
+    right: 34px;
+    bottom: 72px;
+    z-index: 90;
+    width: max-content;
+    max-width: min(65vw, 780px);
+    padding: 4px 10px;
+}
