@@ -122,7 +122,12 @@ async function showMaterials(){
   const actual=api.getRun(run.id);
   const current=actual?.conduit;
   $("pm-conduit-name").textContent=current?[current.CatalogNumber,current.Description,current.Size].filter(Boolean).join(" · "):"No conduit selected";
-  $("pm-conduit-edit").onclick=()=>openConduitTable(run.id,conduits);
+  $("pm-conduit-clear").onclick=async()=>{api.setConduit(run.id,null);await showMaterials();};
+  ["1","2","all"].forEach(key=>{
+   const checkbox=$("pm-conduit-size-"+key);
+   if(checkbox)checkbox.onchange=()=>openConduitTable(run.id,conduits);
+  });
+  openConduitTable(run.id,conduits);
   await showFittings();
  }catch(e){$("pm-material-status").textContent="Could not load materials: "+e.message;}
 }
