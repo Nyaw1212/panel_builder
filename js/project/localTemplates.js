@@ -6,6 +6,10 @@
   // scrollable canvas. Its position follows the workspace viewport.
   const workspace = document.querySelector(".workspace");
   if (title && workspace) workspace.appendChild(title);
+  // Keep Runs outside transformed/scrolled canvas ancestors so fixed positioning
+  // is relative to the browser viewport, not the canvas coordinate system.
+  const runsShortcut = document.getElementById("runsButton");
+  if (runsShortcut) document.body.appendChild(runsShortcut);
   const saveButton = document.getElementById("saveAsTemplateButton");
   const openButton = document.getElementById("openTemplateButton");
   const read = () => {
