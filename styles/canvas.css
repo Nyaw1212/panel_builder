@@ -816,3 +816,18 @@ SCROLLBAR
     border-radius: 999px;
 
 }
+
+/* Template label anchored to the canvas lower-right corner. */
+#canvasTemplateName {
+    position: absolute;
+    right: 30px;
+    bottom: 28px;
+    z-index: 55;
+    pointer-events: none;
+    max-width: 65%;
+    color: rgba(248, 250, 252, .92);
+    font: 800 36pt/1.1 Arial, sans-serif;
+    text-align: right;
+    overflow-wrap: anywhere;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, .8);
+}
