@@ -3889,11 +3889,11 @@ function closeRunMaterialsModal() {
 // Expose the toolbar entry point only after this module has fully evaluated.
 // Shared material logic for the embedded photo measuring sidebar.
 window.photoRunMaterialsAPI = {
- async fittingMatrix(runId){
+ async fittingMatrix(runId,selectedSizes){
   const run=findRun(runId);
   if(!run)return {rows:[],columns:[],cells:[]};
   const materials=typeof getMaterials==="function"?await getMaterials():[];
-  const sizes=[String(run?.conduit?.Size||"")];
+  const sizes=Array.isArray(selectedSizes)&&selectedSizes.length?selectedSizes:[String(run?.conduit?.Size||"")];
   return {
    rows:FITTING_MATRIX_COLUMNS.map(c=>({key:c.key,label:c.label})),
    columns:FITTING_MATRIX_ROWS.map(c=>({key:c.key,label:c.label})),
