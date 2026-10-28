@@ -119,15 +119,41 @@ async function showMaterials(){
  try{
   const conduits=await api.listConduits();
   if(!host||!materialsMode)return;
-  const actual=api.getRun(run.id),select=$("pm-conduit");
-  const esc=v=>escape(v);
-  select.innerHTML='<option value="">Select conduit</option>'+conduits.map((m,i)=>`<option value="${i}">${esc([m.CatalogNumber,m.Description,m.Size].filter(Boolean).join(" · "))}</option>`).join("");
-  const current=String(actual?.conduit?.CatalogNumber||"");
-  const ix=conduits.findIndex(m=>String(m.CatalogNumber)===current);
-  select.value=ix>=0?String(ix):"";
-  select.onchange=async()=>{api.setConduit(run.id,select.value===""?null:conduits[Number(select.value)]);await showFittings();};
+  const actual=api.getRun(run.id);
+  const current=actual?.conduit;
+  $("pm-conduit-name").textContent=current?[current.CatalogNumber,current.Description,current.Size].filter(Boolean).join(" · "):"No conduit selected";
+  $("pm-conduit-edit").onclick=()=>openConduitTable(run.id,conduits);
   await showFittings();
  }catch(e){$("pm-material-status").textContent="Could not load materials: "+e.message;}
+}
+function closeConduitTable(){
+ const overlay=$("pm-conduit-overlay");
+ if(overlay)overlay.remove();
+}
+function openConduitTable(runId,conduits){
+ closeConduitTable();
+ const api=window.photoRunMaterialsAPI,run=api?.getRun(runId);
+ if(!api||!run)return;
+ const selected=String(run.conduit?.CatalogNumber||"");
+ const groups=new Map();
+ conduits.forEach((m,i)=>{
+  const group=String(m.Size||"Other size").trim()||"Other size";
+  if(!groups.has(group))groups.set(group,[]);
+  groups.get(group).push({m,i});
+ });
+ const overlay=document.createElement("div");
+ overlay.id="pm-conduit-overlay";
+ overlay.className="pm-conduit-overlay";
+ overlay.innerHTML=`<div class="pm-conduit-dialog" role="dialog" aria-modal="true" aria-label="Select conduit"><div class="pm-conduit-head"><strong>SELECT CONDUIT · ${escape(run.name||"Material Run")}</strong><button type="button" data-close="1">✕ Close</button></div><div class="pm-conduit-scroll"><table class="pm-conduit-table"><thead><tr><th>SIZE</th><th colspan="5">CONDUIT MATERIALS · CLICK IMAGE TO SELECT</th></tr></thead><tbody>${Array.from(groups,([size,entries])=>`<tr><th scope="row">${escape(size)}</th>${Array.from({length:Math.ceil(entries.length/5)*5},(_,i)=>{const item=entries[i];if(!item)return '<td></td>';const {m}=item,src=api.getImage(m),active=String(m.CatalogNumber||"")===selected;return `<td><button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${item.i}" title="${escape(m.Description||"")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:""}<strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button></td>`}).join("")}</tr>`).join("")}</tbody></table></div><div class="pm-conduit-foot"><button type="button" data-clear="1">Clear conduit</button><button type="button" data-close="1">Done</button></div></div>`;
+ host.appendChild(overlay);
+ overlay.querySelectorAll("[data-close]").forEach(btn=>btn.onclick=closeConduitTable);
+ overlay.querySelector("[data-clear]").onclick=async()=>{api.setConduit(runId,null);closeConduitTable();await showMaterials();};
+ overlay.querySelectorAll("[data-conduit]").forEach(btn=>btn.onclick=async()=>{
+  const item=conduits[Number(btn.dataset.conduit)];
+  if(!item)return;
+  api.setConduit(runId,item);closeConduitTable();await showMaterials();
+ });
+ overlay.onclick=e=>{if(e.target===overlay)closeConduitTable();};
 }
 async function showFittings(){
  const api=window.photoRunMaterialsAPI,run=currentRun();
@@ -155,7 +181,7 @@ async function showFittings(){
  });
  $("pm-material-status").textContent="Changes save directly to Material Runs.";
 }
-function closeMaterials(){
+function closeMaterials(){closeConduitTable();
  materialsMode=false;$("pm-materials").style.display="none";
  if(runIndex<runs.length-1){setRun(runIndex+1);status("Materials saved. Press Q for next run.");}
  else status("Materials saved. All runs complete.");
@@ -201,6 +227,20 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-materials{display:none;width:min(1200px, 55vw);flex:0 0 min(1200px, 55vw);height:100%;min-height:0;align-self:stretch;flex-direction:column;overflow-y:auto;background:#172236;border-left:1px solid #334155}
 #photoMeasureModal .pm-materials .pm-group{padding:14px}
 #photoMeasureModal #pm-conduit{width:100%;padding:10px;background:#0e1726;color:white;border:1px solid #4b617d;font-size:16px}
+#photoMeasureModal .pm-conduit-overlay{position:absolute;inset:0;z-index:25;background:#050b15b8;display:flex;align-items:center;justify-content:center;padding:24px}
+#photoMeasureModal .pm-conduit-dialog{width:min(1180px,96%);max-height:94%;display:flex;flex-direction:column;background:#111c30;border:1px solid #48607c;border-radius:8px;overflow:hidden}
+#photoMeasureModal .pm-conduit-head,#photoMeasureModal .pm-conduit-foot{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;gap:12px}
+#photoMeasureModal .pm-conduit-scroll{overflow:auto;flex:1;min-height:0}
+#photoMeasureModal .pm-conduit-table{border-collapse:collapse;width:100%;table-layout:fixed}
+#photoMeasureModal .pm-conduit-table th,#photoMeasureModal .pm-conduit-table td{border:1px solid #334155;padding:6px;vertical-align:top}
+#photoMeasureModal .pm-conduit-table th{background:#1b3049;font-size:12px}
+#photoMeasureModal .pm-conduit-table tbody th{width:90px}
+#photoMeasureModal .pm-conduit-option{width:100%;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px;border:1px solid #344862;border-radius:5px;background:#1a2940;color:#e2e8f0;cursor:pointer}
+#photoMeasureModal .pm-conduit-option:hover,#photoMeasureModal .pm-conduit-option.selected{border-color:#60a5fa;background:#25415e}
+#photoMeasureModal .pm-conduit-option img{width:100%;height:75px;object-fit:contain;background:#eef2f7;border-radius:3px}
+#photoMeasureModal .pm-conduit-option strong{font-size:12px;overflow-wrap:anywhere}
+#photoMeasureModal .pm-conduit-option span{font-size:11px;max-height:42px;overflow:hidden}
+#photoMeasureModal .pm-conduit-option em{color:#6ee7b7;font-size:11px}
 #photoMeasureModal .pm-fitting-grid{display:block;overflow:auto;max-width:100%;min-height:0;border:1px solid #334155}
 #photoMeasureModal .pm-matrix{border-collapse:separate;border-spacing:0;width:100%;min-width:920px;table-layout:fixed;font-size:12px}
 #photoMeasureModal .pm-matrix th,#photoMeasureModal .pm-matrix td{border-right:1px solid #334155;border-bottom:1px solid #334155;padding:5px;vertical-align:middle;text-align:center}
@@ -241,8 +281,8 @@ host.innerHTML=`<style>
   <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><button id="pm-confirm" class="primary">Finish & Next · Q / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button><button id="pm-edit-materials">Edit Conduit & Fittings</button></div>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Mouse wheel: zoom · Q: start · Click multiple points · Q: finish/save</span></div>
  </aside>
- <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><span class="pm-heading">CONDUIT</span><select id="pm-conduit"></select></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div id="pm-fitting-grid" class="pm-fitting-grid"></div></div></aside>
-</div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{materialsMode=false;host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
+ <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><span class="pm-heading">CONDUIT</span><div id="pm-conduit-name" style="font-size:14px;overflow-wrap:anywhere;margin-bottom:8px"></div><button type="button" id="pm-conduit-edit">Select / Change Conduit · Table View</button></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div id="pm-fitting-grid" class="pm-fitting-grid"></div></div></aside>
+</div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{closeConduitTable();materialsMode=false;host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  corners=[];calibration=null;runPaths={};runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
  try{await cachePhoto(f);status("Photo attached to local cache for this project. Set the reference rectangle.");}
