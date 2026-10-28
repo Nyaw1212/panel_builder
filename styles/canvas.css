@@ -843,3 +843,18 @@ SCROLLBAR
     max-width: min(65vw, 780px);
     padding: 4px 10px;
 }
+
+/* Template caption follows the visible workspace/window, not the giant canvas. */
+.workspace { position: relative; }
+.workspace > #canvasTemplateName {
+    position: sticky;
+    right: 20px;
+    bottom: 20px;
+    float: right;
+    margin-top: -66px;
+    margin-right: 20px;
+    z-index: 90;
+    max-width: min(65vw, 780px);
+    font-size: 36pt;
+    pointer-events: none;
+}
