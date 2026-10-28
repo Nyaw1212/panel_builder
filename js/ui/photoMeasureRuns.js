@@ -323,5 +323,18 @@ host.innerHTML=`<style>
   status("Restored cached project photo.");
  }).catch(err=>{console.warn("Photo cache read failed",err);});
 }
-document.addEventListener("keydown",e=>{if(!host)return;if(e.code==="Space"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();pan=true;canvas.style.cursor="grab";return}if(["q","Q"].includes(e.key)&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(!e.repeat)toggleTrace()}else if(e.key==="Enter"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(tracing&&points.length>=2){tracing=false;confirm()}}if(e.key==="Escape"){$("pm-close").click()}});document.addEventListener("keyup",e=>{if(e.code==="Space"){pan=false;if(canvas)canvas.style.cursor="crosshair"}});window.addEventListener("resize",()=>{if(host)draw()});window.openPhotoMeasureRuns=open;
+document.addEventListener("keydown",e=>{
+ if(!host||e.key!=="Escape")return;
+ e.preventDefault();e.stopImmediatePropagation();
+ if(tracing||mode==="calibrate"){
+  tracing=false;hover=null;points=[];measured=null;
+  if(mode==="calibrate"){mode="measure";corners=[];}
+  restoreRun();status("Measurement canceled. Press Q to start again.");
+  return;
+ }
+ // Close the photo tool and its parent Runs workspace in one action.
+ $("pm-close")?.click();
+ if(typeof window.closeRunsModal==="function")window.closeRunsModal();
+},true);
+document.addEventListener("keydown",e=>{if(!host)return;if(e.code==="Space"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();pan=true;canvas.style.cursor="grab";return}if(["q","Q"].includes(e.key)&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(!e.repeat)toggleTrace()}else if(e.key==="Enter"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(tracing&&points.length>=2){tracing=false;confirm()}}});document.addEventListener("keyup",e=>{if(e.code==="Space"){pan=false;if(canvas)canvas.style.cursor="crosshair"}});window.addEventListener("resize",()=>{if(host)draw()});window.openPhotoMeasureRuns=open;
 })();
