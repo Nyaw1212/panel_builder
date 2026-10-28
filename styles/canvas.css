@@ -903,3 +903,20 @@ SCROLLBAR
 
 /* Runs shortcut is a direct child of body, independent of canvas zoom/pan. */
 body > #runsButton.workspace-floating-runs { position: fixed; left: 20px; bottom: 20px; right: auto; top: auto; z-index: 999; }
+
+/* Template title acts as an interactive shortcut to the saved-template picker. */
+#canvasTemplateName[role="button"] {
+    pointer-events: auto !important;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 8px;
+    transition: color .15s, text-shadow .15s;
+}
+#canvasTemplateName[role="button"]:hover {
+    color: #b9e4ff;
+    text-shadow: 0 0 14px rgba(92, 179, 255, .5);
+}
+#canvasTemplateName[role="button"]:focus-visible {
+    outline: 2px solid #a4d9ff;
+    outline-offset: 5px;
+}
