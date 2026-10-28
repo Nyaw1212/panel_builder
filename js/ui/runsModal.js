@@ -2752,9 +2752,9 @@ function renderRunsModal() {
                                         class="run-length-input"
                                         type="number"
                                         min="0"
-                                        step="0.1"
-                                        inputmode="decimal"
-                                        value="${runModalEscape(length)}"
+                                        step="1"
+                                        inputmode="numeric"
+                                        value="${runModalEscape(Math.ceil(Math.max(0, Number(length) || 0)))}"
                                         aria-label="Run ${index + 1} length in feet"
                                     >
                                     <span>ft</span>
