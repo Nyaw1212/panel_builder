@@ -49,57 +49,72 @@
     label(name);
     window.alert('Template "' + name + '" saved in this browser.');
   });
-  openButton?.addEventListener("click", () => {
+  // Lightweight anchored dropdown: selecting a template loads it immediately.
+  let templateMenu = null;
+  const closeTemplateMenu = () => {
+    templateMenu?.remove();
+    templateMenu = null;
+  };
+  const loadTemplate = async (name, record) => {
+    if (!record?.project) return;
+    if (typeof deserializeProject !== "function") {
+      window.alert("Project loader unavailable.");
+      return;
+    }
+    try {
+      const snapshot = structuredClone(record.project);
+      await deserializeProject(snapshot);
+      if (typeof setProjectState === "function") {
+        setProjectState({ ...state(), id: "", jobName: "", address: "", model: name, usedMaterialsSpreadsheetId: "", usedMaterialsSpreadsheetUrl: "" });
+      }
+      label(name);
+      if (typeof finalizeLoadedProjectHistory === "function") finalizeLoadedProjectHistory();
+      closeTemplateMenu();
+    } catch (err) {
+      window.alert("Unable to load template: " + err.message);
+    }
+  };
+  const openTemplateMenu = anchor => {
+    if (templateMenu) { closeTemplateMenu(); return; }
     const all = read();
     const names = Object.keys(all).sort();
-    if (!names.length) { window.alert("No saved templates in this browser yet."); return; }
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;";
-    const card = document.createElement("div");
-    card.style.cssText = "background:#17212f;color:#f8fafc;padding:24px;border:1px solid #475569;border-radius:12px;width:min(420px,90vw);box-shadow:0 18px 55px #0009;";
-    const heading = document.createElement("h2");
-    heading.textContent = "Open Template";
-    heading.style.cssText = "margin:0 0 16px;font:700 20px Arial;";
-    const select = document.createElement("select");
-    select.style.cssText = "display:block;width:100%;box-sizing:border-box;padding:12px;background:#0f172a;color:white;border:1px solid #64748b;border-radius:7px;font-size:15px;";
+    if (!names.length) {
+      window.alert("No saved templates in this browser yet.");
+      return;
+    }
+    const menu = document.createElement("div");
+    menu.className = "template-quick-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", "Saved templates");
     names.forEach(name => {
-      const option = document.createElement("option");
-      option.value = name;
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "template-quick-option";
+      option.setAttribute("role", "menuitem");
       option.textContent = name;
-      select.appendChild(option);
+      option.addEventListener("click", () => loadTemplate(name, all[name]));
+      menu.appendChild(option);
     });
-    const actions = document.createElement("div");
-    actions.style.cssText = "display:flex;justify-content:flex-end;gap:10px;margin-top:20px;";
-    const cancel = document.createElement("button");
-    cancel.textContent = "Cancel";
-    const load = document.createElement("button");
-    load.textContent = "Load Template";
-    for (const button of [cancel, load]) button.style.cssText = "padding:9px 14px;border-radius:6px;cursor:pointer;";
-    load.style.background = "#2563eb";
-    load.style.color = "white";
-    cancel.addEventListener("click", () => overlay.remove());
-    overlay.addEventListener("click", event => { if (event.target === overlay) overlay.remove(); });
-    load.addEventListener("click", async () => {
-      const name = select.value;
-      if (!window.confirm('Load template "' + name + '"? This replaces the current unsaved layout.')) return;
-      const snapshot = structuredClone(all[name].project);
-      if (typeof deserializeProject !== "function") { window.alert("Project loader unavailable."); return; }
-      try {
-        await deserializeProject(snapshot);
-        if (typeof setProjectState === "function") {
-          setProjectState({ ...state(), id: "", jobName: "", address: "", model: name, usedMaterialsSpreadsheetId: "", usedMaterialsSpreadsheetUrl: "" });
-        }
-        label(name);
-        if (typeof finalizeLoadedProjectHistory === "function") finalizeLoadedProjectHistory();
-        overlay.remove();
-      } catch (err) { window.alert("Unable to load template: " + err.message); }
-    });
-    actions.append(cancel, load);
-    card.append(heading, select, actions);
-    overlay.appendChild(card);
-    document.body.appendChild(overlay);
-    select.focus();
+    document.body.appendChild(menu);
+    templateMenu = menu;
+    const rect = anchor?.getBoundingClientRect?.() || { left: 20, right: 220, top: 60, bottom: 80 };
+    const width = menu.offsetWidth;
+    const height = menu.offsetHeight;
+    menu.style.left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.right - width)) + "px";
+    menu.style.top = (rect.bottom + height + 8 <= window.innerHeight ? rect.bottom + 6 : Math.max(8, rect.top - height - 6)) + "px";
+    menu.querySelector("button")?.focus();
+  };
+  openButton?.addEventListener("click", () => openTemplateMenu(openButton));
+  document.addEventListener("pointerdown", event => {
+    if (templateMenu && !templateMenu.contains(event.target) && event.target !== title && event.target !== openButton) closeTemplateMenu();
   });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && templateMenu) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeTemplateMenu();
+    }
+  }, true);
   // The large workspace title doubles as a shortcut to the existing
   // template dropdown, so there is only one picker to maintain.
   if (title) {
@@ -107,11 +122,11 @@
     title.setAttribute("tabindex", "0");
     title.setAttribute("aria-label", "Choose a saved template");
     title.setAttribute("title", "Click to choose a saved template");
-    title.addEventListener("click", () => openButton?.click());
+    title.addEventListener("click", () => openTemplateMenu(title));
     title.addEventListener("keydown", event => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        openButton?.click();
+        openTemplateMenu(title);
       }
     });
   }
