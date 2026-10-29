@@ -569,7 +569,9 @@ function buildModalCard(item) {
                 "function"
             ) {
 
-                modalOnSelect(item);
+                const applied = modalOnSelect(item);
+                // Keep the picker open when the replacement could not be applied.
+                if (applied === false) return;
 
             }
 
