@@ -471,6 +471,18 @@ function isMDPMaterialCard(item) {
   return type.includes("MDP");
 }
 
+function isGutterMaterialCard(item) {
+  const type = [
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category
+  ].join(" ")
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase();
+
+  return type.includes("GUTTER");
+}
+
 function isSonPlusMaterialCard(item) {
   const type = [
     item?.data?.NodeType,
@@ -847,6 +859,22 @@ function getMDPPresetLibrary() {
     .filter(Boolean);
 }
 
+function getGutterPresetLibrary() {
+  return getPresetCodesByComponentType("GUTTER")
+    .map(presetCode => {
+      const equipment = getPresetEquipment(presetCode);
+      if (!equipment) return null;
+
+      return {
+        ...structuredClone(equipment),
+        PickerCardCode: presetCode,
+        Code: presetCode,
+        presetCode
+      };
+    })
+    .filter(Boolean);
+}
+
 function getSonPlusPresetLibrary() {
   const sonPlusPresetCodes = getPresetCodesByComponentType("SON+");
   const fallbackCodes = Array.from(new Set(
@@ -983,6 +1011,66 @@ function applyMDPPreset(presetCode) {
     typeof window.HistoryManagerV2.capture === "function"
   ) {
     window.HistoryManagerV2.capture("MDP preset changed");
+  }
+
+  if (typeof drawCanvas === "function") {
+    drawCanvas();
+  }
+
+  const refreshedRuns = typeof refreshRunsForCanvasComponent === "function"
+    ? refreshRunsForCanvasComponent(equipment.id)
+    : false;
+  if (!refreshedRuns && typeof renderBOM === "function") {
+    renderBOM();
+  }
+
+  return true;
+}
+
+function applyGutterPreset(presetCode) {
+  const equipment = getCurrentEquipment();
+  const presetEquipment = getPresetEquipment(presetCode);
+  const knownGutterPreset = getPresetCodesByComponentType("GUTTER")
+    .includes(String(presetCode || ""));
+
+  if (!equipment || !presetEquipment || !knownGutterPreset) {
+    return false;
+  }
+
+  if (
+    typeof canPlace === "function" &&
+    !canPlace(presetEquipment, equipment.startCell, equipment)
+  ) {
+    alert("The replacement gutter does not fit in its current canvas position.");
+    return false;
+  }
+
+  const layout = getLayout();
+  (equipment.occupied || []).forEach(index => {
+    if (layout[index] === equipment) {
+      layout[index] = null;
+    }
+  });
+
+  equipment.data = structuredClone(presetEquipment);
+  equipment.width = Number(presetEquipment.GridWidth || 1);
+  equipment.height = Number(presetEquipment.GridHeight || 1);
+  equipment.preset = String(presetCode || "").trim();
+  equipment.materials = ensureMainEquipmentMaterial(
+    getApiPresetMaterials(presetCode),
+    presetEquipment
+  );
+
+  updateOccupiedCells(equipment);
+  equipment.occupied.forEach(index => {
+    layout[index] = equipment;
+  });
+
+  if (
+    window.HistoryManagerV2 &&
+    typeof window.HistoryManagerV2.capture === "function"
+  ) {
+    window.HistoryManagerV2.capture("Gutter preset changed");
   }
 
   if (typeof drawCanvas === "function") {
@@ -1260,6 +1348,24 @@ function openMDPMaterialPicker(equipment) {
         }
       }
     }
+  );
+}
+
+function openGutterMaterialPicker(equipment) {
+  if (!equipment || typeof openPickerModal !== "function") {
+    return;
+  }
+
+  const presets = getGutterPresetLibrary();
+  if (!presets.length) {
+    alert("No GUTTER presets were found. Add TYPE = GUTTER on the PRESETS sheet.");
+    return;
+  }
+
+  openPickerModal(
+    "Choose GUTTER Preset",
+    presets,
+    preset => applyGutterPreset(preset.presetCode)
   );
 }
 
@@ -1637,6 +1743,12 @@ window.isMDPMaterialCard =
 
 window.openMDPMaterialPicker =
   openMDPMaterialPicker;
+
+window.isGutterMaterialCard =
+  isGutterMaterialCard;
+
+window.openGutterMaterialPicker =
+  openGutterMaterialPicker;
 
 window.isSonPlusMaterialCard =
   isSonPlusMaterialCard;
