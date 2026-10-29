@@ -847,6 +847,47 @@ function getMDPPresetLibrary() {
     .filter(Boolean);
 }
 
+function isGutterMaterialCard(item) {
+  const fields = [item?.data?.NodeType,item?.data?.Type,item?.data?.Category,item?.data?.PRESET,item?.preset];
+  const type = fields.join(" ").toUpperCase();
+  return type.includes("GUTTER") || /^G[2-6]$/i.test(String(item?.preset || item?.data?.PRESET || ""));
+}
+function getGutterPresetLibrary() {
+  return getPresetCodesByComponentType("GUTTER")
+    .map(presetCode => {
+      const equipment = getPresetEquipment(presetCode);
+      return equipment ? {...structuredClone(equipment),PickerCardCode:presetCode,Code:presetCode,presetCode} : null;
+    }).filter(Boolean);
+}
+function applyGutterPreset(presetCode) {
+  const equipment = getCurrentEquipment();
+  const presetEquipment = getPresetEquipment(presetCode);
+  if (!equipment || !presetEquipment || !getPresetCodesByComponentType("GUTTER").includes(presetCode)) return false;
+  if (typeof canPlace === "function" && !canPlace(presetEquipment,equipment.startCell,equipment)) {
+    alert("The selected gutter does not fit in this position.");return false;
+  }
+  const layout = getLayout();
+  (equipment.occupied || []).forEach(index => {if(layout[index]===equipment)layout[index]=null;});
+  equipment.data=structuredClone(presetEquipment);
+  equipment.width=Number(presetEquipment.GridWidth || 1);
+  equipment.height=Number(presetEquipment.GridHeight || 1);
+  equipment.preset=presetCode;
+  equipment.materials=ensureMainEquipmentMaterial(getApiPresetMaterials(presetCode),presetEquipment);
+  updateOccupiedCells(equipment);
+  equipment.occupied.forEach(index=>{layout[index]=equipment;});
+  window.HistoryManagerV2?.capture?.("Gutter preset changed");
+  if(typeof drawCanvas==="function")drawCanvas();
+  const refreshed=typeof refreshRunsForCanvasComponent==="function"?refreshRunsForCanvasComponent(equipment.id):false;
+  if(!refreshed&&typeof renderBOM==="function")renderBOM();
+  return true;
+}
+function openGutterMaterialPicker(equipment) {
+  if(!equipment||typeof openPickerModal!=="function")return;
+  const presets=getGutterPresetLibrary();
+  if(!presets.length){alert("No gutter presets found. Add TYPE = GUTTER in the PRESETS sheet.");return;}
+  openPickerModal("Choose Gutter Preset",presets,preset=>applyGutterPreset(preset.presetCode));
+}
+
 function getSonPlusPresetLibrary() {
   const sonPlusPresetCodes = getPresetCodesByComponentType("SON+");
   const fallbackCodes = Array.from(new Set(
@@ -1652,3 +1693,4 @@ window.openL30303MaterialPicker =
 
 window.renderDisconnectPresetEditor =
   renderDisconnectPresetEditor;
+\nwindow.isGutterMaterialCard=isGutterMaterialCard;\nwindow.openGutterMaterialPicker=openGutterMaterialPicker;\n
