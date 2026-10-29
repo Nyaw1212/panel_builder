@@ -166,6 +166,16 @@ function renderPhotoMaterialSummary(){
   row.append(info,qty);target.appendChild(row);
  });
 }
+function preserveMaterialsScroll(task){
+ const side=$("pm-materials");
+ const top=side?.scrollTop||0;
+ const restore=()=>{
+  if(!side?.isConnected)return;
+  side.scrollTop=top;
+  requestAnimationFrame(()=>{if(side.isConnected)side.scrollTop=top;});
+ };
+ return Promise.resolve().then(task).finally(restore);
+}
 async function showMaterials(){
  const api=window.photoRunMaterialsAPI,run=currentRun();
  if(!api||!run)return status("Material sidebar unavailable.");
@@ -179,7 +189,7 @@ async function showMaterials(){
   const actual=api.getRun(run.id);
   const current=actual?.conduit;
   $("pm-conduit-name").textContent=current?[current.CatalogNumber,current.Description,current.Size].filter(Boolean).join(" · "):"No conduit selected";
-  $("pm-conduit-clear").onclick=async()=>{api.setConduit(run.id,null);await showMaterials();};
+  $("pm-conduit-clear").onclick=()=>preserveMaterialsScroll(async()=>{api.setConduit(run.id,null);await showMaterials();});
   ["1","2","all"].forEach(key=>{
    const checkbox=$("pm-conduit-size-"+key);
    if(checkbox)checkbox.onchange=()=>openConduitTable(run.id,conduits);
@@ -217,8 +227,7 @@ function openConduitTable(runId,conduits) {
  target.querySelectorAll("[data-conduit]").forEach(btn=>btn.onclick=async()=>{
   const item=conduits[Number(btn.dataset.conduit)];
   if(!item)return;
-  api.setConduit(runId,item);
-  await showMaterials();
+  await preserveMaterialsScroll(async()=>{api.setConduit(runId,item);await showMaterials();});
  });
 }
 async function showFittings(){
@@ -256,9 +265,11 @@ async function showFittings(){
   });
   target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
   const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
-  api.setFitting(run.id,material,Number(btn.dataset.delta));
-  showFittings();
-  renderPhotoMaterialSummary();
+  preserveMaterialsScroll(async()=>{
+   api.setFitting(run.id,material,Number(btn.dataset.delta));
+   await showFittings();
+   renderPhotoMaterialSummary();
+  });
  });
  $("pm-material-status").textContent="Changes save directly to Material Runs.";
  renderPhotoMaterialSummary();
