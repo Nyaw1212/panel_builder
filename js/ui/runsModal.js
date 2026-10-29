@@ -2672,7 +2672,7 @@ function renderRunsModal() {
                             ? run.wires
                             : (run.wire ? [run.wire] : []);
                         const wireQty = wires.length
-                            ? `${formatRunFeet(length + 4)} ft`
+                            ? `${formatRunFeet(length > 0 ? length + 4 : 0)} ft`
                             : "—";
 
                         const fromTag = run.fromCanvasItemId || "";
@@ -2892,7 +2892,7 @@ function renderRunsModal() {
                     Reset lengths
                 </button>
                 <button id="measurePhotoRunsButton" class="runs-add" type="button">📷 Measure Photo</button>
-                <div class="runs-rule">Wire BOM = run length + 4 ft</div>
+                <div class="runs-rule">Wire BOM = 0 ft for zero-length runs; otherwise run length + 4 ft</div>
                 <button id="doneRunsButton" class="runs-done" type="button">Done</button>
             </footer>
         </section>
