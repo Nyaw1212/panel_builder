@@ -145,6 +145,12 @@ function doPost(e) {
       // Get Presets
       //----------------------------------
 
+      case "getCaliPresets":
+        return jsonOutput({
+          success: true,
+          presets: getCaliPresets()
+        });
+
       case "getPresets":
 
         return jsonOutput({
@@ -322,6 +328,27 @@ function jsonOutput(data) {
 //----------------------------------
 // Get Project Spreadsheet
 //----------------------------------
+
+function getCaliPresets() {
+  const sheet = getProjectSpreadsheet().getSheetByName("CALIPRESET");
+  if (!sheet || sheet.getLastRow() < 2) return [];
+
+  const rows = sheet.getDataRange().getValues();
+  const headers = rows.shift().map(value => String(value || "").trim().toUpperCase());
+  const indexes = ["NAME", "WIDTH", "HEIGHT", "UNIT"].map(name => headers.indexOf(name));
+  if (indexes.some(index => index < 0)) {
+    throw new Error("CALIPRESET requires NAME, WIDTH, HEIGHT, UNIT columns.");
+  }
+  return rows.map(row => ({
+    name: String(row[indexes[0]] || "").trim(),
+    width: Number(row[indexes[1]]),
+    height: Number(row[indexes[2]]),
+    unit: String(row[indexes[3]] || "").trim().toLowerCase()
+  })).filter(item =>
+    item.name && item.width > 0 && item.height > 0 &&
+    (item.unit === "in" || item.unit === "ft")
+  );
+}
 
 function getProjectSpreadsheet() {
 
