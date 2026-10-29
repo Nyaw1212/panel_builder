@@ -186,6 +186,7 @@ async function showMaterials(){
   });
   openConduitTable(run.id,conduits);
   await showFittings();
+  renderPhotoMaterialSummary();
  }catch(e){$("pm-material-status").textContent="Could not load materials: "+e.message;}
 }
 function closeConduitTable() {
@@ -257,8 +258,10 @@ async function showFittings(){
   const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
   api.setFitting(run.id,material,Number(btn.dataset.delta));
   showFittings();
+  renderPhotoMaterialSummary();
  });
  $("pm-material-status").textContent="Changes save directly to Material Runs.";
+ renderPhotoMaterialSummary();
 }
 function closeMaterials(){closeConduitTable();
  materialsMode=false;$("pm-materials").style.display="none";
