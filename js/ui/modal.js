@@ -821,11 +821,8 @@ function renderDisconnectPresetMatrix(list) {
     });
 
     const rows = Array.from(rowsByKey.values()).sort((left, right) => {
-        const typeOrder = { L: 0, H: 1 };
-        const typeDifference = (typeOrder[left.type] ?? 9) -
-            (typeOrder[right.type] ?? 9);
-
-        return typeDifference || right.rating - left.rating;
+        return right.rating - left.rating ||
+            left.type.localeCompare(right.type);
     });
 
     if (!rows.length) {
