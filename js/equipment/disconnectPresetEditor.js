@@ -862,7 +862,7 @@ function getGutterPresetLibrary() {
 function applyGutterPreset(presetCode) {
   const equipment = getCurrentEquipment();
   const presetEquipment = getPresetEquipment(presetCode);
-  if (!equipment || !presetEquipment || !getPresetCodesByComponentType("GUTTER").includes(presetCode)) return false;
+  if (!equipment || !presetEquipment || !getPresetCodesByComponentType("GUTTER").includes(presetCode)) {\n    alert("Unable to select gutter preset " + presetCode + ". Check the PRESETS sheet and reload materials.");\n    return false;\n  }
   if (typeof canPlace === "function" && !canPlace(presetEquipment,equipment.startCell,equipment)) {
     alert("The selected gutter does not fit in this position.");return false;
   }
@@ -885,7 +885,7 @@ function openGutterMaterialPicker(equipment) {
   if(!equipment||typeof openPickerModal!=="function")return;
   const presets=getGutterPresetLibrary();
   if(!presets.length){alert("No gutter presets found. Add TYPE = GUTTER in the PRESETS sheet.");return;}
-  openPickerModal("Choose Gutter Preset",presets,preset=>applyGutterPreset(preset.presetCode));
+  openPickerModal("Choose Gutter Preset",presets,preset=>applyGutterPreset(preset.presetCode || preset.PickerCardCode || preset.Code));
 }
 
 function getSonPlusPresetLibrary() {
