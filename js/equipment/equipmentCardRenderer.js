@@ -140,71 +140,78 @@ function renderBreakerLibrary(container, components) {
       );
     });
 
-  const grid = document.createElement("div");
-  grid.className = "panel-breaker-card-grid";
+  // Matrix layout applies only to the breaker material library.
+  // The panelboard renderer and breaker placement logic remain unchanged.
+  const matrix = document.createElement("table");
+  matrix.className = "panel-breaker-picker-matrix";
+  matrix.setAttribute("aria-label", "Breaker material choices");
+  matrix.innerHTML = `
+    <thead><tr>
+      <th scope="col">Rating</th>
+      <th scope="col">1P</th>
+      <th scope="col">2P</th>
+      <th scope="col">3P</th>
+      <th scope="col">4P</th>
+    </tr></thead>
+  `;
 
+  const body = document.createElement("tbody");
+  const rows = new Map();
   filtered.forEach(material => {
-    const amp = getBreakerAmperage(material);
-    const poles = getBreakerPoleCount(material);
-    const image = getPanelBreakerImage(material);
-    const favorite = Math.max(
-      0,
-      Math.min(Number(material.Favorite || 0), 5)
-    );
-    const card = document.createElement("button");
-
-    card.type = "button";
-    card.className = "panel-breaker-card";
-    card.title = `Install ${material.CatalogNumber}`;
-    card.innerHTML = `
-      ${image ? `
-        <img
-          class="panel-breaker-card__image"
-          src="${escapePanelText(image)}"
-          alt=""
-        >
-      ` : `
-        <span class="panel-breaker-card__image panel-breaker-card__image--empty">
-          ${escapePanelText(selectedFamily)}
-        </span>
-      `}
-      <span class="panel-breaker-card__info">
-        <strong>${escapePanelText(material.CatalogNumber)}</strong>
-        <span>${escapePanelText(material.Description || material.Type || "")}</span>
-        <small>${amp ? `${amp}A` : ""} • ${poles}P</small>
-      </span>
-      ${favorite > 0 ? `
-        <span
-          class="panel-breaker-favorite"
-          title="Favorite value: ${favorite}"
-          aria-label="Favorite value: ${favorite} out of 5"
-        >${"★".repeat(favorite)}</span>
-      ` : ""}
-    `;
-
-    const img = card.querySelector("img");
-    if (img) {
-      img.onerror = () => {
-        img.style.display = "none";
-      };
-    }
-
-    card.draggable = true;
-    card.ondragstart = event => {
-      card.classList.add("dragging");
-      setPanelBreakerDragData(event, {
-        kind: "library",
-        catalogNumber: material.CatalogNumber
-      });
-    };
-    card.ondragend = () => {
-      card.classList.remove("dragging");
-    };
-    card.onclick = () => addEquipmentComponent(material);
-    grid.appendChild(card);
+    const rating = Number(getBreakerAmperage(material)) || 0;
+    const poles = Number(getBreakerPoleCount(material)) || 1;
+    if (!rows.has(rating)) rows.set(rating, new Map());
+    const cells = rows.get(rating);
+    if (!cells.has(poles)) cells.set(poles, []);
+    cells.get(poles).push(material);
   });
 
-  container.appendChild(grid);
+  Array.from(rows.keys()).sort((a, b) => b - a).forEach(rating => {
+    const row = document.createElement("tr");
+    const ratingCell = document.createElement("th");
+    ratingCell.scope = "row";
+    ratingCell.textContent = rating ? `${rating}A` : "—";
+    row.appendChild(ratingCell);
+
+    for (let poles = 1; poles <= 4; poles++) {
+      const cell = document.createElement("td");
+      const choices = rows.get(rating).get(poles) || [];
+      if (!choices.length) {
+        cell.className = "panel-breaker-matrix-empty";
+        cell.textContent = "—";
+      }
+      choices.forEach(material => {
+        const favorite = Math.max(0, Math.min(Number(material.Favorite || 0), 5));
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "panel-breaker-matrix-button";
+        card.title = material.Description || material.CatalogNumber || "Install breaker";
+        card.innerHTML = `
+          <strong>${escapePanelText(material.CatalogNumber || "")}</strong>
+          ${favorite ? `<span aria-label="Favorite: ${favorite} of 5">${"★".repeat(favorite)}</span>` : ""}
+        `;
+        card.draggable = true;
+        card.ondragstart = event => {
+          card.classList.add("dragging");
+          setPanelBreakerDragData(event, {
+            kind: "library",
+            catalogNumber: material.CatalogNumber
+          });
+        };
+        card.ondragend = () => card.classList.remove("dragging");
+        card.onclick = () => addEquipmentComponent(material);
+        cell.appendChild(card);
+      });
+      row.appendChild(cell);
+    }
+    body.appendChild(row);
+  });
+
+  matrix.appendChild(body);
+  const matrixScroll = document.createElement("div");
+  matrixScroll.className = "panel-breaker-matrix-scroll";
+  matrixScroll.appendChild(matrix);
+  container.appendChild(matrixScroll);
 
   if (!filtered.length) {
     const empty = document.createElement("div");
