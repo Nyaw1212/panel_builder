@@ -3509,3 +3509,75 @@ COMPACT FUSE LIBRARY TILES
     right: 6px;
     font-size: 9px;
 }
+
+/* Breaker material picker only — does not style the panelboard. */
+.panel-breaker-matrix-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+.panel-breaker-picker-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid rgba(100, 116, 139, .4);
+    border-radius: 8px;
+    overflow: hidden;
+    color: #eff6ff;
+}
+.panel-breaker-picker-matrix th,
+.panel-breaker-picker-matrix td {
+    padding: 6px;
+    border-right: 1px solid rgba(100, 116, 139, .3);
+    border-bottom: 1px solid rgba(100, 116, 139, .3);
+    text-align: center;
+}
+.panel-breaker-picker-matrix tr > :last-child { border-right: 0; }
+.panel-breaker-picker-matrix tbody tr:last-child > * { border-bottom: 0; }
+.panel-breaker-picker-matrix thead th {
+    position: sticky;
+    top: 0;
+    background: #172944;
+    color: #bfdbfe;
+    font-size: 16pt;
+    font-weight: 900;
+}
+.panel-breaker-picker-matrix tbody th {
+    width: 78px;
+    min-width: 78px;
+    background: #172944;
+    font-size: 16pt;
+    font-weight: 800;
+}
+.panel-breaker-picker-matrix tbody td {
+    width: 112px;
+    min-width: 90px;
+    background: rgba(15, 23, 42, .7);
+}
+.panel-breaker-matrix-button {
+    display: flex;
+    width: 100%;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 2px 0;
+    padding: 6px 4px;
+    border: 1px solid rgba(96, 165, 250, .52);
+    border-radius: 7px;
+    background: rgba(30, 64, 175, .32);
+    color: #eff6ff;
+    cursor: pointer;
+    font-size: 12pt;
+    font-weight: 900;
+}
+.panel-breaker-matrix-button:hover,
+.panel-breaker-matrix-button:focus-visible {
+    border-color: #93c5fd;
+    background: rgba(37, 99, 235, .6);
+}
+.panel-breaker-matrix-button span {
+    color: #fbbf24;
+    font-size: 10px;
+}
+.panel-breaker-matrix-empty { color: #64748b; }
