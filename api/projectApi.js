@@ -32,7 +32,9 @@ let catalogUpdateNoticeShown = false;
 
 async function apiRequest(data) {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 20000);
+    // Apps Script can take longer for large project payloads.
+    const timeoutMs = 60000;
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
 
     try {
         const response = await fetch(PROJECT_API_URL, {
@@ -48,11 +50,16 @@ async function apiRequest(data) {
         return await response.json();
     }
     catch (err) {
+        const aborted = controller.signal.aborted ||
+            err?.name === "AbortError";
+        const message = aborted
+            ? "The project API request timed out after 60 seconds. Please retry."
+            : (err?.message || "The project API request failed.");
         console.error("Project API Error", err);
 
         return {
             success: false,
-            message: err.message
+            message
         };
     }
     finally {
