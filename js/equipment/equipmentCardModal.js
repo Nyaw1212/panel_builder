@@ -48,7 +48,6 @@ function openEquipmentCardModal(item) {
     const hDiscMatch =
         typeof isHDiscMaterialCard === "function" &&
         isHDiscMaterialCard(item);
-    const gutterMatch = typeof isGutterMaterialCard === "function" && isGutterMaterialCard(item);
     const mdpMatch =
         typeof isMDPMaterialCard === "function" &&
         isMDPMaterialCard(item);
@@ -117,11 +116,6 @@ function openEquipmentCardModal(item) {
 
         return;
 
-    }
-
-    if (gutterMatch && typeof openGutterMaterialPicker === "function") {
-        openGutterMaterialPicker(item);
-        return;
     }
 
     if (
