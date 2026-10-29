@@ -143,6 +143,29 @@ function measure(){
  }catch(e){measured=null;status(e.message)}
 }
 function setRun(i){if(materialsMode){materialsMode=false;if($("pm-materials"))$("pm-materials").style.display="none";}runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
+function renderPhotoMaterialSummary(){
+ const target=$("pm-material-summary"),api=window.photoRunMaterialsAPI,run=currentRun();
+ if(!target||!api||!run)return;
+ const saved=api.getRun(run.id);
+ const fittings=Array.isArray(saved?.fittings)?saved.fittings.filter(m=>Number(m.qty)>0):[];
+ const conduit=saved?.conduit;
+ const items=conduit?[{...conduit,qty:1},...fittings]:fittings;
+ const count=items.reduce((sum,m)=>sum+Number(m.qty||0),0);
+ $("pm-summary-count").textContent=items.length+" items · "+count+" qty";
+ target.replaceChildren();
+ if(!items.length){target.textContent="No materials selected";return;}
+ items.forEach(m=>{
+  const row=document.createElement("div");row.className="pm-summary-item";
+  const src=api.getImage(m);
+  if(src){const img=document.createElement("img");img.src=src;img.alt="";img.onerror=()=>img.remove();row.appendChild(img);}
+  const info=document.createElement("div");info.className="pm-summary-info";
+  const code=document.createElement("strong");code.textContent=m.CatalogNumber||"Material";
+  const desc=document.createElement("small");desc.textContent=m.Description||"";
+  info.append(code,desc);
+  const qty=document.createElement("b");qty.textContent=Number(m.qty)||1;
+  row.append(info,qty);target.appendChild(row);
+ });
+}
 async function showMaterials(){
  const api=window.photoRunMaterialsAPI,run=currentRun();
  if(!api||!run)return status("Material sidebar unavailable.");
@@ -312,6 +335,17 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-row{display:flex;gap:8px}
 #photoMeasureModal .pm-materials{display:none;width:min(1200px, 55vw);flex:0 0 min(1200px, 55vw);height:100%;min-height:0;align-self:stretch;flex-direction:column;overflow-y:auto;background:#172236;border-left:1px solid #334155}
 #photoMeasureModal .pm-materials .pm-group{padding:14px}
+#photoMeasureModal .pm-summary-group{border-top:1px solid #334155}
+#photoMeasureModal .pm-summary-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#photoMeasureModal .pm-summary-heading small{color:#93a7c1}
+#photoMeasureModal .pm-summary-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:8px;margin-top:10px}
+#photoMeasureModal .pm-summary-item{display:flex;align-items:center;gap:8px;min-width:0;background:#0b1728;border:1px solid #256083;border-radius:5px;padding:7px}
+#photoMeasureModal .pm-summary-item img{width:42px;height:42px;object-fit:contain;background:white;border-radius:3px;flex:none}
+#photoMeasureModal .pm-summary-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+#photoMeasureModal .pm-summary-info strong{font-size:13px;overflow-wrap:anywhere}
+#photoMeasureModal .pm-summary-info small{font-size:11px;color:#a9c3db;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#photoMeasureModal .pm-summary-item>b{background:#0b536b;color:#8fe5ff;padding:5px 8px;border-radius:4px;font-size:18px}
+
 #photoMeasureModal #pm-conduit{width:100%;padding:10px;background:#0e1726;color:white;border:1px solid #4b617d;font-size:16px}
 #photoMeasureModal #pm-calipreset{width:100%;background:#24364d;color:#f1f5f9;border:1px solid #536b88;border-radius:5px;padding:7px;font-weight:700}\n#photoMeasureModal .pm-unit-field{display:flex;gap:6px;align-items:stretch}
 #photoMeasureModal .pm-unit-field input{min-width:0;flex:1}
@@ -390,7 +424,7 @@ host.innerHTML=`<style>
   <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASUREMENT MODE</span><button type="button" id="pm-mode-indicator" class="pm-mode-indicator pm-mode-idle" title="Click to switch between Q conduit and G wire routes">○ READY — PRESS Q OR G</button><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><span id="pm-length-summary" style="font-size:16px;color:#9bc9ee"></span><button id="pm-confirm" class="primary">Finish & Next · G / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button><button id="pm-edit-materials">Edit Conduit & Fittings</button></div>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Wheel: zoom · Q: conduit to gutter (blue) · G: extra wire (orange) · Same key: finish</span></div>
  </aside>
- <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><span class="pm-heading">CONDUIT</span><div id="pm-conduit-name" style="font-size:14px;overflow-wrap:anywhere;margin-bottom:8px"></div><div class="pm-conduit-sizes"><label><input type="checkbox" id="pm-conduit-size-1" checked> 1&quot;</label><label><input type="checkbox" id="pm-conduit-size-2" checked> 2&quot;</label><label><input type="checkbox" id="pm-conduit-size-all"> Other sizes</label></div><div id="pm-conduit-grid" class="pm-conduit-scroll"></div><button type="button" id="pm-conduit-clear">Clear conduit</button></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div class="pm-size-controls pm-size-chips" role="group" aria-label="Fittings size"><label class="pm-size-chip"><input type="checkbox" id="pm-size-1" checked> <span>1&quot;</span></label><label class="pm-size-chip"><input type="checkbox" id="pm-size-2"> <span>2&quot;</span></label></div><div id="pm-fitting-grid" class="pm-fitting-grid"></div></div></aside>
+ <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><span class="pm-heading">CONDUIT</span><div id="pm-conduit-name" style="font-size:14px;overflow-wrap:anywhere;margin-bottom:8px"></div><div class="pm-conduit-sizes"><label><input type="checkbox" id="pm-conduit-size-1" checked> 1&quot;</label><label><input type="checkbox" id="pm-conduit-size-2" checked> 2&quot;</label><label><input type="checkbox" id="pm-conduit-size-all"> Other sizes</label></div><div id="pm-conduit-grid" class="pm-conduit-scroll"></div><button type="button" id="pm-conduit-clear">Clear conduit</button></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div class="pm-size-controls pm-size-chips" role="group" aria-label="Fittings size"><label class="pm-size-chip"><input type="checkbox" id="pm-size-1" checked> <span>1&quot;</span></label><label class="pm-size-chip"><input type="checkbox" id="pm-size-2"> <span>2&quot;</span></label></div><div id="pm-fitting-grid" class="pm-fitting-grid"></div><div class="pm-group pm-summary-group"><div class="pm-summary-heading"><span class="pm-heading">MATERIAL SUMMARY</span><small id="pm-summary-count">0 items</small></div><div id="pm-material-summary" class="pm-summary-list"></div></div></aside>
 </div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{closeConduitTable();materialsMode=false;host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  corners=[];calibration=null;runPaths={};conduitSegments={};runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
