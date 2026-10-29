@@ -48,7 +48,8 @@ function openEquipmentCardModal(item) {
     const hDiscMatch =
         typeof isHDiscMaterialCard === "function" &&
         isHDiscMaterialCard(item);
-    const gutterMatch = typeof isGutterMaterialCard === "function" && isGutterMaterialCard(item);\n    const mdpMatch =
+    const gutterMatch = typeof isGutterMaterialCard === "function" && isGutterMaterialCard(item);
+    const mdpMatch =
         typeof isMDPMaterialCard === "function" &&
         isMDPMaterialCard(item);
     const sonPlusMatch =
@@ -116,6 +117,11 @@ function openEquipmentCardModal(item) {
 
         return;
 
+    }
+
+    if (gutterMatch && typeof openGutterMaterialPicker === "function") {
+        openGutterMaterialPicker(item);
+        return;
     }
 
     if (
