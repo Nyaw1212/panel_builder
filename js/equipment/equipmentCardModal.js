@@ -48,7 +48,7 @@ function openEquipmentCardModal(item) {
     const hDiscMatch =
         typeof isHDiscMaterialCard === "function" &&
         isHDiscMaterialCard(item);
-    const mdpMatch =
+    const gutterMatch = typeof isGutterMaterialCard === "function" && isGutterMaterialCard(item);\n    const mdpMatch =
         typeof isMDPMaterialCard === "function" &&
         isMDPMaterialCard(item);
     const sonPlusMatch =
