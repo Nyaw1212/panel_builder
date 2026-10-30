@@ -125,7 +125,7 @@ function draw(){
  for(let i=1;i<corners.length;i++)line(corners[i-1],corners[i],"#fbbf24");
  if(corners.length===4)line(corners[3],corners[0],"#fbbf24");
  corners.forEach(p=>dot(p,"#fbbf24"));
- const g=conduitSegments[String(currentRun()?.id)];if(g?.points){for(let i=1;i<g.points.length;i++)line(g.points[i-1],g.points[i],"#38bdf8");g.points.forEach(p=>dot(p,"#38bdf8"));}const traceColor=traceKind==="conduit"?"#38bdf8":"#f97316";for(let i=1;i<points.length;i++)line(points[i-1],points[i],traceColor);
+ const g=conduitSegments[String(currentRun()?.id)];if(g?.points){for(let i=1;i<g.points.length;i++)line(g.points[i-1],g.points[i],"#38bdf8");g.points.forEach(p=>dot(p,"#38bdf8"));}alternatingSegments.forEach(seg=>{const color=seg.kind==="conduit"?"#38bdf8":"#f97316";for(let i=1;i<seg.points.length;i++)line(seg.points[i-1],seg.points[i],color);});const traceColor=traceKind==="conduit"?"#38bdf8":"#f97316";for(let i=1;i<points.length;i++)line(points[i-1],points[i],traceColor);
  if(points.length>=1&&hover&&tracing&&mode==="measure") {
   line(points[points.length-1],hover,traceColor,true);
   if(calibration){try{const p=physical(points[points.length-1]),q=physical(hover),ft=(measured||0)+Math.hypot(p.x-q.x,p.y-q.y);const v=point(hover);ctx.font="bold 13px Arial";const text=ft.toFixed(3)+" ft";const tw=ctx.measureText(text).width;ctx.fillStyle="#101827";ctx.fillRect(v.x+12,v.y-31,tw+16,25);ctx.fillStyle="#4ade80";ctx.fillText(text,v.x+20,v.y-14)}catch(_){}}
@@ -142,7 +142,7 @@ function measure(){
  measured=sum;label();rememberRun();status("Click another point, or press "+(traceKind==="conduit"?"Q":"G")+" to finish.");
  }catch(e){measured=null;status(e.message)}
 }
-function setRun(i){if(materialsMode){materialsMode=false;if($("pm-materials"))$("pm-materials").style.display="none";}runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
+function setRun(i){alternatingSegments=[];if(materialsMode){materialsMode=false;if($("pm-materials"))$("pm-materials").style.display="none";}runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
 function renderPhotoMaterialSummary(){
  const target=$("pm-material-summary"),api=window.photoRunMaterialsAPI,run=currentRun();
  if(!target||!api||!run)return;
@@ -305,34 +305,68 @@ function confirm(){
  status("Saved wire: "+actual.length+" ft"+(g?", conduit: "+actual.conduitLength+" ft":", conduit unchanged")+".");
  showMaterials();
 }
+// Preserve every Q/G segment until the run is finished.
+let alternatingSegments=[];
+function saveActiveTraceSegment(){
+ if(points.length<2||!Number.isFinite(measured))return false;
+ alternatingSegments.push({
+  kind:traceKind,
+  points:points.map(p=>({...p})),
+  length:measured
+ });
+ return true;
+}
+function completeAlternatingTrace(){
+ const run=currentRun(),actual=typeof window.findRun==="function"?window.findRun(run?.id):null;
+ if(!actual)return status("Run not found.");
+ const conduit=alternatingSegments.filter(s=>s.kind==="conduit");
+ const wire=alternatingSegments.filter(s=>s.kind==="wire");
+ const conduitLength=conduit.reduce((n,s)=>n+s.length,0);
+ const extraWire=wire.reduce((n,s)=>n+s.length,0);
+ if(!conduit.length&&!wire.length)return status("Click at least two points.");
+ actual.conduitLength=Math.ceil(Math.max(0,conduitLength));
+ actual.length=Math.ceil(Math.max(0,conduitLength+extraWire));
+ conduitSegments[String(run.id)]={
+  points:conduit.flatMap((s,i)=>i?s.points.slice(1):s.points),
+  length:conduitLength,
+  segments:conduit.map(s=>s.points)
+ };
+ runPaths[String(run.id)]={
+  points:wire.flatMap((s,i)=>i?s.points.slice(1):s.points),
+  length:extraWire,
+  segments:wire.map(s=>s.points)
+ };
+ try{
+  window.captureRunsHistory?.("Photo-measured Q/G route");
+  window.saveRunsDraft?.();
+  window.refreshRunsBOM?.();
+  window.renderRunsModal?.();
+ }catch(e){status("Could not refresh Runs: "+e.message);return;}
+ tracing=false;points=[];hover=null;measured=null;traceKind="wire";
+ alternatingSegments=[];cacheSettings();label();draw();
+ status("Saved conduit: "+actual.conduitLength+" ft, wire: "+actual.length+" ft.");
+ showMaterials();
+}
 function toggleTrace(kind="wire"){
  if(!image)return status("Upload a photo first.");
  if(!calibration)return status("Calibrate the reference rectangle first.");
+ if(materialsMode)return;
  if(tracing){
-  if(traceKind!==kind){
-   if(traceKind==="conduit"&&kind==="wire"&&points.length>=2){
-    toggleTrace("conduit");
-   }else{tracing=false;points=[];hover=null;measured=null;}
-   if(tracing)return;
-   return toggleTrace(kind);
-  }
   if(points.length<2)return status("Click at least two points.");
-  tracing=false;
-  if(kind==="conduit"){
-   const run=currentRun(),actual=typeof window.findRun==="function"?window.findRun(run?.id):null;
-   if(!actual)return status("Run not found.");
-   conduitSegments[String(run.id)]={points:points.map(p=>({...p})),length:measured};
-   actual.conduitLength=Math.ceil(Math.max(0,measured));
-   // Q-only remains useful: wires follow the conduit until an extra G segment is added.
-   actual.length=actual.conduitLength;
-   window.captureRunsHistory?.("Photo-measured conduit");
-   window.saveRunsDraft?.();window.refreshRunsBOM?.();window.renderRunsModal?.();
-   points=[];hover=null;measured=null;traceKind="wire";label();draw();cacheSettings();
-   status("Q conduit saved: "+actual.conduitLength+" ft. Press G or click the mode indicator for additional wire.");
-  }else confirm();
+  const lastPoint={...points[points.length-1]};
+  if(!saveActiveTraceSegment())return;
+  if(traceKind===kind){
+   completeAlternatingTrace();
+   return;
+  }
+  // The last point of Q becomes the first point of G (and vice versa).
+  traceKind=kind;
+  points=[lastPoint];hover=null;measured=0;tracing=true;
+  label();draw();cacheSettings();
+  status((kind==="conduit"?"Q conduit":"G extra wire")+" active. Continue from the shared endpoint.");
   return;
  }
- if(kind==="wire"&&points.length>=2)return status("Wire trace already plotted. Use Remeasure Current Run to replace.");
+ alternatingSegments=[];
  points=[];hover=null;measured=null;traceKind=kind;tracing=true;label();draw();
  status((kind==="conduit"?"BLUE Q conduit":"ORANGE G additional wire")+" tracing: click points, then press "+(kind==="conduit"?"Q":"G")+" to finish.");
 }
@@ -441,10 +475,10 @@ host.innerHTML=`<style>
  <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><span class="pm-heading">CONDUIT</span><div id="pm-conduit-name" style="font-size:14px;overflow-wrap:anywhere;margin-bottom:8px"></div><div class="pm-conduit-sizes"><label><input type="checkbox" id="pm-conduit-size-1" checked> 1&quot;</label><label><input type="checkbox" id="pm-conduit-size-2" checked> 2&quot;</label><label><input type="checkbox" id="pm-conduit-size-all"> Other sizes</label></div><div id="pm-conduit-grid" class="pm-conduit-scroll"></div><button type="button" id="pm-conduit-clear">Clear conduit</button></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div class="pm-size-controls pm-size-chips" role="group" aria-label="Fittings size"><label class="pm-size-chip"><input type="checkbox" id="pm-size-1" checked> <span>1&quot;</span></label><label class="pm-size-chip"><input type="checkbox" id="pm-size-2"> <span>2&quot;</span></label></div><div id="pm-fitting-grid" class="pm-fitting-grid"></div><div class="pm-group pm-summary-group"><div class="pm-summary-heading"><span class="pm-heading">MATERIAL SUMMARY</span><small id="pm-summary-count">0 items</small></div><div id="pm-material-summary" class="pm-summary-list"></div></div></aside>
 </div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{closeConduitTable();materialsMode=false;host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
- corners=[];calibration=null;runPaths={};conduitSegments={};runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
+ corners=[];calibration=null;runPaths={};conduitSegments={};alternatingSegments=[];runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
  try{await cachePhoto(f);status("Photo attached to local cache for this project. Set the reference rectangle.");}
  catch(err){console.warn("Photo cache unavailable",err);status("Photo loaded, but local cache failed: "+err.message);}
-};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;cacheSettings();status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw();cacheSettings()};$("pm-right").onclick=()=>{transform.rotation+=90;draw();cacheSettings()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{points=[];hover=null;measured=null;tracing=false;delete runPaths[String(currentRun()?.id)];delete conduitSegments[String(currentRun()?.id)];traceKind="wire";cacheSettings();mode="measure";label();draw();status("Press Q to start the conduit trace.")};$("pm-mode-indicator").onclick=()=>toggleTrace(tracing&&traceKind==="conduit"?"wire":tracing&&traceKind==="wire"?"conduit":"conduit");$("pm-confirm").onclick=()=>{if(tracing)toggleTrace(traceKind);else confirm();};$("pm-material-done").onclick=closeMaterials;["1","2"].forEach(size=>{$("pm-size-"+size).onchange=()=>{const other=size==="1"?"2":"1";$("pm-size-"+size).checked=true;$("pm-size-"+other).checked=false;fittingSizes=[size+'"'];showFittings();};});$("pm-edit-materials").onclick=showMaterials;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}cacheSettings()};$("pm-height").onchange=$("pm-width").onchange;["pm-width-unit","pm-height-unit"].forEach(id=>{$(id).onchange=$("pm-width").onchange;});canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q for conduit or G for extra wire.");return;}points.push(q);measure();rememberRun();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};restoreSettings();restoreRun();loadCalibrationPresets();requestAnimationFrame(draw);
+};$("pm-cal").onclick=()=>{mode="calibrate";corners=[];calibration=null;points=[];tracing=false;measured=null;cacheSettings();status("Click reference corners in order: top-left, top-right, bottom-right, bottom-left.");draw()};$("pm-fit").onclick=fit;$("pm-left").onclick=()=>{transform.rotation-=90;draw();cacheSettings()};$("pm-right").onclick=()=>{transform.rotation+=90;draw();cacheSettings()};$("pm-prev").onclick=()=>setRun(runIndex-1);$("pm-skip").onclick=()=>setRun(runIndex+1);$("pm-remeasure").onclick=()=>{alternatingSegments=[];points=[];hover=null;measured=null;tracing=false;delete runPaths[String(currentRun()?.id)];delete conduitSegments[String(currentRun()?.id)];traceKind="wire";cacheSettings();mode="measure";label();draw();status("Press Q to start the conduit trace.")};$("pm-mode-indicator").onclick=()=>toggleTrace(tracing&&traceKind==="conduit"?"wire":tracing&&traceKind==="wire"?"conduit":"conduit");$("pm-confirm").onclick=()=>{if(tracing)toggleTrace(traceKind);else confirm();};$("pm-material-done").onclick=closeMaterials;["1","2"].forEach(size=>{$("pm-size-"+size).onchange=()=>{const other=size==="1"?"2":"1";$("pm-size-"+size).checked=true;$("pm-size-"+other).checked=false;fittingSizes=[size+'"'];showFittings();};});$("pm-edit-materials").onclick=showMaterials;$("pm-width").onchange=()=>{if(corners.length===4)try{calibrate()}catch(e){status(e.message)}cacheSettings()};$("pm-height").onchange=$("pm-width").onchange;["pm-width-unit","pm-height-unit"].forEach(id=>{$(id).onchange=$("pm-width").onchange;});canvas.onpointerdown=e=>{if(!image)return;const p={x:e.offsetX,y:e.offsetY};if(pan||e.button===1){drag={x:p.x,y:p.y,tx:transform.x,ty:transform.y};canvas.setPointerCapture(e.pointerId);return}const q=unposition(p);if(mode==="calibrate"){if(corners.length===4)corners=[];corners.push(q);if(corners.length===4)try{calibrate()}catch(err){status(err.message)}else status("Corner "+corners.length+"/4 selected.");}else{if(!tracing){status("Press Q for conduit or G for extra wire.");return;}points.push(q);measure();rememberRun();}draw()};canvas.onpointermove=e=>{if(!drag){if(image&&points.length>=1&&tracing&&mode==="measure"){hover=unposition({x:e.offsetX,y:e.offsetY});draw()}return;}const x=e.offsetX,y=e.offsetY;transform.x=drag.tx+x-drag.x;transform.y=drag.ty+y-drag.y;draw();return};canvas.onpointerup=()=>{drag=null};canvas.onwheel=e=>{e.preventDefault();transform.scale=Math.max(0.01,Math.min(100,transform.scale*(e.deltaY<0?1.1:1/1.1)));draw()};restoreSettings();restoreRun();loadCalibrationPresets();requestAnimationFrame(draw);
  readCachedPhoto().then(entry=>{
   if(!host||image||!entry?.blob)return;
   loadPhotoBlob(entry.blob,entry.name||"cached photo");
