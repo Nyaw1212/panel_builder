@@ -64,7 +64,7 @@ const FITTING_MATRIX_ROWS = [
     { key: "CONNECTOR", label: "Connector", match: node => node === "CONNECTOR" },
     { key: "COUPLING", label: "Coupling", match: node => node === "COUPLING" },
     { key: "ELBOW", label: "Elbow 90", match: (node, desc) => node === "ELBOW" && /90/.test(desc) },
-    { key: "OFFSET", label: "Offset", match: (node, desc) => node === "NIPPLE" && /OFFSET/.test(desc) },
+    { key: "OFFSET", label: "Offset", match: (node, desc) => node === "OFFSET" || (node === "NIPPLE" && /OFFSET/.test(desc)) },
     { key: "NIPPLE", label: "Nipple", match: (node, desc) => node === "NIPPLE" && !/OFFSET/.test(desc) },
     { key: "ADAPTER", label: "Adapter", match: node => node === "ADAPTER" },
     { key: "LB", label: "LB", match: node => node === "LB" },
