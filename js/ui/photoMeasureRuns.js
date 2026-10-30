@@ -267,6 +267,50 @@ function openConduitTable(runId,conduits) {
  });
 }
 const nippleDropdownSelections=Object.create(null);
+function openNippleSelectionModal(materials,runId){
+ const api=window.photoRunMaterialsAPI;
+ if(!api||!materials.length)return;
+ document.getElementById("pm-nipple-modal")?.remove();
+ const overlay=document.createElement("div");
+ overlay.id="pm-nipple-modal";
+ overlay.className="pm-nipple-modal-overlay";
+ overlay.innerHTML='<div class="pm-nipple-modal-dialog" role="dialog" aria-modal="true" aria-label="Choose nipple lengths"><div class="pm-nipple-modal-head"><strong>Choose Nipple Lengths</strong><button type="button" class="pm-nipple-modal-close" aria-label="Close">×</button></div><p>Click a material to add 1. Click again to increase quantity.</p><div class="pm-nipple-modal-list"></div><div class="pm-nipple-modal-foot"><button type="button" class="pm-nipple-modal-done">Done</button></div></div>';
+ document.body.appendChild(overlay);
+ const list=overlay.querySelector(".pm-nipple-modal-list");
+ let changed=false;
+ const close=()=>{
+  document.removeEventListener("keydown",onKey);
+  overlay.remove();
+  if(changed)preserveMaterialsScroll(async()=>{await showFittings();renderPhotoMaterialSummary();});
+ };
+ const onKey=e=>{if(e.key==="Escape"){e.stopPropagation();close();}};
+ document.addEventListener("keydown",onKey,true);
+ overlay.querySelector(".pm-nipple-modal-close").onclick=close;
+ overlay.querySelector(".pm-nipple-modal-done").onclick=close;
+ overlay.onclick=e=>{if(e.target===overlay)close();};
+ materials.forEach(material=>{
+  const photo=photoMaterialImage(material);
+  const card=document.createElement("button");
+  card.type="button";
+  card.className="pm-nipple-choice";
+  const img=document.createElement("img");
+  img.src=photo.src;img.alt="";
+  img.dataset.driveImage=photo.drive;
+  img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";
+  img.onerror=()=>window.photoMaterialImageError(img);
+  const info=document.createElement("span");info.className="pm-nipple-choice-info";
+  const name=document.createElement("strong");name.textContent=material.CatalogNumber||"Nipple";
+  const desc=document.createElement("small");desc.textContent=material.Description||"";
+  const count=document.createElement("b");
+  const update=()=>{count.textContent="Qty "+api.getFittingQty(runId,material);};
+  update();info.append(name,desc);card.append(img,info,count);
+  card.onclick=()=>{
+   api.setFitting(runId,material,1);
+   changed=true;update();renderPhotoMaterialSummary();
+  };
+  list.appendChild(card);
+ });
+}
 async function showFittings(){
  const api=window.photoRunMaterialsAPI,run=currentRun();
  if(!api||!run)return;
@@ -281,43 +325,20 @@ async function showFittings(){
    const m=matrix.cells[ri]?.[ci];
    const variants=col.key==="NIPPLE"?(matrix.nippleOptions?.[ri]||[]):[];
    if(!m&&!variants.length)return '<td class="pm-matrix-empty">—</td>';
-   const choices=variants.length?variants:[m];
-   const key=String(run.id)+"|"+row.key+"|"+fittingSizes.slice().sort().join(",");
-   const selectedCode=nippleDropdownSelections[key];
-   const selected=choices.find(v=>String(v.CatalogNumber)===selectedCode)||m||choices[0];
+   const selected=m||variants[0];
    const index=materialCatalog.push(selected)-1;
    const qty=api.getFittingQty(run.id,selected),photo=photoMaterialImage(selected);
-   const dropdown=variants.length?`<select class="pm-nipple-select" aria-label="${escape(row.label)} nipple size and length" data-nipple-key="${escape(key)}">${choices.map(v=>`<option value="${escape(v.CatalogNumber||"")}" ${String(v.CatalogNumber)===String(selected.CatalogNumber)?"selected":""}>${escape(v.Description||v.CatalogNumber||"Nipple")} (${escape(v.CatalogNumber||"")})</option>`).join("")}</select>`:"";
-   return `<td><div class="pm-matrix-item" title="${escape(selected.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(selected.CatalogNumber||"fitting")}"><img src="${escape(photo.src)}" alt="" data-drive-image="${escape(photo.drive)}" data-fallback-stage="${photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder"}" onerror="window.photoMaterialImageError(this)"></button><div class="pm-matrix-code">${escape(selected.CatalogNumber||selected.Description||"Fitting")}</div>${dropdown}<div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
+   const nippleButton=variants.length?`<button type="button" class="pm-nipple-open" data-nipple-row="${ri}" title="Choose nipple lengths">Choose lengths ▸</button>`:"";
+   return `<td><div class="pm-matrix-item" title="${escape(selected.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" ${variants.length?`data-nipple-row="${ri}"`:""} title="${variants.length?"Choose nipple lengths":"Add one "+escape(selected.CatalogNumber||"fitting")}"><img src="${escape(photo.src)}" alt="" data-drive-image="${escape(photo.drive)}" data-fallback-stage="${photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder"}" onerror="window.photoMaterialImageError(this)"></button><div class="pm-matrix-code">${escape(selected.CatalogNumber||selected.Description||"Fitting")}</div>${nippleButton}<div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
   }).join("");
   return `<tr><th scope="row">${escape(row.label)}</th>${cells}</tr>`;
  }).join("");
  target.innerHTML=`<table class="pm-matrix"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
- target.querySelectorAll(".pm-nipple-select").forEach(select=>{
-  const item=select.closest(".pm-matrix-item");
-  if(item){
-   item.classList.add("pm-nipple-dropdown-host");
-   item.addEventListener("mouseenter",()=>{
-    if(select.options.length<=1)return;
-    const rect=item.getBoundingClientRect();
-    const width=Math.min(360,window.innerWidth-20);
-    const left=rect.right+8+width<=window.innerWidth-10?rect.right+8:Math.max(10,rect.left-width-8);
-    const estimatedHeight=Math.min(select.options.length,9)*23+14;
-    const top=Math.max(10,Math.min(rect.top,window.innerHeight-estimatedHeight-10));
-    select.style.setProperty("--pm-nipple-left",left+"px");
-    select.style.setProperty("--pm-nipple-top",top+"px");
-    select.size=Math.min(select.options.length,9);
-   });
-   item.addEventListener("mouseleave",()=>{select.size=1;});
-   select.addEventListener("blur",()=>{select.size=1;});
-  }
-  select.onchange=()=>{
-   nippleDropdownSelections[select.dataset.nippleKey]=select.value;
-   const scroll=target.scrollLeft;
-   showFittings().then(()=>{if(target.isConnected)target.scrollLeft=scroll;});
-  };
+ target.querySelectorAll(".pm-nipple-open, .pm-matrix-image[data-nipple-row]").forEach(btn=>{
+  btn.onclick=()=>openNippleSelectionModal(matrix.nippleOptions?.[Number(btn.dataset.nippleRow)]||[],run.id);
  });
   target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
+  if(btn.hasAttribute("data-nipple-row"))return;
   const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
   preserveMaterialsScroll(async()=>{
    api.setFitting(run.id,material,Number(btn.dataset.delta));
@@ -495,6 +516,22 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-matrix .pm-matrix-corner{width:92px}
 #photoMeasureModal .pm-matrix-empty{color:#8ca1b7}
 #photoMeasureModal .pm-matrix-item{display:flex;flex-direction:column;gap:3px;min-width:0}
+#photoMeasureModal .pm-nipple-open{width:100%;background:#254a6b;border:1px solid #5d91bd;border-radius:3px;color:#fff;font-size:10px;cursor:pointer;padding:3px 1px}
+.pm-nipple-modal-overlay{position:fixed;inset:0;z-index:2147483500;background:#000a;display:flex;align-items:center;justify-content:center;padding:20px}
+.pm-nipple-modal-dialog{width:min(780px,96vw);max-height:85vh;display:flex;flex-direction:column;gap:12px;background:#152238;color:#edf5ff;border:1px solid #6384ab;border-radius:9px;padding:18px;box-shadow:0 18px 60px #000b}
+.pm-nipple-modal-head{display:flex;justify-content:space-between;align-items:center;font-size:19px}
+.pm-nipple-modal-head button{background:#823044;color:white;border:0;border-radius:4px;font-size:20px;cursor:pointer}
+.pm-nipple-modal-dialog p{margin:0;color:#b8c9df;font-size:13px}
+.pm-nipple-modal-list{overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
+.pm-nipple-choice{display:flex;align-items:center;gap:9px;text-align:left;padding:9px;background:#20334d;border:1px solid #496784;border-radius:6px;color:#fff;cursor:pointer;min-width:0}
+.pm-nipple-choice:hover{border-color:#74c7ff;background:#294a68}
+.pm-nipple-choice img{width:48px;height:48px;object-fit:contain;background:white;border-radius:3px;flex:none}
+.pm-nipple-choice-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.pm-nipple-choice-info strong{font-size:14px;overflow-wrap:anywhere}
+.pm-nipple-choice-info small{font-size:12px;color:#c0d0e3}
+.pm-nipple-choice>b{font-size:12px;white-space:nowrap;color:#91e4ff}
+.pm-nipple-modal-foot{display:flex;justify-content:flex-end}
+.pm-nipple-modal-done{background:#277fbd;color:white;border:0;border-radius:5px;padding:9px 24px;cursor:pointer}
 #photoMeasureModal .pm-nipple-dropdown-host{position:relative}
 #photoMeasureModal .pm-nipple-dropdown-host:has(.pm-nipple-select:focus-within){z-index:20}
 #photoMeasureModal .pm-nipple-select[size]:not([size="1"]){position:fixed;left:var(--pm-nipple-left,50%);top:var(--pm-nipple-top,30%);width:360px;max-width:calc(100vw - 20px);z-index:2147483000;box-shadow:0 8px 22px #0009;font-size:10pt;line-height:1.45;padding:6px}
