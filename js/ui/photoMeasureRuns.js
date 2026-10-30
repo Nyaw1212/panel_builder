@@ -230,6 +230,7 @@ function openConduitTable(runId,conduits) {
   await preserveMaterialsScroll(async()=>{api.setConduit(runId,item);await showMaterials();});
  });
 }
+const nippleDropdownSelections=Object.create(null);
 async function showFittings(){
  const api=window.photoRunMaterialsAPI,run=currentRun();
  if(!api||!run)return;
@@ -243,26 +244,26 @@ async function showFittings(){
   const cells=matrix.columns.map((col,ci)=>{
    const m=matrix.cells[ri]?.[ci];
    const variants=row.key==="NIPPLE"?(matrix.nippleOptions?.[ri]||[]):[];
-   if(!m)return '<td class="pm-matrix-empty">—</td>';
-   const index=materialCatalog.push(m)-1,qty=api.getFittingQty(run.id,m),src=api.getImage(m);
-    const variantCards=variants.length>0?`<div class="pm-nipple-popover"><strong>Available nipple sizes / lengths</strong><div class="pm-nipple-variants">${variants.map(v=>{const vi=materialCatalog.push(v)-1,vq=api.getFittingQty(run.id,v),vs=api.getImage(v);return `<div class="pm-nipple-card"><button type="button" data-fit="${vi}" data-delta="1" title="${escape(v.Description||"")}">${vs?`<img src="${escape(vs)}" alt="">`:""}<strong>${escape(v.CatalogNumber||"Nipple")}</strong><span>${escape(v.Size||"")} · ${escape(v.Description||"")}</span></button><div class="pm-matrix-qty"><button data-fit="${vi}" data-delta="-1">−</button><strong>${vq}</strong><button data-fit="${vi}" data-delta="1">+</button></div></div>`}).join("")}</div></div>`:"";
-   return `<td><div class="pm-matrix-item" title="${escape(m.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(m.CatalogNumber||"fitting")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:"<span>+</span>"}</button><div class="pm-matrix-code">${escape(m.CatalogNumber||m.Description||"Fitting")}</div><div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div>${variantCards}</div></td>`;
+   if(!m&&!variants.length)return '<td class="pm-matrix-empty">—</td>';
+   const choices=variants.length?variants:[m];
+   const key=String(run.id)+"|"+row.key;
+   const selectedCode=nippleDropdownSelections[key];
+   const selected=choices.find(v=>String(v.CatalogNumber)===selectedCode)||m||choices[0];
+   const index=materialCatalog.push(selected)-1;
+   const qty=api.getFittingQty(run.id,selected),src=api.getImage(selected);
+   const dropdown=variants.length?`<select class="pm-nipple-select" aria-label="${escape(row.label)} nipple size and length" data-nipple-key="${escape(key)}">${choices.map(v=>`<option value="${escape(v.CatalogNumber||"")}" ${String(v.CatalogNumber)===String(selected.CatalogNumber)?"selected":""}>${escape(v.Description||v.CatalogNumber||"Nipple")} (${escape(v.CatalogNumber||"")})</option>`).join("")}</select>`:"";
+   return `<td><div class="pm-matrix-item" title="${escape(selected.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(selected.CatalogNumber||"fitting")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:"<span>+</span>"}</button><div class="pm-matrix-code">${escape(selected.CatalogNumber||selected.Description||"Fitting")}</div>${dropdown}<div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
   }).join("");
   return `<tr><th scope="row">${escape(row.label)}</th>${cells}</tr>`;
  }).join("");
  target.innerHTML=`<table class="pm-matrix"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
- target.querySelectorAll(".pm-matrix-item").forEach(item=>{
-   const pop=item.querySelector(".pm-nipple-popover");if(!pop)return;
-   item.classList.add("pm-has-nipple-variants");
-   // Portal the popup out of the horizontally scrolling fitting table.
-   // Otherwise its overflow clips the card, even with a large z-index.
-   host.appendChild(pop);
-   let hideTimer;
-   const show=()=>{clearTimeout(hideTimer);const rect=item.getBoundingClientRect();pop.style.display="block";const width=pop.offsetWidth,height=pop.offsetHeight;pop.style.left=Math.max(8,Math.min(innerWidth-width-8,rect.left-width-8>=8?rect.left-width-8:rect.right+8))+"px";pop.style.top=Math.max(8,Math.min(innerHeight-height-8,rect.top))+"px";};
-   const hide=()=>{hideTimer=setTimeout(()=>pop.style.display="none",180);};
-   item.addEventListener("mouseenter",show);item.addEventListener("mouseleave",hide);
-   pop.addEventListener("mouseenter",()=>clearTimeout(hideTimer));pop.addEventListener("mouseleave",hide);
-  });
+ target.querySelectorAll(".pm-nipple-select").forEach(select=>{
+  select.onchange=()=>{
+   nippleDropdownSelections[select.dataset.nippleKey]=select.value;
+   const scroll=target.scrollLeft;
+   showFittings().then(()=>{if(target.isConnected)target.scrollLeft=scroll;});
+  };
+ });
   target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
   const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
   preserveMaterialsScroll(async()=>{
@@ -437,7 +438,7 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-matrix .pm-matrix-corner{width:92px}
 #photoMeasureModal .pm-matrix-empty{color:#8ca1b7}
 #photoMeasureModal .pm-matrix-item{display:flex;flex-direction:column;gap:3px;min-width:0}
-#photoMeasureModal .pm-has-nipple-variants{cursor:default}
+#photoMeasureModal .pm-nipple-select{width:100%;min-width:0;background:#24364d;color:#fff;border:1px solid #54718e;border-radius:4px;font-size:10px;padding:3px 1px;cursor:pointer}
 #photoMeasureModal .pm-nipple-popover{display:none;position:fixed;z-index:2147483005;width:min(490px,70vw);max-height:330px;overflow:auto;background:#14243a;border:1px solid #76a9df;border-radius:8px;box-shadow:0 15px 35px #000b;padding:10px;text-align:left}
 #photoMeasureModal .pm-nipple-popover>strong{display:block;font-size:13px;margin-bottom:8px}
 #photoMeasureModal .pm-nipple-variants{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px}
