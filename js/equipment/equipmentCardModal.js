@@ -27,6 +27,8 @@ function openPanelCircuitEditor(item) {
     document.getElementById("modalFilters").style.display = "none";
     document.getElementById("equipmentFilters").style.display = "grid";
 
+    const search = document.getElementById("modalSearch");
+    if (search) search.value = "";
     buildEquipmentComponentChips();
     renderEquipmentComponents();
     modal.style.display = "flex";
@@ -226,6 +228,9 @@ function closeEquipmentCardModal() {
     //----------------------------------
 
     modal.style.display = "none";
+
+    const search = document.getElementById("modalSearch");
+    if (search) search.value = "";
 
     modal.classList.remove(
         "equipment-circuit-mode",
