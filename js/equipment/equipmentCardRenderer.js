@@ -312,8 +312,12 @@ function renderPanelSlotCell(equipment, side, index) {
     };
   }
 
+  // A normal click removes the breaker; a drag moves it instead.
+  // Suppress the synthetic click some browsers dispatch after a drag.
+  let dragged = false;
   button.draggable = true;
   button.ondragstart = event => {
+    dragged = true;
     button.classList.add("dragging");
     setPanelBreakerDragData(event, {
       kind: "installed",
@@ -335,8 +339,13 @@ function renderPanelSlotCell(equipment, side, index) {
     };
   }
 
-  button.onclick = () => {
-    selectPanelSlot(side, index);
+  button.onclick = event => {
+    if (dragged) {
+      event.preventDefault();
+      dragged = false;
+      return;
+    }
+    removeEquipmentComponent(occupant.id);
   };
 
   return button;
