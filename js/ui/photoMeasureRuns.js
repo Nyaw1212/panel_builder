@@ -254,7 +254,7 @@ function openConduitTable(runId,conduits) {
  const rows=Array.from(groups,([size,entries])=>{
   const cells=entries.map(({m,i})=>{
    const photo=photoMaterialImage(m),active=String(m.CatalogNumber||"")===selected;
-   return `<div class="pm-conduit-cell"><button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${i}" title="${escape(m.Description||"")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:""}<strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button></div>`;
+   return `<div class="pm-conduit-cell"><button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${i}" title="${escape(m.Description||"")}"><img src="${escape(photo.src)}" alt="" data-drive-image="${escape(photo.drive)}" data-fallback-stage="${photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder"}" onerror="window.photoMaterialImageError(this)"><strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button></div>`;
   }).join("");
   return `<tr><th scope="row">${escape(size)}</th><td colspan="5"><div class="pm-conduit-items">${cells}</div></td></tr>`;
  }).join("");
@@ -287,7 +287,7 @@ async function showFittings(){
    const index=materialCatalog.push(selected)-1;
    const qty=api.getFittingQty(run.id,selected),photo=photoMaterialImage(selected);
    const dropdown=variants.length?`<select class="pm-nipple-select" aria-label="${escape(row.label)} nipple size and length" data-nipple-key="${escape(key)}">${choices.map(v=>`<option value="${escape(v.CatalogNumber||"")}" ${String(v.CatalogNumber)===String(selected.CatalogNumber)?"selected":""}>${escape(v.Description||v.CatalogNumber||"Nipple")} (${escape(v.CatalogNumber||"")})</option>`).join("")}</select>`:"";
-   return `<td><div class="pm-matrix-item" title="${escape(selected.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(selected.CatalogNumber||"fitting")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:"<span>+</span>"}</button><div class="pm-matrix-code">${escape(selected.CatalogNumber||selected.Description||"Fitting")}</div>${dropdown}<div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
+   return `<td><div class="pm-matrix-item" title="${escape(selected.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(selected.CatalogNumber||"fitting")}"><img src="${escape(photo.src)}" alt="" data-drive-image="${escape(photo.drive)}" data-fallback-stage="${photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder"}" onerror="window.photoMaterialImageError(this)"></button><div class="pm-matrix-code">${escape(selected.CatalogNumber||selected.Description||"Fitting")}</div>${dropdown}<div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
   }).join("");
   return `<tr><th scope="row">${escape(row.label)}</th>${cells}</tr>`;
  }).join("");
