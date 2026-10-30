@@ -224,8 +224,8 @@ async function showMaterials(){
   if(!host||!materialsMode)return;
   const actual=api.getRun(run.id);
   const current=actual?.conduit;
-  $("pm-conduit-name").textContent=current?[current.CatalogNumber,current.Description,current.Size].filter(Boolean).join(" · "):"No conduit selected";
-  $("pm-conduit-clear").onclick=()=>preserveMaterialsScroll(async()=>{api.setConduit(run.id,null);await showMaterials();});
+
+
   openConduitTable(run.id,conduits);
   await showFittings();
   renderPhotoMaterialSummary();
@@ -270,7 +270,7 @@ function openConduitTable(runId,conduits) {
  target.querySelectorAll("[data-conduit]").forEach(btn=>btn.onclick=async()=>{
   const item=conduits[Number(btn.dataset.conduit)];
   if(!item)return;
-  await preserveMaterialsScroll(async()=>{api.setConduit(runId,item);await showMaterials();});
+  await preserveMaterialsScroll(async()=>{api.setConduit(runId,String(run.conduit?.CatalogNumber||"")===String(item.CatalogNumber||"")?null:item);await showMaterials();});
  });
 }
 const nippleDropdownSelections=Object.create(null);
@@ -604,7 +604,7 @@ host.innerHTML=`<style>
   <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASUREMENT MODE</span><button type="button" id="pm-mode-indicator" class="pm-mode-indicator pm-mode-idle" title="Click to switch between Q conduit and G wire routes">○ READY — PRESS Q OR G</button><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><span id="pm-length-summary" style="font-size:16px;color:#9bc9ee"></span><button id="pm-confirm" class="primary">Finish & Next · G / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button><button id="pm-edit-materials">Edit Conduit & Fittings</button></div>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Wheel: zoom · Q: conduit to gutter (blue) · G: extra wire (orange) · Same key: finish</span></div>
  </aside>
- <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><span class="pm-heading">CONDUIT</span><div id="pm-conduit-name" style="font-size:14px;overflow-wrap:anywhere;margin-bottom:8px"></div><div id="pm-conduit-grid" class="pm-conduit-scroll"></div><button type="button" id="pm-conduit-clear">Clear conduit</button></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div class="pm-fitting-toolbar"><div class="pm-size-controls pm-size-chips" role="group" aria-label="Fittings size"><label class="pm-size-chip"><input type="checkbox" id="pm-size-1" checked> <span>1&quot;</span></label><label class="pm-size-chip"><input type="checkbox" id="pm-size-2"> <span>2&quot;</span></label></div><div class="pm-summary-group"><div class="pm-summary-heading"><span class="pm-heading">MATERIAL SUMMARY</span><small id="pm-summary-count">0 items</small></div><div id="pm-material-summary" class="pm-summary-list"></div></div></div><div id="pm-fitting-grid" class="pm-fitting-grid"></div></aside>
+ <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><div id="pm-conduit-grid" class="pm-conduit-scroll" aria-label="Conduit selection table"></div></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div class="pm-fitting-toolbar"><div class="pm-size-controls pm-size-chips" role="group" aria-label="Fittings size"><label class="pm-size-chip"><input type="checkbox" id="pm-size-1" checked> <span>1&quot;</span></label><label class="pm-size-chip"><input type="checkbox" id="pm-size-2"> <span>2&quot;</span></label></div><div class="pm-summary-group"><div class="pm-summary-heading"><span class="pm-heading">MATERIAL SUMMARY</span><small id="pm-summary-count">0 items</small></div><div id="pm-material-summary" class="pm-summary-list"></div></div></div><div id="pm-fitting-grid" class="pm-fitting-grid"></div></aside>
 </div>`;document.body.appendChild(host);canvas=$("pm-canvas");ctx=canvas.getContext("2d");$("pm-close").onclick=()=>{closeConduitTable();materialsMode=false;host.remove();host=null;image=null;if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}};$("pm-file").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  corners=[];calibration=null;runPaths={};conduitSegments={};alternatingSegments=[];runIndex=0;cacheSettings();loadPhotoBlob(f,f.name);
