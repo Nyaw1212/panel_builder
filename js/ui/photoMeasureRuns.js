@@ -259,7 +259,7 @@ async function showFittings(){
  const rows=matrix.rows.map((row,ri)=>{
   const cells=matrix.columns.map((col,ci)=>{
    const m=matrix.cells[ri]?.[ci];
-   const variants=row.key==="NIPPLE"?(matrix.nippleOptions?.[ri]||[]):[];
+   const variants=col.key==="NIPPLE"?(matrix.nippleOptions?.[ri]||[]):[];
    if(!m&&!variants.length)return '<td class="pm-matrix-empty">—</td>';
    const choices=variants.length?variants:[m];
    const key=String(run.id)+"|"+row.key;
