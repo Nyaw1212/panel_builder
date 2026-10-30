@@ -414,6 +414,8 @@ document.addEventListener(
 
 function closeActiveModal() {
 
+    if (modalSearch) modalSearch.value = "";
+
     if (
         typeof getCurrentEquipment === "function" &&
         getCurrentEquipment() &&
@@ -1046,6 +1048,15 @@ function renderConduitPickerMatrix(list) {
 //----------------------------------
 // Search
 //----------------------------------
+
+const modalSearchClear = document.getElementById("modalSearchClear");
+if (modalSearchClear) {
+    modalSearchClear.onclick = () => {
+        modalSearch.value = "";
+        modalSearch.dispatchEvent(new Event("input", { bubbles: true }));
+        modalSearch.focus();
+    };
+}
 
 modalSearch.addEventListener(
 
