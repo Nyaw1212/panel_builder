@@ -163,7 +163,23 @@ function renderPhotoMaterialSummary(){
   const desc=document.createElement("small");desc.textContent=m.Description||"";
   info.append(code,desc);
   const qty=document.createElement("b");qty.textContent=Number(m.qty)||1;
-  row.append(info,qty);target.appendChild(row);
+  const remove=document.createElement("button");
+  remove.type="button";
+  remove.className="pm-summary-remove";
+  remove.textContent="×";
+  remove.title="Remove "+(m.CatalogNumber||"material")+" from this run";
+  remove.setAttribute("aria-label",remove.title);
+  remove.onclick=()=>preserveMaterialsScroll(async()=>{
+   if(m===items[0]&&conduit){
+    api.setConduit(run.id,null);
+    await showMaterials();
+   }else{
+    api.setFitting(run.id,m,-Number(m.qty||0));
+    await showFittings();
+   }
+   renderPhotoMaterialSummary();
+  });
+  row.append(info,qty,remove);target.appendChild(row);
  });
 }
 function preserveMaterialsScroll(task){
@@ -404,6 +420,10 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-summary-info strong{font-size:13px;overflow-wrap:anywhere}
 #photoMeasureModal .pm-summary-info small{font-size:11px;color:#a9c3db;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #photoMeasureModal .pm-summary-item>b{background:#0b536b;color:#8fe5ff;padding:5px 8px;border-radius:4px;font-size:18px}
+#photoMeasureModal .pm-summary-item{position:relative;padding-right:22px}
+#photoMeasureModal .pm-summary-remove{position:absolute;top:2px;right:2px;width:17px;height:17px;padding:0;border:0;border-radius:3px;background:#762d3a;color:#fff;font-size:15px;line-height:15px;cursor:pointer}
+#photoMeasureModal .pm-summary-remove:hover{background:#dc3545}
+
 
 #photoMeasureModal #pm-conduit{width:100%;padding:10px;background:#0e1726;color:white;border:1px solid #4b617d;font-size:16px}
 #photoMeasureModal #pm-calipreset{width:100%;background:#24364d;color:#f1f5f9;border:1px solid #536b88;border-radius:5px;padding:7px;font-weight:700}\n#photoMeasureModal .pm-unit-field{display:flex;gap:6px;align-items:stretch}
