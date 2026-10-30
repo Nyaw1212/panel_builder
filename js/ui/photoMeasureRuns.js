@@ -143,6 +143,25 @@ function measure(){
  }catch(e){measured=null;status(e.message)}
 }
 function setRun(i){alternatingSegments=[];if(materialsMode){materialsMode=false;if($("pm-materials"))$("pm-materials").style.display="none";}runIndex=Math.max(0,Math.min(runs.length-1,i));restoreRun();cacheSettings();status(points.length?"Restored measured path. Press Q to remeasure.":"Press Q to start tracing this run.");}
+function photoMaterialImage(material){
+ const catalog=String(material?.CatalogNumber||"").trim();
+ const local=catalog?"images/materials/"+encodeURIComponent(catalog)+".png":"";
+ const driveId=String(material?.DriveFileID||"").trim();
+ const drive=driveId&&typeof getDriveImageUrl==="function"?getDriveImageUrl(driveId,400):"";
+ return {src:local||drive||"images/placeholder.png",drive};
+}
+window.photoMaterialImageError=function photoMaterialImageError(img){
+ if(!img||!img.isConnected)return;
+ if(img.dataset.fallbackStage==="local"&&img.dataset.driveImage){
+  img.dataset.fallbackStage="drive";
+  img.src=img.dataset.driveImage;
+ }else if(img.dataset.fallbackStage!=="placeholder"){
+  img.dataset.fallbackStage="placeholder";
+  img.src="images/placeholder.png";
+ }else{
+  img.onerror=null;
+ }
+}
 function renderPhotoMaterialSummary(){
  const target=$("pm-material-summary"),api=window.photoRunMaterialsAPI,run=currentRun();
  if(!target||!api||!run)return;
@@ -156,8 +175,8 @@ function renderPhotoMaterialSummary(){
  if(!items.length){target.textContent="No materials selected";return;}
  items.forEach(m=>{
   const row=document.createElement("div");row.className="pm-summary-item";
-  const src=api.getImage(m);
-  if(src){const img=document.createElement("img");img.src=src;img.alt="";img.onerror=()=>img.remove();row.appendChild(img);}
+  const photo=photoMaterialImage(m);
+  {const img=document.createElement("img");img.src=photo.src;img.alt="";img.dataset.driveImage=photo.drive;img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";img.onerror=()=>photoMaterialImageError(img);row.appendChild(img);}
   const info=document.createElement("div");info.className="pm-summary-info";
   const code=document.createElement("strong");code.textContent=m.CatalogNumber||"Material";
   const desc=document.createElement("small");desc.textContent=m.Description||"";
@@ -234,7 +253,7 @@ function openConduitTable(runId,conduits) {
  });
  const rows=Array.from(groups,([size,entries])=>{
   const cells=entries.map(({m,i})=>{
-   const src=api.getImage(m),active=String(m.CatalogNumber||"")===selected;
+   const photo=photoMaterialImage(m),active=String(m.CatalogNumber||"")===selected;
    return `<div class="pm-conduit-cell"><button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${i}" title="${escape(m.Description||"")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:""}<strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button></div>`;
   }).join("");
   return `<tr><th scope="row">${escape(size)}</th><td colspan="5"><div class="pm-conduit-items">${cells}</div></td></tr>`;
@@ -266,7 +285,7 @@ async function showFittings(){
    const selectedCode=nippleDropdownSelections[key];
    const selected=choices.find(v=>String(v.CatalogNumber)===selectedCode)||m||choices[0];
    const index=materialCatalog.push(selected)-1;
-   const qty=api.getFittingQty(run.id,selected),src=api.getImage(selected);
+   const qty=api.getFittingQty(run.id,selected),photo=photoMaterialImage(selected);
    const dropdown=variants.length?`<select class="pm-nipple-select" aria-label="${escape(row.label)} nipple size and length" data-nipple-key="${escape(key)}">${choices.map(v=>`<option value="${escape(v.CatalogNumber||"")}" ${String(v.CatalogNumber)===String(selected.CatalogNumber)?"selected":""}>${escape(v.Description||v.CatalogNumber||"Nipple")} (${escape(v.CatalogNumber||"")})</option>`).join("")}</select>`:"";
    return `<td><div class="pm-matrix-item" title="${escape(selected.Description||"")}"><button type="button" class="pm-matrix-image pm-matrix-add" data-fit="${index}" data-delta="1" title="Add one ${escape(selected.CatalogNumber||"fitting")}">${src?`<img src="${escape(src)}" alt="" onerror="this.style.display='none'">`:"<span>+</span>"}</button><div class="pm-matrix-code">${escape(selected.CatalogNumber||selected.Description||"Fitting")}</div>${dropdown}<div class="pm-matrix-qty"><button data-fit="${index}" data-delta="-1">−</button><strong>${qty}</strong><button data-fit="${index}" data-delta="1">+</button></div></div></td>`;
   }).join("");
