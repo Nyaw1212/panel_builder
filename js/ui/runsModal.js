@@ -3898,12 +3898,10 @@ window.photoRunMaterialsAPI = {
    rows:FITTING_MATRIX_COLUMNS.map(c=>({key:c.key,label:c.label})),
    columns:FITTING_MATRIX_ROWS.map(c=>({key:c.key,label:c.label})),
    cells:FITTING_MATRIX_COLUMNS.map(col=>FITTING_MATRIX_ROWS.map(row=>getFittingCandidates(materials,run,row,col,sizes)[0]||null)),
-    // Hover choices intentionally include every catalog size/length for this
-    // fitting family, not only the currently checked 1"/2" matrix filter.
+    // Keep nipple lengths grouped by the currently selected 1"/2" size.
     nippleOptions:FITTING_MATRIX_COLUMNS.map(col=>{
      const nipple=FITTING_MATRIX_ROWS.find(row=>row.key==="NIPPLE");
-     const allSizes=Array.from(new Set(materials.map(item=>String(item?.Size||"").trim()).filter(Boolean)));
-     const candidates=getFittingCandidates(materials,run,nipple,col,allSizes);
+     const candidates=getFittingCandidates(materials,run,nipple,col,sizes);
      const seen=new Set();
      return candidates.filter(item=>{
       const key=String(item?.CatalogNumber||"").trim().toUpperCase();
