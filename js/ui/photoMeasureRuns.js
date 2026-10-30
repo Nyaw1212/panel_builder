@@ -308,7 +308,15 @@ async function showFittings(){
   if(item){
    item.classList.add("pm-nipple-dropdown-host");
    item.addEventListener("mouseenter",()=>{
-    if(select.options.length>1)select.size=Math.min(select.options.length,9);
+    if(select.options.length<=1)return;
+    const rect=item.getBoundingClientRect();
+    const width=Math.min(360,window.innerWidth-20);
+    const left=rect.right+8+width<=window.innerWidth-10?rect.right+8:Math.max(10,rect.left-width-8);
+    const estimatedHeight=Math.min(select.options.length,9)*23+14;
+    const top=Math.max(10,Math.min(rect.top,window.innerHeight-estimatedHeight-10));
+    select.style.setProperty("--pm-nipple-left",left+"px");
+    select.style.setProperty("--pm-nipple-top",top+"px");
+    select.size=Math.min(select.options.length,9);
    });
    item.addEventListener("mouseleave",()=>{select.size=1;});
    select.addEventListener("blur",()=>{select.size=1;});
@@ -499,7 +507,7 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-matrix-item{display:flex;flex-direction:column;gap:3px;min-width:0}
 #photoMeasureModal .pm-nipple-dropdown-host{position:relative}
 #photoMeasureModal .pm-nipple-dropdown-host:has(.pm-nipple-select:focus-within){z-index:20}
-#photoMeasureModal .pm-nipple-select[size]:not([size="1"]){position:absolute;left:0;top:100%;width:max(190px,100%);max-width:300px;z-index:40;box-shadow:0 8px 22px #0009}
+#photoMeasureModal .pm-nipple-select[size]:not([size="1"]){position:fixed;left:var(--pm-nipple-left,50%);top:var(--pm-nipple-top,30%);width:360px;max-width:calc(100vw - 20px);z-index:2147483000;box-shadow:0 8px 22px #0009;font-size:10pt;line-height:1.45;padding:6px}
 #photoMeasureModal .pm-nipple-select{width:100%;min-width:0;background:#24364d;color:#fff;border:1px solid #54718e;border-radius:4px;font-size:10px;padding:3px 1px;cursor:pointer}
 #photoMeasureModal .pm-nipple-popover{display:none;position:fixed;z-index:2147483005;width:min(490px,70vw);max-height:330px;overflow:auto;background:#14243a;border:1px solid #76a9df;border-radius:8px;box-shadow:0 15px 35px #000b;padding:10px;text-align:left}
 #photoMeasureModal .pm-nipple-popover>strong{display:block;font-size:13px;margin-bottom:8px}
