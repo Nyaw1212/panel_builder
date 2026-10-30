@@ -337,7 +337,7 @@ async function showFittings(){
  target.querySelectorAll(".pm-nipple-open, .pm-matrix-image[data-nipple-row]").forEach(btn=>{
   btn.onclick=()=>openNippleSelectionModal(matrix.nippleOptions?.[Number(btn.dataset.nippleRow)]||[],run.id);
  });
-  target.querySelectorAll("[data-fit]").forEach(btn=>btn.onclick=()=>{
+  target.querySelectorAll("[data-fit]:not([data-nipple-row])").forEach(btn=>btn.onclick=()=>{
   if(btn.hasAttribute("data-nipple-row"))return;
   const material=materialCatalog[Number(btn.dataset.fit)];if(!material)return;
   preserveMaterialsScroll(async()=>{
