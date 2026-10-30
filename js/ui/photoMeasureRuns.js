@@ -515,6 +515,7 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-conduit-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:6px;min-width:0}\n#photoMeasureModal .pm-conduit-cell{min-width:0}\n#photoMeasureModal .pm-conduit-scroll{max-height:350px;overflow:auto;border:1px solid #334155}\n#photoMeasureModal .pm-conduit-table{table-layout:auto}\n#photoMeasureModal .pm-conduit-table tbody th{width:55px;min-width:55px}\n#photoMeasureModal .pm-conduit-matrix{width:100%;table-layout:fixed}
 #photoMeasureModal .pm-conduit-matrix thead th:first-child,#photoMeasureModal .pm-conduit-matrix tbody th{width:48px}
 #photoMeasureModal .pm-conduit-matrix td{width:calc((100% - 48px)/3)}
+#photoMeasureModal .pm-conduit-matrix tbody th{font-size:24pt;font-weight:700;line-height:1.15;text-align:center;vertical-align:middle}
 #photoMeasureModal .pm-conduit-matrix .pm-conduit-items{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
 #photoMeasureModal .pm-conduit-matrix .pm-conduit-option{width:110px;max-width:100%}
 #photoMeasureModal .pm-conduit-empty{color:#8495ad;display:block;text-align:center;padding:20px 0}
