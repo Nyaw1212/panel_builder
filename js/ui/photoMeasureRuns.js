@@ -244,22 +244,33 @@ function openConduitTable(runId,conduits) {
  if(!target||!api||!run)return;
  const selected=String(run.conduit?.CatalogNumber||"");
  const enabled=new Set(["1","2","all"].filter(key=>$("pm-conduit-size-"+key)?.checked));
+ const families=["EMT","PVC","LT"];
  const groups=new Map();
  conduits.forEach((m,i)=>{
-  const group=String(m.Size||"Other size").trim()||"Other size";
-  const key=group.replace(/\s/g,"").replace(/"/g,"");
+  const size=String(m.Size||"Other size").trim()||"Other size";
+  const key=size.replace(/\\s/g,"").replace(/"/g,"");
   if(!(enabled.has(key)||(key!=="1"&&key!=="2"&&enabled.has("all"))))return;
-  if(!groups.has(group))groups.set(group,[]);
-  groups.get(group).push({m,i});
+  const family=String(m.Color||"").trim().toUpperCase();
+  if(!families.includes(family))return;
+  if(!groups.has(size))groups.set(size,new Map());
+  const columns=groups.get(size);
+  if(!columns.has(family))columns.set(family,[]);
+  columns.get(family).push({m,i});
  });
- const rows=Array.from(groups,([size,entries])=>{
-  const cells=entries.map(({m,i})=>{
-   const photo=photoMaterialImage(m),active=String(m.CatalogNumber||"")===selected;
-   return `<div class="pm-conduit-cell"><button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${i}" title="${escape(m.Description||"")}"><img src="${escape(photo.src)}" alt="" data-drive-image="${escape(photo.drive)}" data-fallback-stage="${photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder"}" onerror="window.photoMaterialImageError(this)"><strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button></div>`;
+ const sizes=Array.from(groups.keys()).sort((a,b)=>Number(a)-Number(b)||a.localeCompare(b));
+ const rows=sizes.map(size=>{
+  const columns=groups.get(size);
+  const cells=families.map(family=>{
+   const entries=columns.get(family)||[];
+   const cards=entries.map(({m,i})=>{
+    const photo=photoMaterialImage(m),active=String(m.CatalogNumber||"")===selected;
+    return `<button type="button" class="pm-conduit-option${active?" selected":""}" data-conduit="${i}" title="${escape(m.Description||"")}"><img src="${escape(photo.src)}" alt="" data-drive-image="${escape(photo.drive)}" data-fallback-stage="${photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder"}" onerror="window.photoMaterialImageError(this)"><strong>${escape(m.CatalogNumber||"Conduit")}</strong><span>${escape(m.Description||"")}</span>${active?'<em>Selected</em>':""}</button>`;
+   }).join("");
+   return `<td><div class="pm-conduit-items">${cards||'<span class="pm-conduit-empty">—</span>'}</div></td>`;
   }).join("");
-  return `<tr><th scope="row">${escape(size)}</th><td colspan="5"><div class="pm-conduit-items">${cells}</div></td></tr>`;
+  return `<tr><th scope="row">${escape(size)}</th>${cells}</tr>`;
  }).join("");
- target.innerHTML=`<table class="pm-conduit-table"><thead><tr><th>SIZE</th><th>CONDUIT MATERIALS · CLICK TO SELECT</th></tr></thead><tbody>${rows||'<tr><td colspan="2">No conduit matches these size filters.</td></tr>'}</tbody></table>`;
+ target.innerHTML=`<table class="pm-conduit-table pm-conduit-matrix"><thead><tr><th>SIZE</th><th>EMT</th><th>PVC</th><th>LT</th></tr></thead><tbody>${rows||'<tr><td colspan="4">No conduit matches these size filters.</td></tr>'}</tbody></table>`;
  target.querySelectorAll("[data-conduit]").forEach(btn=>btn.onclick=async()=>{
   const item=conduits[Number(btn.dataset.conduit)];
   if(!item)return;
@@ -501,7 +512,13 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-conduit-table th,#photoMeasureModal .pm-conduit-table td{border:1px solid #334155;padding:6px;vertical-align:top}
 #photoMeasureModal .pm-conduit-table th{background:#1b3049;font-size:12px}
 #photoMeasureModal .pm-conduit-table tbody th{width:90px}
-#photoMeasureModal .pm-conduit-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:6px;min-width:0}\n#photoMeasureModal .pm-conduit-cell{min-width:0}\n#photoMeasureModal .pm-conduit-scroll{max-height:350px;overflow:auto;border:1px solid #334155}\n#photoMeasureModal .pm-conduit-table{table-layout:auto}\n#photoMeasureModal .pm-conduit-table tbody th{width:55px;min-width:55px}\n#photoMeasureModal .pm-conduit-option{width:100%;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px;border:1px solid #344862;border-radius:5px;background:#1a2940;color:#e2e8f0;cursor:pointer}
+#photoMeasureModal .pm-conduit-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:6px;min-width:0}\n#photoMeasureModal .pm-conduit-cell{min-width:0}\n#photoMeasureModal .pm-conduit-scroll{max-height:350px;overflow:auto;border:1px solid #334155}\n#photoMeasureModal .pm-conduit-table{table-layout:auto}\n#photoMeasureModal .pm-conduit-table tbody th{width:55px;min-width:55px}\n#photoMeasureModal .pm-conduit-matrix{width:100%;table-layout:fixed}
+#photoMeasureModal .pm-conduit-matrix thead th:first-child,#photoMeasureModal .pm-conduit-matrix tbody th{width:48px}
+#photoMeasureModal .pm-conduit-matrix td{width:calc((100% - 48px)/3)}
+#photoMeasureModal .pm-conduit-matrix .pm-conduit-items{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+#photoMeasureModal .pm-conduit-matrix .pm-conduit-option{width:110px;max-width:100%}
+#photoMeasureModal .pm-conduit-empty{color:#8495ad;display:block;text-align:center;padding:20px 0}
+#photoMeasureModal .pm-conduit-option{width:100%;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px;border:1px solid #344862;border-radius:5px;background:#1a2940;color:#e2e8f0;cursor:pointer}
 #photoMeasureModal .pm-conduit-option:hover,#photoMeasureModal .pm-conduit-option.selected{border-color:#60a5fa;background:#25415e}
 #photoMeasureModal .pm-conduit-option img{width:100%;height:55px;object-fit:contain;background:#eef2f7;border-radius:3px}
 #photoMeasureModal .pm-conduit-option strong{font-size:12px;overflow-wrap:anywhere}
