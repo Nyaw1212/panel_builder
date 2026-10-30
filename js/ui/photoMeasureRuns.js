@@ -176,7 +176,7 @@ function renderPhotoMaterialSummary(){
  items.forEach(m=>{
   const row=document.createElement("div");row.className="pm-summary-item";
   const photo=photoMaterialImage(m);
-  {const img=document.createElement("img");img.src=photo.src;img.alt="";img.dataset.driveImage=photo.drive;img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";img.onerror=()=>photoMaterialImageError(img);row.appendChild(img);}
+  {const img=document.createElement("img");img.src=photo.src;img.alt="";img.dataset.driveImage=photo.drive;img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";img.onerror=()=>window.photoMaterialImageError(img);row.appendChild(img);}
   const info=document.createElement("div");info.className="pm-summary-info";
   const code=document.createElement("strong");code.textContent=m.CatalogNumber||"Material";
   const desc=document.createElement("small");desc.textContent=m.Description||"";
