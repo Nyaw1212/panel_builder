@@ -3914,7 +3914,11 @@ window.photoRunMaterialsAPI = {
 
  async listConduits(){
   const materials=typeof getMaterials==="function"?await getMaterials():[];
-  return (Array.isArray(materials)?materials:[]).filter(m=>String(m?.NodeType||"").toUpperCase()==="PIPE"||(String(m?.Color||"").toUpperCase()==="LT"&&String(m?.Description||"").toUpperCase().includes("MET L/T")));
+  return (Array.isArray(materials)?materials:[]).filter(m=>{
+   const nodeType=String(m?.NodeType||"").trim().toUpperCase();
+   const family=String(m?.Color||"").trim().toUpperCase();
+   return nodeType==="PIPE"&&["EMT","PVC","LT"].includes(family);
+  });
  },
  async listFittings(runId){
   const run=findRun(runId);if(!run)return [];
