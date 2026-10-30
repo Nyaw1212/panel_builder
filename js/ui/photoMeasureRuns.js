@@ -219,7 +219,18 @@ async function showMaterials(){
  $("pm-material-title").textContent="Run "+(runIndex+1)+" · Conduit & Fittings";
  $("pm-material-status").textContent="Loading materials…";
  try{
-  const conduits=await api.listConduits();
+  const allConduits=await api.listConduits();
+  // Limit the Photo Measure conduit picker to EMT, PVC and liquidtight.
+  // Keep all catalog variants within those families.
+  const conduits=allConduits.filter(m=>{
+   const code=String(m?.CatalogNumber||"").trim().toUpperCase();
+   const description=String(m?.Description||"").toUpperCase();
+   const color=String(m?.Color||"").trim().toUpperCase();
+   return /^EMT(?:\\d|[-_]|$)/.test(code)
+    || /^PVC(?:\\d|[-_]|$)/.test(code)
+    || /^LT(?:\\d|[-_]|$)/.test(code)
+    || color==="LT" || /LIQUID\\s*TIGHT|LIQUIDTIGHT/.test(description);
+  });
   if(!host||!materialsMode)return;
   const actual=api.getRun(run.id);
   const current=actual?.conduit;
