@@ -329,6 +329,28 @@ async function showFittings(){
  const comboPanel=document.createElement("div");
  comboPanel.className="pm-combo-panel";
  comboPanel.innerHTML='<div class="pm-combo-title"><strong>Combo Fittings</strong><button type="button" class="pm-combo-new">+ Create Combo</button></div><div class="pm-combo-list"></div><div class="pm-combo-editor" hidden></div>';
+ const strapSettings=document.createElement("div");strapSettings.className="pm-holestrap-settings";
+ strapSettings.innerHTML='<div class="pm-holestrap-heading"><strong>HOLESTRAP · Automatic Conduit Straps</strong><label><input type="checkbox" data-strap="enabled"> Enabled</label></div><div class="pm-holestrap-fields"><label>Every <input type="number" data-strap="interval" min="0.1" step="0.5"> ft = 1 strap</label><label>1″ strap <select data-strap="one"></select></label><label>2″ strap <select data-strap="two"></select></label></div><small>Default: 922S for 1″; 1906 for 2″. 2150 is available as a 2″ alternative. Updates run fittings and BOM when conduit length changes.</small>';
+ comboPanel.prepend(strapSettings);
+ const strapConfig=window.getHoleStrapSettings?.()||{enabled:true,feetPerStrap:5,bySize:{"1":"922S","2":"1906"}};
+ const strapField=k=>strapSettings.querySelector('[data-strap="'+k+'"]');
+ strapField("enabled").checked=strapConfig.enabled!==false;
+ strapField("interval").value=strapConfig.feetPerStrap||5;
+ const strapOptions=[["922S",'922S · 1″ One Hole EMT Strap'],["1906",'1906 · 2″ Two Hole Rigid Strap'],["2150",'2150 · 2″ EMT/Rigid Hanger']];
+ const buildStrapSelect=(field,selected)=>{
+  const select=strapField(field);
+  strapOptions.forEach(([code,label])=>{const opt=document.createElement("option");opt.value=code;opt.textContent=label;select.append(opt);});
+  select.value=selected;
+ };
+ buildStrapSelect("one",strapConfig.bySize?.["1"]||"922S");
+ buildStrapSelect("two",strapConfig.bySize?.["2"]||"1906");
+ const saveStrapSettings=()=>{
+  const interval=Number(strapField("interval").value);
+  if(!Number.isFinite(interval)||interval<=0){alert("Feet per strap must be greater than zero.");return;}
+  window.saveHoleStrapSettings?.({enabled:strapField("enabled").checked,feetPerStrap:interval,bySize:{"1":strapField("one").value,"2":strapField("two").value}});
+  renderPhotoMaterialSummary();
+ };
+ ["enabled","interval","one","two"].forEach(k=>strapField(k).addEventListener("change",saveStrapSettings));
  const comboList=comboPanel.querySelector(".pm-combo-list");
  const comboEditor=comboPanel.querySelector(".pm-combo-editor");
  const comboKey="panel-builder-fitting-combos-v1";
@@ -727,6 +749,13 @@ host.innerHTML=`<style>
 .pm-combo-workspace-footer button{border:1px solid #6685a5;border-radius:5px;background:#2b4867;color:white;padding:10px;cursor:pointer}
 .pm-combo-workspace-footer .pm-combo-save{background:#237db7;border-color:#4ca6df}
 @media(max-width:760px){.pm-combo-workspace-body{grid-template-columns:minmax(0,1fr)}.pm-combo-builder{border-left:0;border-top:1px solid #405976;max-height:42vh}}
+#photoMeasureModal .pm-holestrap-settings{border:1px solid #4b7396;border-radius:6px;background:#1a324a;padding:12px;margin-bottom:12px}
+#photoMeasureModal .pm-holestrap-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#photoMeasureModal .pm-holestrap-fields{display:flex;flex-wrap:wrap;gap:12px;margin:10px 0}
+#photoMeasureModal .pm-holestrap-fields label{display:flex;align-items:center;gap:6px;font-size:12px}
+#photoMeasureModal .pm-holestrap-fields input{width:65px}
+#photoMeasureModal .pm-holestrap-fields select,#photoMeasureModal .pm-holestrap-fields input{background:#0e2034;border:1px solid #5b83a7;border-radius:4px;color:white;padding:6px}
+#photoMeasureModal .pm-holestrap-settings small{color:#afc7de}
 #photoMeasureModal .pm-combo-new{margin-left:auto;background:#237fbb;border:1px solid #80c3f2;color:white;padding:7px 12px;border-radius:5px;cursor:pointer}
 #photoMeasureModal .pm-combo-thumbnails{display:flex;flex-wrap:wrap;gap:9px;margin:4px 0}
 #photoMeasureModal .pm-combo-thumbnail{display:flex;align-items:center;gap:6px;background:#14253a;border:1px solid #466484;border-radius:5px;padding:5px 9px}
