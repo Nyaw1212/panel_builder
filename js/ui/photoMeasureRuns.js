@@ -542,6 +542,7 @@ async function showFittings(){
     const code=input.value.trim().toLowerCase();
     if(!code)return;
     if(!/^[a-z][a-z0-9_-]*$/.test(code)){invalid=true;return;}
+    if(next[code]&&next[code]!==material){invalid=true;return;}
     next[code]=material;
    });
    if(invalid){alert("Codes must start with a letter and use only letters, numbers, - or _.");return;}
@@ -552,7 +553,7 @@ async function showFittings(){
  };
  fastPanel.querySelector(".pm-fast-settings-button").onclick=openFastEditor;
  const addFast=async()=>{
-  const tokens=fastInput.value.toLowerCase().trim().split(/[\\s,]+/).filter(Boolean);
+  const tokens=fastInput.value.toLowerCase().trim().split(/[\s,]+/).filter(Boolean);
   if(!tokens.length)return;
   const defs=loadFast(),catalog=await getFastCatalog();
   const lookup=new Map(catalog.map(m=>[String(m.CatalogNumber).trim().toUpperCase(),m]));
