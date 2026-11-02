@@ -1783,7 +1783,40 @@ function captureRunsHistory(label) {
 
 }
 
+const HOLESTRAP_SETTINGS_KEY="panel-builder-holestrap-settings-v1";
+function getHoleStrapSettings(){
+    const defaults={enabled:true,feetPerStrap:5,bySize:{"1":"922S","2":"1906"}};
+    try{
+        const saved=JSON.parse(localStorage.getItem(HOLESTRAP_SETTINGS_KEY)||"{}");
+        return {...defaults,...saved,bySize:{...defaults.bySize,...(saved.bySize||{})}};
+    }catch{return defaults;}
+}
+function syncHoleStrapFittings(){
+    const settings=getHoleStrapSettings();
+    const materials=typeof getMaterials==="function"?getMaterials():[];
+    if(!Array.isArray(materials))return;
+    const catalog=new Map(materials.map(m=>[String(m?.CatalogNumber||"").trim().toUpperCase(),m]));
+    getEditableRuns().forEach(run=>{
+        const fittings=getRunFittings(run);
+        // Only replace entries created by this automatic rule. Manual fittings remain untouched.
+        for(let i=fittings.length-1;i>=0;i--)if(fittings[i]?._autoHoleStrap)fittings.splice(i,1);
+        const size=String(run?.conduit?.Size||"").trim().replace(/["″\\s]/g,"");
+        const code=String(settings.bySize?.[size]||"").trim().toUpperCase();
+        const feet=Number(run?.conduitLength??run?.length??0);
+        const interval=Number(settings.feetPerStrap);
+        if(!settings.enabled||!run?.conduit||!code||!Number.isFinite(feet)||feet<=0||!Number.isFinite(interval)||interval<=0)return;
+        const material=catalog.get(code);
+        if(!material)return;
+        fittings.push({...structuredClone(material),qty:Math.ceil(feet/interval),_autoHoleStrap:true});
+    });
+}
+window.getHoleStrapSettings=getHoleStrapSettings;
+window.saveHoleStrapSettings=value=>{
+    localStorage.setItem(HOLESTRAP_SETTINGS_KEY,JSON.stringify(value));
+    refreshRunsBOM();
+};
 function refreshRunsBOM() {
+    syncHoleStrapFittings();
 
     if (typeof renderBOM === "function") {
         renderBOM();
@@ -2314,7 +2347,7 @@ function getFittingQuantity(run, material) {
     const catalog = String(material?.CatalogNumber || "");
 
     return getRunFittings(run).find(fitting =>
-        String(fitting?.CatalogNumber || "") === catalog
+        !fitting?._autoHoleStrap && String(fitting?.CatalogNumber || "") === catalog
     )?.qty || 0;
 
 }
@@ -2324,7 +2357,7 @@ function addRunFitting(run, material) {
     const fittings = getRunFittings(run);
     const catalog = String(material?.CatalogNumber || "");
     const existing = fittings.find(fitting =>
-        String(fitting?.CatalogNumber || "") === catalog
+        !fitting?._autoHoleStrap && String(fitting?.CatalogNumber || "") === catalog
     );
 
     if (existing) {
@@ -2344,7 +2377,7 @@ function removeRunFitting(run, material) {
     const fittings = getRunFittings(run);
     const catalog = String(material?.CatalogNumber || "");
     const index = fittings.findIndex(fitting =>
-        String(fitting?.CatalogNumber || "") === catalog
+        !fitting?._autoHoleStrap && String(fitting?.CatalogNumber || "") === catalog
     );
 
     if (index < 0) return;
@@ -2363,7 +2396,7 @@ function setRunFittingQuantity(run, material, quantity) {
     const fittings = getRunFittings(run);
     const catalog = String(material?.CatalogNumber || "");
     const index = fittings.findIndex(fitting =>
-        String(fitting?.CatalogNumber || "") === catalog
+        !fitting?._autoHoleStrap && String(fitting?.CatalogNumber || "") === catalog
     );
     const qty = Math.max(0, Math.floor(Number(quantity) || 0));
 
