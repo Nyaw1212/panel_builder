@@ -350,8 +350,23 @@ async function showFittings(){
    const title=document.createElement("strong");title.textContent=combo.name;
    const desc=document.createElement("span");
    desc.textContent=combo.items.map(item=>item.qty+" × "+item.code).join(" + ");
+   const thumbnails=document.createElement("div");thumbnails.className="pm-combo-thumbnails";
+   combo.items.forEach(item=>{
+    const material=lookup.get(String(item.code).toUpperCase());
+    const tile=document.createElement("div");tile.className="pm-combo-thumbnail";tile.title=item.qty+" × "+item.code;
+    if(material){
+     const photo=photoMaterialImage(material);
+     const img=document.createElement("img");img.src=photo.src;img.alt=item.code;
+     img.dataset.driveImage=photo.drive;
+     img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";
+     img.onerror=()=>window.photoMaterialImageError(img);
+     tile.append(img);
+    }
+    const caption=document.createElement("span");caption.textContent=item.qty+" × "+item.code;
+    tile.append(caption);thumbnails.append(tile);
+   });
    const label=document.createElement("b");label.textContent="+ Add combo";
-   add.append(title,desc,label);
+   add.append(title,thumbnails,desc,label);
    const missing=combo.items.filter(item=>!lookup.has(item.code.toUpperCase()));
    if(missing.length){add.disabled=true;label.textContent="Missing MML: "+missing.map(x=>x.code).join(", ");}
    add.onclick=()=>{
@@ -713,6 +728,10 @@ host.innerHTML=`<style>
 .pm-combo-workspace-footer .pm-combo-save{background:#237db7;border-color:#4ca6df}
 @media(max-width:760px){.pm-combo-workspace-body{grid-template-columns:minmax(0,1fr)}.pm-combo-builder{border-left:0;border-top:1px solid #405976;max-height:42vh}}
 #photoMeasureModal .pm-combo-new{margin-left:auto;background:#237fbb;border:1px solid #80c3f2;color:white;padding:7px 12px;border-radius:5px;cursor:pointer}
+#photoMeasureModal .pm-combo-thumbnails{display:flex;flex-wrap:wrap;gap:9px;margin:4px 0}
+#photoMeasureModal .pm-combo-thumbnail{display:flex;align-items:center;gap:6px;background:#14253a;border:1px solid #466484;border-radius:5px;padding:5px 9px}
+#photoMeasureModal .pm-combo-thumbnail img{width:52px;height:52px;object-fit:contain;background:#f0f3f7;border-radius:4px}
+#photoMeasureModal .pm-combo-thumbnail span{font-size:12px;color:#dce9fa}
 #photoMeasureModal .pm-combo-entry{display:flex;flex-direction:column;gap:5px}
 #photoMeasureModal .pm-combo-actions{display:flex;gap:8px}
 #photoMeasureModal .pm-combo-actions button,#photoMeasureModal .pm-combo-editor>button{background:#2b4664;color:white;border:1px solid #6686a7;border-radius:4px;padding:7px 12px;cursor:pointer}
