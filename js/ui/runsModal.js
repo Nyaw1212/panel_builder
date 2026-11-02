@@ -1800,7 +1800,7 @@ function syncHoleStrapFittings(){
         const fittings=getRunFittings(run);
         // Only replace entries created by this automatic rule. Manual fittings remain untouched.
         for(let i=fittings.length-1;i>=0;i--)if(fittings[i]?._autoHoleStrap)fittings.splice(i,1);
-        const size=String(run?.conduit?.Size||"").trim().replace(/["″\\s]/g,"");
+        const size=String(run?.conduit?.Size||"").trim().replace(/["″\s]/g,"");
         const code=String(settings.bySize?.[size]||"").trim().toUpperCase();
         const feet=Number(run?.conduitLength??run?.length??0);
         const interval=Number(settings.feetPerStrap);
