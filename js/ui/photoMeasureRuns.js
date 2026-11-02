@@ -328,28 +328,90 @@ async function showFittings(){
  materialCatalog=[];
  const comboPanel=document.createElement("div");
  comboPanel.className="pm-combo-panel";
- comboPanel.innerHTML='<div class="pm-combo-title"><strong>Combo Fittings</strong><span>Preview: 1 connector + 1 plastic locknut</span></div><div class="pm-combo-list"></div>';
+ comboPanel.innerHTML='<div class="pm-combo-title"><strong>Combo Fittings</strong><button type="button" class="pm-combo-new">+ Create Combo</button></div><div class="pm-combo-list"></div><div class="pm-combo-editor" hidden></div>';
  const comboList=comboPanel.querySelector(".pm-combo-list");
- const connectorCol=matrix.columns.findIndex(c=>c.key==="CONNECTOR");
- const locknutCol=matrix.columns.findIndex(c=>c.key==="PLASTIC_LOCKNUT");
- matrix.rows.forEach((system,ri)=>{
-  const connector=matrix.cells[ri]?.[connectorCol],locknut=matrix.cells[ri]?.[locknutCol];
-  if(!connector||!locknut)return;
-  const card=document.createElement("button");
-  card.type="button";card.className="pm-combo-card";
-  const title=document.createElement("strong");title.textContent=system.label+" · Connector + Locknut";
-  const detail=document.createElement("span");detail.textContent="1 × "+connector.CatalogNumber+" + 1 × "+locknut.CatalogNumber;
-  const count=document.createElement("b");count.textContent="+ Add combo";
-  card.append(title,detail,count);
-  card.onclick=()=>{
-   api.setFitting(run.id,connector,1);
-   api.setFitting(run.id,locknut,1);
-   renderPhotoMaterialSummary();
-   count.textContent="✓ Added · Add again";
+ const comboEditor=comboPanel.querySelector(".pm-combo-editor");
+ const comboKey="panel-builder-fitting-combos-v1";
+ const loadCombos=()=>{try{const v=JSON.parse(localStorage.getItem(comboKey)||"[]");return Array.isArray(v)?v:[]}catch{return []}};
+ const saveCombos=v=>localStorage.setItem(comboKey,JSON.stringify(v));
+ let comboMaterials=null;
+ const getComboMaterials=async()=>comboMaterials||(comboMaterials=await api.listComboMaterials());
+ const renderCombos=async()=>{
+  const definitions=loadCombos();
+  comboList.replaceChildren();
+  if(!definitions.length){
+   const empty=document.createElement("p");empty.textContent="No combos yet. Click + Create Combo to build one from MML materials.";comboList.appendChild(empty);
+  }
+  const catalog=await getComboMaterials();
+  const lookup=new Map(catalog.map(m=>[String(m.CatalogNumber||"").trim().toUpperCase(),m]));
+  definitions.forEach((combo,index)=>{
+   const wrapper=document.createElement("div");wrapper.className="pm-combo-entry";
+   const add=document.createElement("button");add.type="button";add.className="pm-combo-card";
+   const title=document.createElement("strong");title.textContent=combo.name;
+   const desc=document.createElement("span");
+   desc.textContent=combo.items.map(item=>item.qty+" × "+item.code).join(" + ");
+   const label=document.createElement("b");label.textContent="+ Add combo";
+   add.append(title,desc,label);
+   const missing=combo.items.filter(item=>!lookup.has(item.code.toUpperCase()));
+   if(missing.length){add.disabled=true;label.textContent="Missing MML: "+missing.map(x=>x.code).join(", ");}
+   add.onclick=()=>{
+    combo.items.forEach(item=>{
+     const material=lookup.get(item.code.toUpperCase());
+     for(let n=0;n<item.qty;n++)api.setFitting(run.id,material,1);
+    });
+    renderPhotoMaterialSummary();label.textContent="✓ Added · Add again";
+   };
+   const actions=document.createElement("div");actions.className="pm-combo-actions";
+   const edit=document.createElement("button");edit.textContent="Edit";edit.onclick=()=>openComboEditor(index);
+   const remove=document.createElement("button");remove.textContent="Delete";remove.onclick=()=>{
+    if(!window.confirm("Delete combo '"+combo.name+"'?"))return;
+    const next=loadCombos();next.splice(index,1);saveCombos(next);renderCombos();
+   };
+   actions.append(edit,remove);wrapper.append(add,actions);comboList.appendChild(wrapper);
+  });
+ };
+ const openComboEditor=async index=>{
+  const all=await getComboMaterials();
+  const combos=loadCombos();
+  const existing=index===null?{name:"",items:[{code:"",qty:1},{code:"",qty:1}]}:combos[index];
+  if(!existing)return;
+  const draft=JSON.parse(JSON.stringify(existing));
+  comboEditor.hidden=false;comboList.hidden=true;
+  comboPanel.querySelector(".pm-combo-new").hidden=true;
+  comboEditor.replaceChildren();
+  const heading=document.createElement("h3");heading.textContent=index===null?"Create Combo":"Edit Combo";
+  const name=document.createElement("input");name.placeholder="Combo name (e.g. 1-inch Straight Connector + Locknut)";name.value=draft.name;name.className="pm-combo-name";
+  const lines=document.createElement("div");lines.className="pm-combo-lines";
+  const renderLines=()=>{
+   lines.replaceChildren();
+   draft.items.forEach((item,i)=>{
+    const row=document.createElement("div");row.className="pm-combo-line";
+    const select=document.createElement("select");
+    const blank=document.createElement("option");blank.value="";blank.textContent="Choose MML material";select.append(blank);
+    all.forEach(m=>{const option=document.createElement("option");option.value=String(m.CatalogNumber);option.textContent=String(m.CatalogNumber)+" — "+String(m.Description||"");select.append(option)});
+    select.value=item.code;select.onchange=()=>{item.code=select.value;};
+    const qty=document.createElement("input");qty.type="number";qty.min="1";qty.step="1";qty.value=String(item.qty||1);qty.title="Quantity";qty.onchange=()=>{item.qty=Math.max(1,Math.floor(Number(qty.value)||1));};
+    const del=document.createElement("button");del.textContent="−";del.title="Remove material";del.onclick=()=>{draft.items.splice(i,1);renderLines();};
+    row.append(select,qty,del);lines.append(row);
+   });
   };
-  comboList.appendChild(card);
- });
- if(!comboList.children.length)comboList.textContent="No matching connector + plastic locknut pairs found for the selected fitting size.";
+  renderLines();
+  const addLine=document.createElement("button");addLine.textContent="+ Add Material";addLine.onclick=()=>{draft.items.push({code:"",qty:1});renderLines();};
+  const footer=document.createElement("div");footer.className="pm-combo-actions";
+  const cancel=document.createElement("button");cancel.textContent="Cancel";cancel.onclick=()=>{comboEditor.hidden=true;comboList.hidden=false;comboPanel.querySelector(".pm-combo-new").hidden=false;};
+  const save=document.createElement("button");save.textContent="Save Combo";save.onclick=()=>{
+   const label=name.value.trim();
+   if(!label||!draft.items.length||draft.items.some(x=>!x.code||!Number.isInteger(x.qty)||x.qty<1)){alert("Enter a combo name and choose at least one MML material with a valid quantity.");return;}
+   const updated=loadCombos();
+   const record={name:label,items:draft.items.map(x=>({code:x.code,qty:x.qty}))};
+   if(index===null)updated.push(record);else updated[index]=record;
+   try{saveCombos(updated)}catch(err){alert("Could not save combo: "+err.message);return;}
+   cancel.onclick();renderCombos();
+  };
+  footer.append(cancel,save);comboEditor.append(heading,name,lines,addLine,footer);
+ };
+ comboPanel.querySelector(".pm-combo-new").onclick=()=>openComboEditor(null);
+ renderCombos();
  const headers='<th class="pm-matrix-corner">SYSTEM</th>'+matrix.columns.map(c=>`<th>${escape(c.label)}</th>`).join("");
  const rows=matrix.rows.map((row,ri)=>{
   const cells=matrix.columns.map((col,ci)=>{
@@ -575,6 +637,21 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-fitting-view-tabs button{background:#263a54;color:#d8e7fa;border:1px solid #526c88;border-radius:5px;padding:8px 16px;cursor:pointer;font-weight:700}
 #photoMeasureModal .pm-fitting-view-tabs button.active{background:#237fbb;border-color:#85bde6;color:#fff}
 #photoMeasureModal .pm-fitting-combo[hidden],#photoMeasureModal .pm-fitting-standard[hidden]{display:none}
+#photoMeasureModal .pm-combo-new{margin-left:auto;background:#237fbb;border:1px solid #80c3f2;color:white;padding:7px 12px;border-radius:5px;cursor:pointer}
+#photoMeasureModal .pm-combo-entry{display:flex;flex-direction:column;gap:5px}
+#photoMeasureModal .pm-combo-actions{display:flex;gap:8px}
+#photoMeasureModal .pm-combo-actions button,#photoMeasureModal .pm-combo-editor>button{background:#2b4664;color:white;border:1px solid #6686a7;border-radius:4px;padding:7px 12px;cursor:pointer}
+#photoMeasureModal .pm-combo-card:disabled{opacity:.6;cursor:not-allowed}
+#photoMeasureModal .pm-combo-editor{display:flex;flex-direction:column;gap:12px}
+#photoMeasureModal .pm-combo-editor[hidden],#photoMeasureModal .pm-combo-list[hidden],#photoMeasureModal .pm-combo-new[hidden]{display:none}
+#photoMeasureModal .pm-combo-editor h3{margin:0}
+#photoMeasureModal .pm-combo-name,#photoMeasureModal .pm-combo-line select,#photoMeasureModal .pm-combo-line input{background:#0e1c2e;border:1px solid #5d7896;border-radius:4px;color:white;padding:9px;font-size:13px}
+#photoMeasureModal .pm-combo-name{width:100%}
+#photoMeasureModal .pm-combo-lines{display:flex;flex-direction:column;gap:8px}
+#photoMeasureModal .pm-combo-line{display:flex;gap:8px}
+#photoMeasureModal .pm-combo-line select{flex:1;min-width:0}
+#photoMeasureModal .pm-combo-line input{width:70px}
+#photoMeasureModal .pm-combo-line button{background:#823044;color:white;border:0;border-radius:4px;padding:0 14px;cursor:pointer}
 #photoMeasureModal .pm-combo-panel{padding:12px;border:1px solid #3b5575;border-radius:6px;background:#152238}
 #photoMeasureModal .pm-combo-title{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
 #photoMeasureModal .pm-combo-title span{color:#b4c8dc;font-size:12px}
