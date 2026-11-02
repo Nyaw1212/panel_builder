@@ -326,6 +326,30 @@ async function showFittings(){
  const matrix=await api.fittingMatrix(run.id,fittingSizes);
  if(!host||!materialsMode||run.id!==currentRun()?.id)return;
  materialCatalog=[];
+ const comboPanel=document.createElement("div");
+ comboPanel.className="pm-combo-panel";
+ comboPanel.innerHTML='<div class="pm-combo-title"><strong>Combo Fittings</strong><span>Preview: 1 connector + 1 plastic locknut</span></div><div class="pm-combo-list"></div>';
+ const comboList=comboPanel.querySelector(".pm-combo-list");
+ const connectorCol=matrix.columns.findIndex(c=>c.key==="CONNECTOR");
+ const locknutCol=matrix.columns.findIndex(c=>c.key==="PLASTIC_LOCKNUT");
+ matrix.rows.forEach((system,ri)=>{
+  const connector=matrix.cells[ri]?.[connectorCol],locknut=matrix.cells[ri]?.[locknutCol];
+  if(!connector||!locknut)return;
+  const card=document.createElement("button");
+  card.type="button";card.className="pm-combo-card";
+  const title=document.createElement("strong");title.textContent=system.label+" · Connector + Locknut";
+  const detail=document.createElement("span");detail.textContent="1 × "+connector.CatalogNumber+" + 1 × "+locknut.CatalogNumber;
+  const count=document.createElement("b");count.textContent="+ Add combo";
+  card.append(title,detail,count);
+  card.onclick=()=>{
+   api.setFitting(run.id,connector,1);
+   api.setFitting(run.id,locknut,1);
+   renderPhotoMaterialSummary();
+   count.textContent="✓ Added · Add again";
+  };
+  comboList.appendChild(card);
+ });
+ if(!comboList.children.length)comboList.textContent="No matching connector + plastic locknut pairs found for the selected fitting size.";
  const headers='<th class="pm-matrix-corner">SYSTEM</th>'+matrix.columns.map(c=>`<th>${escape(c.label)}</th>`).join("");
  const rows=matrix.rows.map((row,ri)=>{
   const cells=matrix.columns.map((col,ci)=>{
@@ -340,7 +364,14 @@ async function showFittings(){
   }).join("");
   return `<tr><th scope="row">${escape(row.label)}</th>${cells}</tr>`;
  }).join("");
- target.innerHTML=`<table class="pm-matrix"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+ target.innerHTML=`<div class="pm-fitting-view-tabs"><button type="button" data-view="standard" class="active">Fittings</button><button type="button" data-view="combo">Combo Fittings</button></div><div class="pm-fitting-standard"><table class="pm-matrix"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></div><div class="pm-fitting-combo" hidden></div>`;
+ target.querySelector(".pm-fitting-combo").appendChild(comboPanel);
+ target.querySelectorAll(".pm-fitting-view-tabs button").forEach(button=>button.onclick=()=>{
+  const combo=button.dataset.view==="combo";
+  target.querySelector(".pm-fitting-standard").hidden=combo;
+  target.querySelector(".pm-fitting-combo").hidden=!combo;
+  target.querySelectorAll(".pm-fitting-view-tabs button").forEach(b=>b.classList.toggle("active",b===button));
+ });
  target.querySelectorAll(".pm-nipple-open, .pm-matrix-image[data-nipple-row]").forEach(btn=>{
   btn.onclick=()=>openNippleSelectionModal(matrix.nippleOptions?.[Number(btn.dataset.nippleRow)]||[],run.id);
  });
@@ -540,6 +571,18 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-matrix .pm-matrix-corner{width:92px}
 #photoMeasureModal .pm-matrix-empty{color:#8ca1b7}
 #photoMeasureModal .pm-matrix-item{display:flex;flex-direction:column;gap:3px;min-width:0}
+#photoMeasureModal .pm-fitting-view-tabs{display:flex;gap:7px;margin:6px 0 12px}
+#photoMeasureModal .pm-fitting-view-tabs button{background:#263a54;color:#d8e7fa;border:1px solid #526c88;border-radius:5px;padding:8px 16px;cursor:pointer;font-weight:700}
+#photoMeasureModal .pm-fitting-view-tabs button.active{background:#237fbb;border-color:#85bde6;color:#fff}
+#photoMeasureModal .pm-fitting-combo[hidden],#photoMeasureModal .pm-fitting-standard[hidden]{display:none}
+#photoMeasureModal .pm-combo-panel{padding:12px;border:1px solid #3b5575;border-radius:6px;background:#152238}
+#photoMeasureModal .pm-combo-title{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px}
+#photoMeasureModal .pm-combo-title span{color:#b4c8dc;font-size:12px}
+#photoMeasureModal .pm-combo-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:9px}
+#photoMeasureModal .pm-combo-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;background:#233954;color:#fff;border:1px solid #547b9e;border-radius:6px;padding:12px;text-align:left;cursor:pointer}
+#photoMeasureModal .pm-combo-card:hover{background:#315574}
+#photoMeasureModal .pm-combo-card span{font-size:12px;color:#d0dce9}
+#photoMeasureModal .pm-combo-card b{color:#8fe4b3;font-size:13px}
 #photoMeasureModal .pm-nipple-open{width:100%;background:#254a6b;border:1px solid #5d91bd;border-radius:3px;color:#fff;font-size:10px;cursor:pointer;padding:3px 1px}
 .pm-nipple-modal-overlay{position:fixed;inset:0;z-index:2147483500;background:#000a;display:flex;align-items:center;justify-content:center;padding:20px}
 .pm-nipple-modal-dialog{width:min(780px,96vw);max-height:85vh;display:flex;flex-direction:column;gap:12px;background:#152238;color:#edf5ff;border:1px solid #6384ab;border-radius:9px;padding:18px;box-shadow:0 18px 60px #000b}
