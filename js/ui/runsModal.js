@@ -1807,7 +1807,7 @@ function syncHoleStrapFittings(){
         if(!settings.enabled||!run?.conduit||!code||!Number.isFinite(feet)||feet<=0||!Number.isFinite(interval)||interval<=0)return;
         const material=catalog.get(code);
         if(!material)return;
-        fittings.push({...structuredClone(material),qty:Math.ceil(feet/interval),_autoHoleStrap:true});
+        fittings.push({...structuredClone(material),qty:Math.ceil(feet/interval)+1,_autoHoleStrap:true});
     });
 }
 window.getHoleStrapSettings=getHoleStrapSettings;
