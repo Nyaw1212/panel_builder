@@ -487,9 +487,30 @@ async function showFittings(){
  };
  comboPanel.querySelector(".pm-combo-new").onclick=()=>openComboEditor(null);
  renderCombos();
- const fastKey="panel-builder-fitting-fast-codes-v1";
- const fastDefaults={};
- const loadFast=()=>{try{return {...fastDefaults,...JSON.parse(localStorage.getItem(fastKey)||"{}")}}catch{return {...fastDefaults}}};
+ const fastKey="panel-builder-fitting-fast-codes-v2";
+ const legacyFastKey="panel-builder-fitting-fast-codes-v1";
+ const fastSizes=["1/2","3/4","1","1-1/4","1-1/2","2","2-1/2","3","4"];
+ const normalizeFastSize=value=>{
+  const raw=String(value||"").toLowerCase().replace(/["″]/g,"").replace(/\s+/g,"").replace(/in(ch(es)?)?/g,"");
+  const m=raw.match(/^(1\/2|3\/4|1-1\/4|1-1\/2|2-1\/2|[1234])$/);
+  return m?m[1]:"";
+ };
+ const inferFastSize=m=>{
+  for(const field of ["Size","size","TradeSize","tradeSize","ConduitSize","conduitSize"]){
+   const val=normalizeFastSize(m?.[field]);if(val)return val;
+  }
+  const desc=String(m?.Description||"");
+  const match=desc.match(/(?:^|[\s(])((?:1|2)-1\/[24]|[1234]\/[24]|[1234])\s*(?:"|″|\binch\b|\bin\b)/i);
+  return normalizeFastSize(match?.[1]);
+ };
+ const loadFast=()=>{
+  try{
+   const modern=JSON.parse(localStorage.getItem(fastKey)||"null");
+   if(modern&&typeof modern==="object"&&!Array.isArray(modern))return modern;
+   const old=JSON.parse(localStorage.getItem(legacyFastKey)||"{}");
+   return Object.fromEntries(Object.entries(old).map(([code,material])=>["*:"+code,material]));
+  }catch{return {}}
+ };
  const matrixMaterials=[];
  matrix.rows.forEach((row,ri)=>matrix.columns.forEach((col,ci)=>{
   const options=col.key==="NIPPLE"?(matrix.nippleOptions?.[ri]||[]):[];
@@ -497,7 +518,7 @@ async function showFittings(){
   if(material&&!matrixMaterials.some(m=>String(m.CatalogNumber)===String(material.CatalogNumber)))matrixMaterials.push(material);
  }));
  const fastPanel=document.createElement("section");fastPanel.className="pm-fast-panel";
- fastPanel.innerHTML='<div class="pm-fast-header"><strong>Fast Entry</strong><button type="button" class="pm-fast-settings-button">⚙ Edit Codes</button></div><p>Type fitting codes separated by spaces. Repeating a code adds another fitting. Example: <code>h c u u lb</code></p><div class="pm-fast-entry-row"><input type="text" class="pm-fast-entry-input" placeholder="h c u u lb" autocomplete="off"><button type="button" class="pm-fast-add">Add Fittings</button></div><div class="pm-fast-feedback" aria-live="polite"></div><div class="pm-fast-editor" hidden></div>';
+ fastPanel.innerHTML='<div class="pm-fast-header"><strong>Fast Entry</strong><button type="button" class="pm-fast-settings-button">⚙ Edit Codes</button></div><p>Use a size followed by fitting codes, for example <code>1 c u u lb</code> or <code>2 c</code>. The size applies until you enter another size.</p><div class="pm-fast-entry-row"><input type="text" class="pm-fast-entry-input" placeholder="1 c u u lb" autocomplete="off"><button type="button" class="pm-fast-add">Add Fittings</button></div><div class="pm-fast-feedback" aria-live="polite"></div><div class="pm-fast-editor" hidden></div>';
  const fastInput=fastPanel.querySelector(".pm-fast-entry-input"),fastFeedback=fastPanel.querySelector(".pm-fast-feedback");
  const fastEditor=fastPanel.querySelector(".pm-fast-editor");
  const getFastCatalog=async()=>{
@@ -507,49 +528,68 @@ async function showFittings(){
   return [...found.values()];
  };
  const openFastEditor=async()=>{
-  const catalog=await getFastCatalog();
-  const defs=loadFast();
-  fastEditor.hidden=false;
-  fastEditor.replaceChildren();
+  const catalog=await getFastCatalog(),defs=loadFast(),draft={...defs};
+  fastEditor.hidden=false;fastEditor.replaceChildren();
   const heading=document.createElement("h3");heading.textContent="Fast Entry Code Settings";
-  const hint=document.createElement("p");hint.textContent="Map short codes to materials used in the Fittings picker. Settings are saved in this browser.";
-  const search=document.createElement("input");search.type="search";search.placeholder="Filter materials by code, description, or type";
+  const hint=document.createElement("p");hint.textContent="Assign the same code to different sizes. Choose a size for each material; changes persist when filtering.";
+  const toolbar=document.createElement("div");toolbar.className="pm-fast-filterbar";
+  const search=document.createElement("input");search.type="search";search.placeholder="Search catalog number or description";
+  const type=document.createElement("select"),size=document.createElement("select");
+  const option=(el,value,label)=>{const o=document.createElement("option");o.value=value;o.textContent=label;el.append(o);};
+  option(type,"","All types");
+  [...new Set(catalog.map(m=>String(m.NodeType||"").trim().toUpperCase()).filter(Boolean))].sort().forEach(t=>option(type,t,t));
+  option(size,"","All sizes");fastSizes.forEach(z=>option(size,z,z+'″'));option(size,"unknown","Unspecified");
+  toolbar.append(search,type,size);
   const rows=document.createElement("div");rows.className="pm-fast-code-list";
+  const assignments=new Map();
+  catalog.forEach(m=>{
+   const code=String(m.CatalogNumber||"").trim().toUpperCase();
+   const key=Object.keys(draft).find(k=>String(draft[k]).trim().toUpperCase()===code);
+   const split=key?key.split(":"):[];
+   assignments.set(code,{size:split.length>1?split[0]:inferFastSize(m),shortcut:split.length>1?split.slice(1).join(":"):""});
+  });
   const renderRows=()=>{
    rows.replaceChildren();
-   const query=search.value.trim().toLowerCase();
-   const materials=catalog.filter(m=>!query||[m.CatalogNumber,m.Description,m.NodeType].join(" ").toLowerCase().includes(query));
-   materials.forEach(m=>{
-    const catalogCode=String(m.CatalogNumber||"").trim().toUpperCase();
+   const q=search.value.trim().toLowerCase();
+   catalog.filter(m=>{
+    const z=assignments.get(String(m.CatalogNumber).trim().toUpperCase())?.size||"";
+    return (!q||[m.CatalogNumber,m.Description,m.NodeType].join(" ").toLowerCase().includes(q))
+     &&(!type.value||String(m.NodeType||"").trim().toUpperCase()===type.value)
+     &&(!size.value||(size.value==="unknown"?!z:z===size.value));
+   }).forEach(m=>{
+    const catalogCode=String(m.CatalogNumber||"").trim().toUpperCase(),state=assignments.get(catalogCode);
     const row=document.createElement("label");row.className="pm-fast-code-row";
-    const photo=photoMaterialImage(m),img=document.createElement("img");img.src=photo.src;img.alt="";img.dataset.driveImage=photo.drive;img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";img.onerror=()=>window.photoMaterialImageError(img);
+    const photo=photoMaterialImage(m),img=document.createElement("img");img.src=photo.src;img.alt="";
+    img.dataset.driveImage=photo.drive;img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";img.onerror=()=>window.photoMaterialImageError(img);
     const info=document.createElement("span");info.textContent=catalogCode+" · "+String(m.Description||"");
-    const input=document.createElement("input");input.placeholder="Shortcut";input.value=Object.keys(defs).find(k=>String(defs[k]).toUpperCase()===catalogCode)||"";
-    input.dataset.catalog=catalogCode;input.setAttribute("aria-label","Fast code for "+catalogCode);
-    row.append(img,info,input);rows.append(row);
+    const materialSize=document.createElement("select");materialSize.setAttribute("aria-label","Size for "+catalogCode);
+    option(materialSize,"*","Any size");fastSizes.forEach(z=>option(materialSize,z,z+'″'));
+    materialSize.value=state.size||"*";
+    materialSize.onchange=()=>{state.size=materialSize.value;};
+    const input=document.createElement("input");input.placeholder="Code";input.value=state.shortcut;
+    input.setAttribute("aria-label","Shortcut for "+catalogCode);
+    input.oninput=()=>{state.shortcut=input.value.trim().toLowerCase();};
+    row.append(img,info,materialSize,input);rows.append(row);
    });
   };
-  search.oninput=renderRows;renderRows();
+  [search,type,size].forEach(el=>el.addEventListener(el===search?"input":"change",renderRows));
+  renderRows();
   const actions=document.createElement("div");actions.className="pm-fast-actions";
   const cancel=document.createElement("button");cancel.textContent="Cancel";cancel.onclick=()=>{fastEditor.hidden=true;};
   const save=document.createElement("button");save.textContent="Save Codes";save.onclick=()=>{
-   // Preserve assignments for materials hidden by the search filter.
-   const next={...defs};
-   let invalid=false;
-   rows.querySelectorAll("input[data-catalog]").forEach(input=>{
-    const material=input.dataset.catalog;
-    Object.keys(next).forEach(key=>{if(String(next[key]).toUpperCase()===material)delete next[key]});
-    const code=input.value.trim().toLowerCase();
-    if(!code)return;
-    if(!/^[a-z][a-z0-9_-]*$/.test(code)){invalid=true;return;}
-    if(next[code]&&next[code]!==material){invalid=true;return;}
-    next[code]=material;
-   });
-   if(invalid){alert("Codes must start with a letter and use only letters, numbers, - or _.");return;}
-   localStorage.setItem(fastKey,JSON.stringify(next));
-   fastEditor.hidden=true;fastFeedback.textContent="Fast entry codes saved.";
+   const next={};
+   for(const [material,state] of assignments){
+    const shortcut=state.shortcut.trim().toLowerCase();
+    if(!shortcut)continue;
+    if(!/^[a-z][a-z0-9_-]*$/.test(shortcut)){alert("Codes must begin with a letter and contain only letters, numbers, - or _.");return;}
+    const key=(state.size||"*")+":"+shortcut;
+    if(next[key]&&next[key]!==material){alert("Duplicate code "+shortcut+" for size "+(state.size||"Any")+".");return;}
+    next[key]=material;
+   }
+   try{localStorage.setItem(fastKey,JSON.stringify(next));}catch(err){alert("Unable to save codes: "+err.message);return;}
+   fastEditor.hidden=true;fastFeedback.textContent="Size-specific Fast Entry codes saved.";
   };
-  actions.append(cancel,save);fastEditor.append(heading,hint,search,rows,actions);
+  actions.append(cancel,save);fastEditor.append(heading,hint,toolbar,rows,actions);
  };
  fastPanel.querySelector(".pm-fast-settings-button").onclick=openFastEditor;
  const addFast=async()=>{
@@ -557,12 +597,20 @@ async function showFittings(){
   if(!tokens.length)return;
   const defs=loadFast(),catalog=await getFastCatalog();
   const lookup=new Map(catalog.map(m=>[String(m.CatalogNumber).trim().toUpperCase(),m]));
-  const missing=tokens.filter(token=>!lookup.has(String(defs[token]||"").toUpperCase()));
-  if(missing.length){fastFeedback.textContent="Unknown or unavailable code(s): "+[...new Set(missing)].join(", ")+". Edit Codes to assign them.";return;}
-  tokens.forEach(token=>api.setFitting(run.id,lookup.get(String(defs[token]).toUpperCase()),1));
-  fastFeedback.textContent="Added "+tokens.length+" fitting(s).";
-  fastInput.value="";
-  renderPhotoMaterialSummary();
+  let currentSize="",lastSize="",unknown=[],selected=[];
+  for(const token of tokens){
+   const z=normalizeFastSize(token);
+   if(z){currentSize=z;lastSize=z;continue;}
+   const code=defs[(currentSize||"*")+":"+token]||defs["*:"+token];
+   const material=lookup.get(String(code||"").toUpperCase());
+   if(!material)unknown.push((currentSize?currentSize+'″ ':"")+token);
+   else selected.push(material);
+  }
+  if(unknown.length){fastFeedback.textContent="Unassigned fitting code(s): "+[...new Set(unknown)].join(", ")+". Edit Codes to map them.";return;}
+  if(!selected.length){fastFeedback.textContent="Enter fitting codes after the size.";return;}
+  selected.forEach(m=>api.setFitting(run.id,m,1));
+  fastFeedback.textContent="Added "+selected.length+" fitting(s)"+(lastSize?" · last size "+lastSize+'″':"")+".";
+  fastInput.value="";renderPhotoMaterialSummary();
  };
  fastPanel.querySelector(".pm-fast-add").onclick=addFast;
  fastInput.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();e.stopPropagation();addFast();}};
@@ -847,6 +895,10 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-fast-panel button{background:#2a618d;color:white;border:1px solid #6195bf;border-radius:5px;padding:8px 12px;cursor:pointer}
 #photoMeasureModal .pm-fast-feedback{color:#9bdab8;margin-top:8px;font-size:13px}
 #photoMeasureModal .pm-fast-editor{margin-top:18px;border-top:1px solid #405a79;padding-top:12px}
+#photoMeasureModal .pm-fast-filterbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+#photoMeasureModal .pm-fast-filterbar input{flex:1;min-width:160px}
+#photoMeasureModal .pm-fast-filterbar select,#photoMeasureModal .pm-fast-code-row select{background:#10243b;color:#fff;border:1px solid #58799c;border-radius:4px;padding:8px}
+#photoMeasureModal .pm-fast-code-row select{width:85px;flex-shrink:0}
 #photoMeasureModal .pm-fast-code-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;max-height:400px;overflow:auto;margin-top:10px}
 #photoMeasureModal .pm-fast-code-row{display:flex;align-items:center;gap:7px;background:#213651;border:1px solid #4b6685;border-radius:5px;padding:7px;min-width:0}
 #photoMeasureModal .pm-fast-code-row img{width:42px;height:42px;object-fit:contain;background:white}
