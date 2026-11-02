@@ -373,42 +373,80 @@ async function showFittings(){
  const openComboEditor=async index=>{
   const all=await getComboMaterials();
   const combos=loadCombos();
-  const existing=index===null?{name:"",items:[{code:"",qty:1},{code:"",qty:1}]}:combos[index];
+  const existing=index===null?{name:"",items:[]}:combos[index];
   if(!existing)return;
   const draft=JSON.parse(JSON.stringify(existing));
-  comboEditor.hidden=false;comboList.hidden=true;
-  comboPanel.querySelector(".pm-combo-new").hidden=true;
-  comboEditor.replaceChildren();
-  const heading=document.createElement("h3");heading.textContent=index===null?"Create Combo":"Edit Combo";
-  const name=document.createElement("input");name.placeholder="Combo name (e.g. 1-inch Straight Connector + Locknut)";name.value=draft.name;name.className="pm-combo-name";
-  const lines=document.createElement("div");lines.className="pm-combo-lines";
-  const renderLines=()=>{
-   lines.replaceChildren();
+  const overlay=document.createElement("div");
+  overlay.className="pm-combo-workspace-overlay";
+  overlay.innerHTML='<section class="pm-combo-workspace" role="dialog" aria-modal="true" aria-label="Combo Fittings Editor"><header class="pm-combo-workspace-header"><div><small>PHOTO MEASURE / FITTINGS</small><h2>Combo Fittings Editor</h2></div><button type="button" class="pm-combo-workspace-close" aria-label="Close editor">×</button></header><div class="pm-combo-workspace-body"><section class="pm-combo-library"><div class="pm-combo-library-toolbar"><input type="search" class="pm-combo-search" placeholder="Search catalog number or description…"><select class="pm-combo-type" aria-label="Filter fitting type"></select><select class="pm-combo-size" aria-label="Filter size"></select></div><div class="pm-combo-library-count"></div><div class="pm-combo-gallery"></div></section><aside class="pm-combo-builder"><label>Combo name<input class="pm-combo-workspace-name" placeholder="e.g. 1-inch Straight Connector + Locknut"></label><div class="pm-combo-builder-title">Included materials <span class="pm-combo-builder-count"></span></div><div class="pm-combo-builder-items"></div><div class="pm-combo-workspace-footer"><button type="button" class="pm-combo-cancel">Cancel</button><button type="button" class="pm-combo-save">Save Combo</button></div></aside></div></section>';
+  document.body.appendChild(overlay);
+  const el=sel=>overlay.querySelector(sel);
+  const name=el(".pm-combo-workspace-name");name.value=draft.name;
+  const search=el(".pm-combo-search"),type=el(".pm-combo-type"),size=el(".pm-combo-size");
+  const catalog=new Map(all.map(m=>[String(m.CatalogNumber||"").trim().toUpperCase(),m]));
+  const sizes=["1","2","3/4","1/2","1-1/4","1-1/2","2-1/2","3","4"];
+  const normalizedSize=m=>String(m.Size||"").trim().replace(/["″]/g,"").replace(/\\s/g,"");
+  const types=[...new Set(all.map(m=>String(m.NodeType||"").trim().toUpperCase()).filter(Boolean))].sort();
+  const option=(select,value,label)=>{const o=document.createElement("option");o.value=value;o.textContent=label;select.append(o)};
+  option(type,"","All fitting types");types.forEach(t=>option(type,t,t));
+  option(size,"","All sizes");sizes.forEach(v=>option(size,v,v+'″'));option(size,"other","Other / unspecified");
+  const close=()=>{document.removeEventListener("keydown",keyHandler,true);overlay.remove();};
+  const keyHandler=e=>{if(e.key==="Escape"){e.stopImmediatePropagation();e.preventDefault();close();}};
+  document.addEventListener("keydown",keyHandler,true);
+  el(".pm-combo-workspace-close").onclick=close;el(".pm-combo-cancel").onclick=close;
+  const renderBuilder=()=>{
+   const list=el(".pm-combo-builder-items");list.replaceChildren();
+   el(".pm-combo-builder-count").textContent=draft.items.length+" items";
+   if(!draft.items.length){const p=document.createElement("p");p.className="pm-combo-builder-empty";p.textContent="Select materials from the gallery to build your combo.";list.append(p);}
    draft.items.forEach((item,i)=>{
-    const row=document.createElement("div");row.className="pm-combo-line";
-    const select=document.createElement("select");
-    const blank=document.createElement("option");blank.value="";blank.textContent="Choose MML material";select.append(blank);
-    all.forEach(m=>{const option=document.createElement("option");option.value=String(m.CatalogNumber);option.textContent=String(m.CatalogNumber)+" — "+String(m.Description||"");select.append(option)});
-    select.value=item.code;select.onchange=()=>{item.code=select.value;};
-    const qty=document.createElement("input");qty.type="number";qty.min="1";qty.step="1";qty.value=String(item.qty||1);qty.title="Quantity";qty.onchange=()=>{item.qty=Math.max(1,Math.floor(Number(qty.value)||1));};
-    const del=document.createElement("button");del.textContent="−";del.title="Remove material";del.onclick=()=>{draft.items.splice(i,1);renderLines();};
-    row.append(select,qty,del);lines.append(row);
+    const material=catalog.get(String(item.code).toUpperCase());
+    const row=document.createElement("div");row.className="pm-combo-builder-row";
+    if(material){const photo=photoMaterialImage(material);const img=document.createElement("img");img.src=photo.src;img.alt="";img.dataset.driveImage=photo.drive;img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";img.onerror=()=>window.photoMaterialImageError(img);row.append(img);}
+    const info=document.createElement("div");info.className="pm-combo-builder-info";
+    const code=document.createElement("strong");code.textContent=item.code;
+    const desc=document.createElement("small");desc.textContent=material?.Description||"Not found in MML";
+    info.append(code,desc);
+    const minus=document.createElement("button");minus.textContent="−";minus.title="Decrease quantity";minus.onclick=()=>{if(item.qty>1)item.qty--;else draft.items.splice(i,1);renderBuilder();};
+    const qty=document.createElement("input");qty.type="number";qty.min="1";qty.step="1";qty.value=String(item.qty);qty.setAttribute("aria-label","Quantity for "+item.code);qty.onchange=()=>{item.qty=Math.max(1,Math.floor(Number(qty.value)||1));qty.value=String(item.qty);};
+    const plus=document.createElement("button");plus.textContent="+";plus.title="Increase quantity";plus.onclick=()=>{item.qty++;renderBuilder();};
+    const remove=document.createElement("button");remove.textContent="×";remove.title="Remove material";remove.onclick=()=>{draft.items.splice(i,1);renderBuilder();};
+    row.append(info,minus,qty,plus,remove);list.append(row);
    });
   };
-  renderLines();
-  const addLine=document.createElement("button");addLine.textContent="+ Add Material";addLine.onclick=()=>{draft.items.push({code:"",qty:1});renderLines();};
-  const footer=document.createElement("div");footer.className="pm-combo-actions";
-  const cancel=document.createElement("button");cancel.textContent="Cancel";cancel.onclick=()=>{comboEditor.hidden=true;comboList.hidden=false;comboPanel.querySelector(".pm-combo-new").hidden=false;};
-  const save=document.createElement("button");save.textContent="Save Combo";save.onclick=()=>{
+  const renderGallery=()=>{
+   const q=search.value.trim().toLowerCase(),t=type.value,z=size.value;
+   const filtered=all.filter(m=>{
+    const node=String(m.NodeType||"").trim().toUpperCase(),ms=normalizedSize(m);
+    const sizeMatch=!z||(z==="other"?!sizes.includes(ms):ms===z);
+    return (!t||node===t)&&sizeMatch&&(!q||(String(m.CatalogNumber||"")+" "+String(m.Description||"")).toLowerCase().includes(q));
+   });
+   el(".pm-combo-library-count").textContent=filtered.length+" matching MML materials";
+   const gallery=el(".pm-combo-gallery");gallery.replaceChildren();
+   filtered.forEach(m=>{
+    const card=document.createElement("button");card.type="button";card.className="pm-combo-gallery-card";
+    const photo=photoMaterialImage(m),img=document.createElement("img");img.src=photo.src;img.alt="";img.dataset.driveImage=photo.drive;img.dataset.fallbackStage=photo.src.startsWith("images/materials/")?"local":photo.drive?"drive":"placeholder";img.onerror=()=>window.photoMaterialImageError(img);
+    const label=document.createElement("strong");label.textContent=m.CatalogNumber;
+    const desc=document.createElement("small");desc.textContent=m.Description||"";
+    const add=document.createElement("b");add.textContent="+ Add";
+    card.append(img,label,desc,add);
+    card.onclick=()=>{
+     const key=String(m.CatalogNumber).trim(),found=draft.items.find(x=>String(x.code).toUpperCase()===key.toUpperCase());
+     if(found)found.qty++;else draft.items.push({code:key,qty:1});
+     renderBuilder();
+    };
+    gallery.append(card);
+   });
+  };
+  [search,type,size].forEach(control=>control.addEventListener(control===search?"input":"change",renderGallery));
+  el(".pm-combo-save").onclick=()=>{
    const label=name.value.trim();
-   if(!label||!draft.items.length||draft.items.some(x=>!x.code||!Number.isInteger(x.qty)||x.qty<1)){alert("Enter a combo name and choose at least one MML material with a valid quantity.");return;}
-   const updated=loadCombos();
-   const record={name:label,items:draft.items.map(x=>({code:x.code,qty:x.qty}))};
+   if(!label||!draft.items.length||draft.items.some(x=>!catalog.has(String(x.code).toUpperCase())||!Number.isInteger(x.qty)||x.qty<1)){alert("Enter a combo name and add at least one valid MML material.");return;}
+   const updated=loadCombos(),record={name:label,items:draft.items.map(x=>({code:x.code,qty:x.qty}))};
    if(index===null)updated.push(record);else updated[index]=record;
    try{saveCombos(updated)}catch(err){alert("Could not save combo: "+err.message);return;}
-   cancel.onclick();renderCombos();
+   close();renderCombos();
   };
-  footer.append(cancel,save);comboEditor.append(heading,name,lines,addLine,footer);
+  renderBuilder();renderGallery();search.focus();
  };
  comboPanel.querySelector(".pm-combo-new").onclick=()=>openComboEditor(null);
  renderCombos();
@@ -637,6 +675,43 @@ host.innerHTML=`<style>
 #photoMeasureModal .pm-fitting-view-tabs button{background:#263a54;color:#d8e7fa;border:1px solid #526c88;border-radius:5px;padding:8px 16px;cursor:pointer;font-weight:700}
 #photoMeasureModal .pm-fitting-view-tabs button.active{background:#237fbb;border-color:#85bde6;color:#fff}
 #photoMeasureModal .pm-fitting-combo[hidden],#photoMeasureModal .pm-fitting-standard[hidden]{display:none}
+.pm-combo-workspace-overlay{position:fixed;inset:0;z-index:2147483400;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px}
+.pm-combo-workspace{display:flex;flex-direction:column;width:min(1450px,98vw);height:min(900px,94vh);background:#142239;color:#eaf2fc;border:1px solid #587493;border-radius:9px;box-shadow:0 20px 70px #000b;overflow:hidden}
+.pm-combo-workspace-header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #405976}
+.pm-combo-workspace-header small{font-size:10px;color:#91b2d4;letter-spacing:1px}
+.pm-combo-workspace-header h2{margin:4px 0 0;font-size:23px}
+.pm-combo-workspace-close{font-size:24px;background:#803149;border:0;color:white;border-radius:4px;cursor:pointer;padding:1px 10px}
+.pm-combo-workspace-body{display:grid;grid-template-columns:minmax(0,1fr) 340px;flex:1;min-height:0}
+.pm-combo-library{padding:16px;overflow:auto;min-width:0}
+.pm-combo-library-toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.pm-combo-library-toolbar input,.pm-combo-library-toolbar select,.pm-combo-workspace-name{background:#0c182a;color:white;border:1px solid #59728d;border-radius:5px;padding:10px;font-size:13px}
+.pm-combo-library-toolbar input{flex:1;min-width:180px}
+.pm-combo-library-toolbar select{max-width:180px}
+.pm-combo-library-count{font-size:12px;color:#a4bcd7;margin:12px 0}
+.pm-combo-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.pm-combo-gallery-card{background:#20334e;color:#fff;border:1px solid #425e7d;border-radius:7px;padding:10px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;cursor:pointer;min-width:0}
+.pm-combo-gallery-card:hover{border-color:#75c5ff;background:#2b4a68}
+.pm-combo-gallery-card img{width:100%;height:90px;object-fit:contain;background:#edf2f8;border-radius:4px}
+.pm-combo-gallery-card strong{font-size:13px;overflow-wrap:anywhere}
+.pm-combo-gallery-card small{font-size:11px;color:#b9cbe0;min-height:27px}
+.pm-combo-gallery-card b{color:#8de7b6;font-size:12px}
+.pm-combo-builder{display:flex;flex-direction:column;gap:12px;padding:16px;border-left:1px solid #405976;min-height:0;background:#101c30}
+.pm-combo-builder label{font-size:12px;color:#b5c9e0;display:flex;flex-direction:column;gap:7px}
+.pm-combo-builder-title{display:flex;justify-content:space-between;font-weight:700}
+.pm-combo-builder-count{color:#8da9c8;font-weight:400;font-size:12px}
+.pm-combo-builder-items{flex:1;overflow:auto;min-height:0;display:flex;flex-direction:column;gap:8px}
+.pm-combo-builder-empty{font-size:13px;color:#91a8c3}
+.pm-combo-builder-row{display:flex;align-items:center;gap:5px;padding:7px;background:#1d304a;border:1px solid #425c78;border-radius:5px}
+.pm-combo-builder-row img{width:38px;height:38px;object-fit:contain;background:#fff;border-radius:3px}
+.pm-combo-builder-info{display:flex;flex-direction:column;flex:1;min-width:0;gap:3px}
+.pm-combo-builder-info strong{font-size:12px;overflow-wrap:anywhere}
+.pm-combo-builder-info small{font-size:10px;color:#a7bdd5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-combo-builder-row button{background:#2c4869;border:1px solid #5d7895;color:#fff;border-radius:4px;cursor:pointer;padding:5px}
+.pm-combo-builder-row input{width:40px;background:#0d1b2d;color:white;border:1px solid #526e89;text-align:center;padding:5px}
+.pm-combo-workspace-footer{display:flex;gap:8px;justify-content:flex-end}
+.pm-combo-workspace-footer button{border:1px solid #6685a5;border-radius:5px;background:#2b4867;color:white;padding:10px;cursor:pointer}
+.pm-combo-workspace-footer .pm-combo-save{background:#237db7;border-color:#4ca6df}
+@media(max-width:760px){.pm-combo-workspace-body{grid-template-columns:minmax(0,1fr)}.pm-combo-builder{border-left:0;border-top:1px solid #405976;max-height:42vh}}
 #photoMeasureModal .pm-combo-new{margin-left:auto;background:#237fbb;border:1px solid #80c3f2;color:white;padding:7px 12px;border-radius:5px;cursor:pointer}
 #photoMeasureModal .pm-combo-entry{display:flex;flex-direction:column;gap:5px}
 #photoMeasureModal .pm-combo-actions{display:flex;gap:8px}
