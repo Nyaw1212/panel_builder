@@ -488,7 +488,7 @@ async function showFittings(){
  comboPanel.querySelector(".pm-combo-new").onclick=()=>openComboEditor(null);
  renderCombos();
  const fastKey="panel-builder-fitting-fast-codes-v1";
- const fastDefaults={"h":"CHB3","c":"252SRT","u":"323","lb":"LB35WC&G"};
+ const fastDefaults={};
  const loadFast=()=>{try{return {...fastDefaults,...JSON.parse(localStorage.getItem(fastKey)||"{}")}}catch{return {...fastDefaults}}};
  const matrixMaterials=[];
  matrix.rows.forEach((row,ri)=>matrix.columns.forEach((col,ci)=>{
@@ -535,16 +535,16 @@ async function showFittings(){
   const save=document.createElement("button");save.textContent="Save Codes";save.onclick=()=>{
    // Preserve assignments for materials hidden by the search filter.
    const next={...defs};
+   let invalid=false;
    rows.querySelectorAll("input[data-catalog]").forEach(input=>{
     const material=input.dataset.catalog;
     Object.keys(next).forEach(key=>{if(String(next[key]).toUpperCase()===material)delete next[key]});
     const code=input.value.trim().toLowerCase();
     if(!code)return;
-    if(!/^[a-z][a-z0-9_-]*$/.test(code)){alert("Codes must use letters, numbers, - or _.");return;}
+    if(!/^[a-z][a-z0-9_-]*$/.test(code)){invalid=true;return;}
     next[code]=material;
    });
-   const keys=Object.keys(next);
-   if(new Set(keys).size!==keys.length){alert("Each shortcut must be unique.");return;}
+   if(invalid){alert("Codes must start with a letter and use only letters, numbers, - or _.");return;}
    localStorage.setItem(fastKey,JSON.stringify(next));
    fastEditor.hidden=true;fastFeedback.textContent="Fast entry codes saved.";
   };
