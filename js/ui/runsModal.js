@@ -3912,6 +3912,10 @@ window.photoRunMaterialsAPI = {
   };
  },
 
+ async listComboMaterials(){
+  const materials=typeof getMaterials==="function"?await getMaterials():[];
+  return (Array.isArray(materials)?materials:[]).filter(m=>String(m?.CatalogNumber||"").trim()&&String(m?.NodeType||"").trim().toUpperCase()!=="PIPE");
+ },
  async listConduits(){
   const materials=typeof getMaterials==="function"?await getMaterials():[];
   return (Array.isArray(materials)?materials:[]).filter(m=>{
