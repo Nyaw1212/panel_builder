@@ -36,35 +36,44 @@ async function readCachedPhoto(){
 }
 const settingsKey=()=>PHOTO_DB+":settings:"+projectPhotoKey();
 async function loadCalibrationPresets(){
- const select=$("pm-calipreset");
- if(!select)return;
+ const chips=$("pm-calipreset");
+ if(!chips)return;
+ chips.replaceChildren();
+ const makeChip=(name,action,active=false)=>{
+  const button=document.createElement("button");
+  button.type="button";button.className="pm-cali-chip"+(active?" is-active":"");
+  button.textContent=name;button.onclick=()=>{
+   chips.querySelectorAll(".pm-cali-chip").forEach(el=>el.classList.remove("is-active"));
+   button.classList.add("is-active");action();
+  };
+  chips.append(button);
+ };
+ makeChip("Custom",()=>{status("Enter reference dimensions, then click Set Reference Rectangle.");},true);
  try{
   const result=await apiRequest({action:"getCaliPresets"});
   if(!result?.success)throw Error(result?.message||"Could not read CALIPRESET");
   const items=Array.isArray(result.presets)?result.presets:[];
-  select.replaceChildren(new Option("Custom / manual entry",""));
   items.forEach(item=>{
    if(!(Number(item.width)>0&&Number(item.height)>0))return;
    const unit=String(item.unit||"").toLowerCase();
    if(unit!=="in"&&unit!=="ft")return;
-   const option=new Option(item.name+" — "+item.width+" × "+item.height+" "+unit,item.name);
-   option.dataset.width=item.width;
-   option.dataset.height=item.height;
-   option.dataset.unit=unit;
-   select.add(option);
+   makeChip(String(item.name||"").trim(),()=>{
+    $("pm-width").value=item.width;
+    $("pm-height").value=item.height;
+    $("pm-width-unit").value=unit;
+    $("pm-height-unit").value=unit;
+    if(corners.length===4){
+     try{calibrate();status("Reference calibrated: "+item.name);}
+     catch(e){status(e.message);}
+    }else{
+     $("pm-cal").click();
+     status("Reference "+item.name+" selected. Click the 4 corners clockwise, starting at the top-left.");
+    }
+    cacheSettings();
+   });
   });
-  select.onchange=()=>{
-   const option=select.selectedOptions[0];
-   if(!option?.value)return;
-   $("pm-width").value=option.dataset.width;
-   $("pm-height").value=option.dataset.height;
-   $("pm-width-unit").value=option.dataset.unit;
-   $("pm-height-unit").value=option.dataset.unit;
-   if(corners.length===4)try{calibrate()}catch(e){status(e.message)}
-   cacheSettings();
-  };
  }catch(error){
-  select.replaceChildren(new Option("Calibration presets unavailable",""));
+  status("Calibration presets unavailable. Manual calibration remains available.");
   console.warn("CALIPRESET load failed",error);
  }
 }
@@ -788,7 +797,10 @@ host.innerHTML=`<style>
 
 
 #photoMeasureModal #pm-conduit{width:100%;padding:10px;background:#0e1726;color:white;border:1px solid #4b617d;font-size:16px}
-#photoMeasureModal #pm-calipreset{width:100%;background:#24364d;color:#f1f5f9;border:1px solid #536b88;border-radius:5px;padding:7px;font-weight:700}\n#photoMeasureModal .pm-unit-field{display:flex;gap:6px;align-items:stretch}
+#photoMeasureModal .pm-cali-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+#photoMeasureModal .pm-cali-chip{background:#253c58;color:#edf5ff;border:1px solid #567594;border-radius:6px;padding:8px 11px;font-size:13px;font-weight:700;cursor:pointer}
+#photoMeasureModal .pm-cali-chip:hover{background:#34658b}
+#photoMeasureModal .pm-cali-chip.is-active{background:#2679b7;border-color:#89d0ff;box-shadow:inset 0 0 0 1px #89d0ff}\n#photoMeasureModal .pm-unit-field{display:flex;gap:6px;align-items:stretch}
 #photoMeasureModal .pm-unit-field input{min-width:0;flex:1}
 #photoMeasureModal .pm-unit-field select{width:65px;flex:none;background:#24364d;color:#f1f5f9;border:1px solid #536b88;border-radius:5px;padding:4px;font-weight:700}
 #photoMeasureModal .pm-size-chips{display:flex;gap:10px;padding:12px 0;align-items:center}
@@ -992,7 +1004,7 @@ host.innerHTML=`<style>
 <div style="display:flex;flex:1;min-height:0">
  <aside class="pm-side">
   <div class="pm-group"><span class="pm-heading">PHOTO</span><input id="pm-file" type="file" accept="image/*"><div class="pm-row"><button id="pm-fit">Fit Image</button><button id="pm-left">↶ 90°</button><button id="pm-right">90° ↷</button></div></div>
-  <div class="pm-group"><span class="pm-heading">CALIBRATION</span><label>Reference preset <select id="pm-calipreset" aria-label="Calibration preset"><option value="">Loading presets...</option></select></label><label>Reference width <span class="pm-unit-field"><input id="pm-width" type="number" value="1.3333" step=".001" min=".001"><select id="pm-width-unit" aria-label="Width unit"><option value="ft">ft</option><option value="in">in</option></select></span></label><label>Reference height <span class="pm-unit-field"><input id="pm-height" type="number" value="2.125" step=".001" min=".001"><select id="pm-height-unit" aria-label="Height unit"><option value="ft">ft</option><option value="in">in</option></select></span></label><button id="pm-cal">Set Reference Rectangle</button><span style="font-size:19px;color:#93a7c1">Click 4 corners clockwise, starting at the top-left.</span></div>
+  <div class="pm-group"><span class="pm-heading">CALIBRATION</span><label>Reference preset</label><div id="pm-calipreset" class="pm-cali-chips" role="group" aria-label="Calibration presets"></div><label>Reference width <span class="pm-unit-field"><input id="pm-width" type="number" value="1.3333" step=".001" min=".001"><select id="pm-width-unit" aria-label="Width unit"><option value="ft">ft</option><option value="in">in</option></select></span></label><label>Reference height <span class="pm-unit-field"><input id="pm-height" type="number" value="2.125" step=".001" min=".001"><select id="pm-height-unit" aria-label="Height unit"><option value="ft">ft</option><option value="in">in</option></select></span></label><button id="pm-cal">Set Reference Rectangle</button><span style="font-size:19px;color:#93a7c1">Click 4 corners clockwise, starting at the top-left.</span></div>
   <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASUREMENT MODE</span><button type="button" id="pm-mode-indicator" class="pm-mode-indicator pm-mode-idle" title="Click to switch between Q conduit and G wire routes">○ READY — PRESS Q OR G</button><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><span id="pm-length-summary" style="font-size:16px;color:#9bc9ee"></span><button id="pm-confirm" class="primary">Finish & Next · G / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button><button id="pm-edit-materials">Edit Conduit & Fittings</button></div>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Wheel: zoom · Q: conduit to gutter (blue) · G: extra wire (orange) · Same key: finish</span></div>
  </aside>
