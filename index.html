@@ -42,6 +42,15 @@
 #equipmentModal.run-wire-fullpage #run-wire-connection-preview{padding:8px 14px}
 #equipmentModal.run-wire-fullpage .run-wire-connection-equipment .run-canvas-component-preview{min-height:65px}
 #equipmentModal.run-wire-fullpage .run-wire-connection-equipment img{height:58px;width:58px}
+
+/* Override legacy modal dimensions only while the wire editor is active. */
+html body #equipmentModal.run-wire-fullpage{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;overflow:hidden!important;z-index:99999!important;display:flex!important}
+html body #equipmentModal.run-wire-fullpage>.modal-wrapper{box-sizing:border-box;width:100%!important;height:100%!important;min-height:0!important;max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;gap:0!important;align-items:stretch!important;overflow:hidden!important}
+html body #equipmentModal.run-wire-fullpage .modal-content{box-sizing:border-box;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;min-height:0!important;flex:1 1 0!important;margin:0!important;border-radius:0!important;overflow:hidden!important}
+html body #equipmentModal.run-wire-fullpage .modal-body{height:auto!important;min-height:0!important;flex:1 1 0!important;grid-template-columns:190px minmax(0,1fr)!important;overflow:hidden!important}
+html body #equipmentModal.run-wire-fullpage .library-panel{height:100%!important;min-height:0!important;overflow:hidden!important}
+html body #equipmentModal.run-wire-fullpage #assemblyPanel{box-sizing:border-box;flex:0 0 auto!important;max-height:24vh!important;overflow-y:auto!important;width:100%!important}
+@media(min-width:1200px){html body #equipmentModal.run-wire-fullpage .modal-body{grid-template-columns:205px minmax(0,1fr)!important}}
 </style>
 </head>
 
@@ -437,7 +446,7 @@
     <script src="js/project/projectSerializer.js?v=project-photos-v1"></script>
     <script src="js/project/projectDeserializer.js?v=project-photos-v1"></script>
     <script src="js/project/projectState.js?v=project-photos-v1"></script>
-    <script src="js/ui/runsModal.js?v=run-wire-fullpage-v2"></script>
+    <script src="js/ui/runsModal.js?v=run-wire-fullpage-v3"></script>
     <script src="js/ui/photoMeasureRuns.js?v=cali-chips-v1"></script>
     <script src="js/ui/projectPhotos.js?v=project-photos-v4"></script>
     <script src="js/project/projectCache.js"></script>
