@@ -22,32 +22,25 @@ let runMaterialsModalScrollTop = 0;
 let fittingReturnModal = "runs";
 let draggedRunId = "";
 
+let restoringRunsScroll = false;
 function rememberRunsModalScroll() {
-
+    if (restoringRunsScroll) return;
     const dialog = runsModalElement?.querySelector(".runs-dialog");
-
-    if (dialog) {
-        runsModalScrollTop = dialog.scrollTop;
-    }
-
+    if (dialog) runsModalScrollTop = dialog.scrollTop;
 }
-
 function restoreRunsModalScroll(dialog) {
-
     if (!dialog) return;
-
-    const savedScrollTop = runsModalScrollTop;
-    const applyScrollPosition = () => {
-        dialog.scrollTop = savedScrollTop;
-    };
-
-    // Rebuilds can change row height. Apply twice so a focused button or an
-    // image layout pass cannot pull the full-screen workspace back to top.
+    const saved = runsModalScrollTop;
+    restoringRunsScroll = true;
+    const restore = () => { dialog.scrollTop = saved; };
+    restore();
     requestAnimationFrame(() => {
-        applyScrollPosition();
-        requestAnimationFrame(applyScrollPosition);
+        restore();
+        requestAnimationFrame(() => {
+            restore();
+            restoringRunsScroll = false;
+        });
     });
-
 }
 
 const FITTING_MATRIX_COLUMNS = [
