@@ -3505,14 +3505,13 @@ function openCanvasLinkRunWirePicker(canvasLink) {
         alert("No Material Run is associated with this canvas link. Open Material Runs and use '+ Runs from Link' first.");
         return false;
     }
-    openRunsModal();
-    openRunWireModal(run.id);
+    openRunWireModal(run.id, { returnToCanvas: true });
     return true;
 }
 
 window.openCanvasLinkRunWirePicker = openCanvasLinkRunWirePicker;
 
-async function openRunWireModal(runId) {
+async function openRunWireModal(runId, options = {}) {
 
     const run = findRun(runId);
 
@@ -3544,7 +3543,11 @@ async function openRunWireModal(runId) {
             }
             document.getElementById("run-wire-connection-preview")?.remove();
             modal.classList.remove("run-wire-fullpage");
-            openRunsModal();
+            if (options.returnToCanvas) {
+                closeRunsModal();
+            } else {
+                openRunsModal();
+            }
         }
     });
     modal.classList.add("run-wire-fullpage");
