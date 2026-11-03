@@ -3543,9 +3543,11 @@ async function openRunWireModal(runId) {
                 refreshRunsBOM();
             }
             document.getElementById("run-wire-connection-preview")?.remove();
+            modal.classList.remove("run-wire-fullpage");
             openRunsModal();
         }
     });
+    modal.classList.add("run-wire-fullpage");
     const header = modal.querySelector(".modal-header");
     document.getElementById("run-wire-connection-preview")?.remove();
     if (header) {
