@@ -1408,7 +1408,19 @@ function openMDPMaterialPicker(equipment) {
   openPickerModal(
     "Choose MDP Preset",
     presets,
-    preset => applyMDPPreset(preset.presetCode),
+    preset => {
+      const applied = applyMDPPreset(preset.presetCode);
+      if (applied !== true) return;
+      // The generic picker closes immediately after its selection callback.
+      // Open the breaker editor afterward so the picker cannot close it.
+      queueMicrotask(() => {
+        if (typeof openPanelCircuitEditor === "function") {
+          openPanelCircuitEditor(equipment);
+        } else {
+          alert("The panel breaker editor is not available.");
+        }
+      });
+    },
     {
       headerAction: {
         label: "⚡ Configure breakers",
