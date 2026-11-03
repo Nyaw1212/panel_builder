@@ -2422,6 +2422,17 @@ function ensureRunsModal() {
         }
     });
 
+    // Capture the current viewport before any control rebuilds the runs list.
+    // This also covers clicks that open and close nested pickers.
+    overlay.addEventListener("pointerdown", event => {
+        if (event.target.closest("button, select, input, [data-action], .run-row")) {
+            rememberRunsModalScroll();
+        }
+    }, { capture: true });
+    overlay.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") rememberRunsModalScroll();
+    }, { capture: true });
+
     document.body.appendChild(overlay);
 
     runsModalElement = overlay;
