@@ -995,17 +995,31 @@ host.innerHTML=`<style>
 @keyframes pm-wire-pulse{from{box-shadow:0 0 0 0 #f9731640}to{box-shadow:0 0 0 6px #f9731618}}
 #photoMeasureModal #pm-value{font-size:38px;font-weight:700;color:#4ade80}
 #photoMeasureModal #pm-status{font-size:20px;line-height:1.5;color:#b6c7db;white-space:normal}
+#photoMeasureModal .pm-active-run-banner{display:flex;align-items:center;gap:22px;padding:12px 24px;background:#1d304a;border-bottom:2px solid #3b82b6;flex-wrap:wrap}
+#photoMeasureModal .pm-active-run-banner #pm-run{font-size:25px;line-height:1.3;flex:1 1 290px}
+#photoMeasureModal .pm-active-run-banner .pm-heading{font-size:15px;flex:0 0 auto}
+#photoMeasureModal .pm-active-run-banner .pm-endpoints{flex:1 1 450px;max-width:850px;gap:16px}
+#photoMeasureModal .pm-active-run-banner .pm-endpoint{min-height:86px;padding:10px 16px;gap:12px}
+#photoMeasureModal .pm-active-run-banner .pm-endpoint img{width:66px!important;height:66px!important;object-fit:contain}
+#photoMeasureModal .pm-active-run-banner .pm-endpoint-name{font-size:20px;font-weight:700}
+#photoMeasureModal .pm-active-run-banner .pm-endpoint-role{font-size:14px}
+@media(max-width:900px){#photoMeasureModal .pm-active-run-banner{gap:10px;padding:8px 12px}#photoMeasureModal .pm-active-run-banner #pm-run{font-size:20px}}
 #photoMeasureModal .pm-canvas{flex:1;min-width:0;position:relative;background:#101827}
 @media(max-width:700px){#photoMeasureModal .pm-side{width:310px;flex-basis:310px}}
 </style>
 <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 17px;background:#111a2a;border-bottom:1px solid #334155">
  <strong style="font-size:24px">▣ Photo Measuring Tool</strong><button id="pm-close">✕ Close</button>
 </div>
+<section class="pm-active-run-banner" aria-label="Active material run">
+ <span class="pm-heading">ACTIVE MATERIAL RUN</span>
+ <strong id="pm-run"></strong>
+ <div id="pm-endpoints" class="pm-endpoints"></div>
+ </section>
 <div style="display:flex;flex:1;min-height:0">
  <aside class="pm-side">
   <div class="pm-group"><span class="pm-heading">PHOTO</span><input id="pm-file" type="file" accept="image/*"><div class="pm-row"><button id="pm-fit">Fit Image</button><button id="pm-left">↶ 90°</button><button id="pm-right">90° ↷</button></div></div>
   <div class="pm-group"><span class="pm-heading">CALIBRATION</span><label>Reference preset</label><div id="pm-calipreset" class="pm-cali-chips" role="group" aria-label="Calibration presets"></div><label>Reference width <span class="pm-unit-field"><input id="pm-width" type="number" value="1.3333" step=".001" min=".001"><select id="pm-width-unit" aria-label="Width unit"><option value="ft">ft</option><option value="in">in</option></select></span></label><label>Reference height <span class="pm-unit-field"><input id="pm-height" type="number" value="2.125" step=".001" min=".001"><select id="pm-height-unit" aria-label="Height unit"><option value="ft">ft</option><option value="in">in</option></select></span></label><button id="pm-cal">Set Reference Rectangle</button><span style="font-size:19px;color:#93a7c1">Click 4 corners clockwise, starting at the top-left.</span></div>
-  <div class="pm-group"><span class="pm-heading">ACTIVE MATERIAL RUN</span><strong id="pm-run" style="line-height:1.5"></strong><div id="pm-endpoints" class="pm-endpoints"></div><span class="pm-heading">MEASUREMENT MODE</span><button type="button" id="pm-mode-indicator" class="pm-mode-indicator pm-mode-idle" title="Click to switch between Q conduit and G wire routes">○ READY — PRESS Q OR G</button><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><span id="pm-length-summary" style="font-size:16px;color:#9bc9ee"></span><button id="pm-confirm" class="primary">Finish & Next · G / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button><button id="pm-edit-materials">Edit Conduit & Fittings</button></div>
+  <div class="pm-group"><span class="pm-heading">MEASUREMENT MODE</span><button type="button" id="pm-mode-indicator" class="pm-mode-indicator pm-mode-idle" title="Click to switch between Q conduit and G wire routes">○ READY — PRESS Q OR G</button><span class="pm-heading">MEASURED LENGTH</span><span id="pm-value">—</span><span id="pm-length-summary" style="font-size:16px;color:#9bc9ee"></span><button id="pm-confirm" class="primary">Finish & Next · G / Enter</button><div class="pm-row"><button id="pm-prev">← Previous</button><button id="pm-skip">Skip →</button></div><button id="pm-remeasure">Remeasure Current Run</button><button id="pm-edit-materials">Edit Conduit & Fittings</button></div>
   <div class="pm-group"><span class="pm-heading">COMMAND / STATUS</span><div id="pm-status">Upload a photo to begin.</div><span style="font-size:19px;color:#93a7c1">Space + drag: pan · Wheel: zoom · Q: conduit to gutter (blue) · G: extra wire (orange) · Same key: finish</span></div>
  </aside>
  <main class="pm-canvas"><canvas id="pm-canvas" style="width:100%;height:100%;display:block;touch-action:none;cursor:crosshair"></canvas></main><aside id="pm-materials" class="pm-materials"><div class="pm-group"><span class="pm-heading">MATERIALS EDITOR</span><strong id="pm-material-title"></strong><button id="pm-material-done" class="primary">Done · Next Run →</button><span id="pm-material-status" style="font-size:14px;color:#a9c3db"></span></div><div class="pm-group"><div id="pm-conduit-grid" class="pm-conduit-scroll" aria-label="Conduit selection table"></div></div><div class="pm-group"><span class="pm-heading">FITTINGS</span><div class="pm-fitting-toolbar"><div class="pm-size-controls pm-size-chips" role="group" aria-label="Fittings size"><label class="pm-size-chip"><input type="checkbox" id="pm-size-1" checked> <span>1&quot;</span></label><label class="pm-size-chip"><input type="checkbox" id="pm-size-2"> <span>2&quot;</span></label></div><div class="pm-summary-group"><div class="pm-summary-heading"><span class="pm-heading">MATERIAL SUMMARY</span><small id="pm-summary-count">0 items</small></div><div id="pm-material-summary" class="pm-summary-list"></div></div></div><div id="pm-fitting-grid" class="pm-fitting-grid"></div></aside>
