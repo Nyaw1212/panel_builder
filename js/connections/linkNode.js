@@ -3,6 +3,46 @@
 //----------------------------------
 
 const LINK_NODE_SIZE = 24;
+
+// Link-node clipboard: copies assigned materials/wires between existing links.
+let linkNodeClipboard = null;
+let activeLinkNode = null;
+function persistLinkNodeEdit() {
+  if (typeof saveProject === "function") saveProject();
+  if (typeof renderCanvas === "function") renderCanvas();
+  else if (typeof render === "function") render();
+}
+document.addEventListener("keydown", event => {
+  if (!activeLinkNode || event.target?.closest?.("input,textarea,[contenteditable='true']")) return;
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+  const key = event.key.toLowerCase();
+  if (key === "c") {
+    linkNodeClipboard = structuredClone({
+      materials: activeLinkNode.materials || [],
+      assembly: activeLinkNode.assembly || [],
+      startHardware: activeLinkNode.nodes?.start?.hardware || [],
+      endHardware: activeLinkNode.nodes?.end?.hardware || [],
+      startMaterials: activeLinkNode.nodes?.start?.materials || [],
+      endMaterials: activeLinkNode.nodes?.end?.materials || []
+    });
+    event.preventDefault();
+  } else if (key === "v" && linkNodeClipboard) {
+    const data = structuredClone(linkNodeClipboard);
+    activeLinkNode.materials = data.materials;
+    activeLinkNode.assembly = data.assembly;
+    if (activeLinkNode.nodes?.start) {
+      activeLinkNode.nodes.start.hardware = data.startHardware;
+      activeLinkNode.nodes.start.materials = data.startMaterials;
+    }
+    if (activeLinkNode.nodes?.end) {
+      activeLinkNode.nodes.end.hardware = data.endHardware;
+      activeLinkNode.nodes.end.materials = data.endMaterials;
+    }
+    event.preventDefault();
+    persistLinkNodeEdit();
+  }
+});
+
 const LINK_DELETE_RADIUS = 8;
 
 //----------------------------------
@@ -338,12 +378,34 @@ function drawLinkNode(link) {
     }
   });
 
+  // Visible, editable link label.
+  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  label.setAttribute("x", position.x);
+  label.setAttribute("y", position.y + 29);
+  label.setAttribute("text-anchor", "middle");
+  label.setAttribute("font-size", "12");
+  label.setAttribute("font-weight", "600");
+  label.setAttribute("fill", "#1d4ed8");
+  label.style.cursor = "text";
+  label.style.pointerEvents = "all";
+  label.textContent = link.label || "Link";
+  label.addEventListener("dblclick", event => {
+    event.stopPropagation();
+    const next = prompt("Connection label", link.label || "");
+    if (next === null) return;
+    link.label = next.trim().slice(0, 80);
+    label.textContent = link.label || "Link";
+    persistLinkNodeEdit();
+  });
+  hit.addEventListener("mousedown", () => { activeLinkNode = link; });
+  label.addEventListener("mousedown", () => { activeLinkNode = link; });
   //----------------------------------
   // Build
   //----------------------------------
 
   group.appendChild(hit);
   group.appendChild(square);
+  group.appendChild(label);
 
   group.appendChild(deleteButton);
   group.appendChild(x1);
