@@ -31,6 +31,17 @@
 .run-wire-connection-equipment .run-canvas-component-preview span{font-size:11px;color:#a9bfd9}
 .run-wire-connection-equipment .run-canvas-component-preview small{font-weight:700}
 .run-wire-connection-equipment>span{font-size:22px;color:#70bdf4}
+
+/* Dedicated full-screen Run Wire Editor (other pickers remain unchanged). */
+#equipmentModal.run-wire-fullpage{inset:0;padding:0;align-items:stretch;justify-content:stretch}
+#equipmentModal.run-wire-fullpage .modal-wrapper{width:100vw;height:100vh;max-width:none;gap:0;display:flex;flex-direction:column;align-items:stretch}
+#equipmentModal.run-wire-fullpage .modal-content{order:0;width:100vw;max-width:none;height:auto;max-height:none;min-height:0;flex:1;border-radius:0;padding:14px 22px}
+#equipmentModal.run-wire-fullpage #assemblyPanel{order:1;width:100%;max-width:none;min-width:0;flex-shrink:0;padding:8px 22px;background:#0e1b30;border-top:1px solid #3a5371}
+#equipmentModal.run-wire-fullpage .modal-body{min-height:0;flex:1}
+#equipmentModal.run-wire-fullpage .modal-header{margin-bottom:6px;padding-bottom:8px}
+#equipmentModal.run-wire-fullpage #run-wire-connection-preview{padding:8px 14px}
+#equipmentModal.run-wire-fullpage .run-wire-connection-equipment .run-canvas-component-preview{min-height:65px}
+#equipmentModal.run-wire-fullpage .run-wire-connection-equipment img{height:58px;width:58px}
 </style>
 </head>
 
@@ -391,7 +402,7 @@
     <script src="js/ui/modalFilters.js"></script>
     <script src="js/ui/modalSearch.js"></script>
     <script src="js/ui/modalEquipment.js"></script>
-    <script src="js/ui/modalHardware.js?v=wire-entry-v1"></script>
+    <script src="js/ui/modalHardware.js?v=run-wire-qty-v2"></script>
     <script src="js/ui/materialImageUpload.js?v=drive-image-v3"></script>
     <script src="js/ui/modalRenderer.js?v=drive-image-v3"></script>
 
@@ -426,7 +437,7 @@
     <script src="js/project/projectSerializer.js?v=project-photos-v1"></script>
     <script src="js/project/projectDeserializer.js?v=project-photos-v1"></script>
     <script src="js/project/projectState.js?v=project-photos-v1"></script>
-    <script src="js/ui/runsModal.js?v=connection-wire-preview-v1"></script>
+    <script src="js/ui/runsModal.js?v=run-wire-fullpage-v2"></script>
     <script src="js/ui/photoMeasureRuns.js?v=cali-chips-v1"></script>
     <script src="js/ui/projectPhotos.js?v=project-photos-v4"></script>
     <script src="js/project/projectCache.js"></script>
