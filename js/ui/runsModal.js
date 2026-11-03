@@ -3490,6 +3490,28 @@ async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
 
 }
 
+function openCanvasLinkRunWirePicker(canvasLink) {
+    const linkId = String(canvasLink?.id || "");
+    const fromId = String(canvasLink?.start?.panelId || "");
+    const toId = String(canvasLink?.end?.panelId || "");
+    const run = getEditableRuns().find(candidate =>
+        String(candidate?.canvasLinkId || "") === linkId
+    ) || getEditableRuns().find(candidate =>
+        fromId && toId &&
+        String(candidate?.fromCanvasItemId || "") === fromId &&
+        String(candidate?.toCanvasItemId || "") === toId
+    );
+    if (!run) {
+        alert("No Material Run is associated with this canvas link. Open Material Runs and use '+ Runs from Link' first.");
+        return false;
+    }
+    openRunsModal();
+    openRunWireModal(run.id);
+    return true;
+}
+
+window.openCanvasLinkRunWirePicker = openCanvasLinkRunWirePicker;
+
 function openRunWireModal(runId) {
 
     const run = findRun(runId);
