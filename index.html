@@ -22,7 +22,17 @@
 
     <!-- Uncomment when toolbar.css exists -->
     <!-- <link rel="stylesheet" href="styles/toolbar.css"> -->
-  </head>
+  <style id="run-wire-page-style">
+#run-wire-connection-preview{padding:12px 20px;background:#142239;color:#eef5ff;border-bottom:1px solid #3a5371}
+#run-wire-connection-preview>strong{font-size:17px;display:block;margin-bottom:10px}
+.run-wire-connection-equipment{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.run-wire-connection-equipment .run-canvas-component-preview{display:flex;align-items:center;gap:12px;border:1px solid #425b79;border-radius:7px;padding:8px 12px;min-width:180px;min-height:80px}
+.run-wire-connection-equipment .run-canvas-component-preview img{width:74px;height:74px;object-fit:contain;background:#f4f6f8;border-radius:4px}
+.run-wire-connection-equipment .run-canvas-component-preview span{font-size:11px;color:#a9bfd9}
+.run-wire-connection-equipment .run-canvas-component-preview small{font-weight:700}
+.run-wire-connection-equipment>span{font-size:22px;color:#70bdf4}
+</style>
+</head>
 
   <body>
     <div class="container">
@@ -416,7 +426,7 @@
     <script src="js/project/projectSerializer.js?v=project-photos-v1"></script>
     <script src="js/project/projectDeserializer.js?v=project-photos-v1"></script>
     <script src="js/project/projectState.js?v=project-photos-v1"></script>
-    <script src="js/ui/runsModal.js?v=canvas-link-run-wire-v1"></script>
+    <script src="js/ui/runsModal.js?v=connection-wire-preview-v1"></script>
     <script src="js/ui/photoMeasureRuns.js?v=cali-chips-v1"></script>
     <script src="js/ui/projectPhotos.js?v=project-photos-v4"></script>
     <script src="js/project/projectCache.js"></script>
