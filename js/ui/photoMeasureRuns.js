@@ -1034,5 +1034,17 @@ document.addEventListener("keydown",e=>{
  $("pm-close")?.click();
  if(typeof window.closeRunsModal==="function")window.closeRunsModal();
 },true);
+// Quick fitting-size filter: 1 selects 1-inch, 2 selects 2-inch.
+document.addEventListener("keydown", e => {
+ if (!host || !["1","2"].includes(e.key) || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+ if (["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return;
+ if (host.querySelector(".pm-combo-workspace, #pm-nipple-modal, .pm-conduit-overlay")) return;
+ const sizeInput = $("pm-size-" + e.key);
+ if (!sizeInput || !sizeInput.isConnected) return;
+ e.preventDefault();
+ e.stopPropagation();
+ sizeInput.checked = true;
+ sizeInput.dispatchEvent(new Event("change", { bubbles: true }));
+}, true);
 document.addEventListener("keydown",e=>{if(!host)return;if((e.key==="Enter"||e.key==="Tab")&&materialsMode&&!e.repeat&&!["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName)&&!document.getElementById("pm-nipple-modal")){e.preventDefault();closeMaterials();return;}if(e.code==="Space"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();pan=true;canvas.style.cursor="grab";return}if(["q","Q"].includes(e.key)&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(!e.repeat)toggleTrace("conduit")}else if(e.key.toLowerCase()==="g"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(!e.repeat)toggleTrace("wire")}else if(e.key==="Enter"&&!["INPUT","TEXTAREA"].includes(document.activeElement.tagName)){e.preventDefault();if(tracing&&points.length>=2){toggleTrace(traceKind)}}});document.addEventListener("keyup",e=>{if(e.code==="Space"){pan=false;if(canvas)canvas.style.cursor="crosshair"}});window.addEventListener("resize",()=>{if(host)draw()});window.openPhotoMeasureRuns=open;
 })();
