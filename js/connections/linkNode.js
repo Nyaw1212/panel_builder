@@ -331,9 +331,11 @@ function drawLinkNode(link) {
 
     selectLink(link);
 
-    await openMaterialModal(link.nodes.start);
-
-    drawCanvas();
+    if (typeof window.openCanvasLinkRunWirePicker === "function") {
+      window.openCanvasLinkRunWirePicker(link);
+    } else {
+      alert("Material Runs wire selection is unavailable. Reload the app and try again.");
+    }
   });
 
   //----------------------------------
