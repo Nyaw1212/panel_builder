@@ -3512,7 +3512,7 @@ function openCanvasLinkRunWirePicker(canvasLink) {
 
 window.openCanvasLinkRunWirePicker = openCanvasLinkRunWirePicker;
 
-function openRunWireModal(runId) {
+async function openRunWireModal(runId) {
 
     const run = findRun(runId);
 
@@ -3527,7 +3527,8 @@ function openRunWireModal(runId) {
     rememberRunsModalScroll();
     overlay.style.display = "none";
 
-    openMaterialModal(draftConnection, {
+    await openMaterialModal(draftConnection, {
+        title: "Connection Wire Editor",
         category: "WIRE",
         onClose: () => {
             const currentRun = findRun(runId);
@@ -3541,10 +3542,19 @@ function openRunWireModal(runId) {
                 captureRunsHistory("Run wire selection updated");
                 refreshRunsBOM();
             }
-
+            document.getElementById("run-wire-connection-preview")?.remove();
             openRunsModal();
         }
     });
+    const header = modal.querySelector(".modal-header");
+    document.getElementById("run-wire-connection-preview")?.remove();
+    if (header) {
+        const preview = document.createElement("section");
+        preview.id = "run-wire-connection-preview";
+        preview.className = "run-wire-connection-preview";
+        preview.innerHTML = `<strong>${runModalEscape(run.name || "Connection")}</strong><div class="run-wire-connection-equipment">${renderRunCanvasComponentPreview(run.fromCanvasItemId, "FROM")}<span>→</span>${renderRunCanvasComponentPreview(run.toCanvasItemId, "TO")}</div>`;
+        header.insertAdjacentElement("afterend", preview);
+    }
 
 }
 
