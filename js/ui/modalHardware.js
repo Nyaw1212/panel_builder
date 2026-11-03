@@ -624,7 +624,7 @@ function handleHardwareClick(item) {
             nodeType === "PIPE" ||
             nodeType === "WIRE"
         ) &&
-        !currentConnection?.runWirePicker
+        (nodeType === "WIRE" && currentConnection?.runWirePicker || !currentConnection?.runWirePicker)
 
     ) {
 
