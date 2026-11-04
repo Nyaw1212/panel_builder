@@ -90,6 +90,23 @@
     add(project.materialSummary,"material");
     return {types:[...types],sizes:[...sizes],combinations:[...combinations].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))};
   }
+  function isFSU(project) {
+    if(!project || !Array.isArray(project.layout))return false;
+    const entries=project.layout.map(item=>{
+      const data=item?.data||{};
+      const overrides=data.$o||{};
+      return [item?.preset,data.PRESET,data.preset,data.Name,data.name,data.Description,data.description,data.CatalogNumber,data.catalogNumber,data.$ref,overrides.PRESET,overrides.preset].filter(Boolean).join(" ").toUpperCase();
+    });
+    const hasMN=entries.some(label=>/(?:^|[^A-Z0-9])MN(?:$|[^A-Z0-9])/.test(label));
+    const hasBRP=entries.some(label=>/(?:^|[^A-Z0-9])BRP(?:$|[^A-Z0-9])/.test(label)&&!/(?:^|[^A-Z0-9])(?:BRP[-_ ]?)?GEN(?:$|[^A-Z0-9])/.test(label));
+    return hasMN&&hasBRP;
+  }
+  function fsuBadge() {
+    const badge=document.createElement("span");
+    badge.textContent="FSU";
+    badge.style.cssText="display:inline-block;justify-self:start;padding:4px 9px;border-radius:5px;background:#1e40af;color:#fff;font-size:12px;font-weight:800;letter-spacing:.06em";
+    return badge;
+  }
   function choosePhoto() {
     return new Promise(resolve => {
       const input = document.createElement("input");
@@ -226,7 +243,7 @@
               button.textContent="Photo Attached / Template Created";
             }catch(err){alert("Could not create template: "+err.message);button.disabled=false;button.textContent="Attach Photo & Make Template";}
           };
-          card.append(heading,subtitle,button);grid.append(card);
+          card.append(heading,subtitle);if(isFSU(project.project))card.appendChild(fsuBadge());card.append(button);grid.append(card);
           cards.push({name:project.jobName||"",group:project.model||"",templateType:"saved",tags:{types:[],sizes:[]},card});
         });
         update();
@@ -282,7 +299,7 @@
         };
         document.body.appendChild(panel);groupField.focus();
       };
-      actions.append(use,attach,edit);card.append(img,groupLabel,heading,details,actions);grid.append(card);
+      actions.append(use,attach,edit);card.append(img,groupLabel,heading);if(isFSU(record.project))card.appendChild(fsuBadge());card.append(details,actions);grid.append(card);
       cards.push({name,group:record.group||"Uncategorized",templateType,tags,card});
     }
     const update=()=>{
