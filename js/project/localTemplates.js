@@ -45,18 +45,46 @@
     }); } finally { db.close(); }
   }
   function conduitTags(project) {
-    const types = new Set(), sizes = new Set();
-    (project.runs || []).forEach(run => {
-      const c = run.conduit;
-      if (!c) return;
-      const desc = [c.Description, c.description, c.CatalogNumber, c.catalogNumber, c.Name, c.name].filter(Boolean).join(" ").toUpperCase();
-      if (/\bEMT\b/.test(desc)) types.add("EMT");
-      if (/\bPVC\b|SCHEDULE\s*\d+|\bSCH\s*\d+/.test(desc)) types.add("PVC");
-      if (/LIQUID|SEALTIGHT|\bL\/?T\b|\bLFNC\b|\bLFMC\b/.test(desc)) types.add("LT");
-      if (/(?:^|[^0-9])1\s*(?:INCH|IN\b|["″])/.test(desc)) sizes.add('1"');
-      if (/(?:^|[^0-9])2\s*(?:INCH|IN\b|["″])/.test(desc)) sizes.add('2"');
+    const types=new Set(), sizes=new Set();
+    const sources=[];
+    const add=(value,source)=>{
+      if(!value)return;
+      if(Array.isArray(value)){value.forEach(item=>add(item,source));return;}
+      if(typeof value!=="object")return;
+      const record=value.material && typeof value.material==="object" ? value.material : value;
+      // Serialized catalog entries may be compact $ref + $o records.
+      const resolved=typeof hydrateCatalogRecord==="function" ? hydrateCatalogRecord(record) : record;
+      const fields=[record,resolved,record.$o].filter(x=>x&&typeof x==="object");
+      const desc=fields.flatMap(x=>[x.Description,x.description,x.CatalogNumber,x.catalogNumber,x.Name,x.name,x.Category,x.category,x.MaterialType,x.materialType,x.$ref]).filter(Boolean).join(" ").toUpperCase();
+      if(!desc)return;
+      const isConduit=source==="conduit" || /\bCONDUIT\b|\bEMT\b|\bPVC\b|LIQUID\s*TIGHT|LIQUIDTIGHT|SEALTIGHT|\bLFNC\b|\bLFMC\b|\bLQT\b|\bLT\b|\bSCH\s*(?:40|80)\b/.test(desc);
+      if(!isConduit)return;
+      // Avoid interpreting an EMT connector/fitting as a conduit run.
+      if(source!=="conduit" && /\bCONNECTOR\b|\bCOUPLING\b|\bBUSHING\b|\bLOCKNUT\b|\bFITTING\b|\bADAPTER\b|\bELBOW\b/.test(desc) && !/\bCONDUIT\b/.test(desc))return;
+      const found=[];
+      if(/\bEMT\b|ELECTRICAL\s+METALLIC\s+TUBING/.test(desc))found.push("EMT");
+      if(/\bPVC\b|\bSCH\s*(?:40|80)\b|\bSCHEDULE\s*(?:40|80)\b/.test(desc))found.push("PVC");
+      if(/LIQUID\s*TIGHT|LIQUIDTIGHT|SEALTIGHT|\bLFNC\b|\bLFMC\b|\bLQT\b|\bLT\b/.test(desc))found.push("LT");
+      if(!found.length)return;
+      found.forEach(type=>types.add(type));
+      // Match 1" and 2" only, not 1/2", 1-1/4", 2-1/2", or 12".
+      const sizeText=desc.replace(/\s+/g," ");
+      if(/(?:^|[^0-9/])1\s*(?:"|″|INCH(?:ES)?\b|IN\b)(?!\s*[-/]\s*\d)/.test(sizeText))sizes.add('1"');
+      if(/(?:^|[^0-9/])2\s*(?:"|″|INCH(?:ES)?\b|IN\b)(?!\s*[-/]\s*\d)/.test(sizeText))sizes.add('2"');
+      sources.push(desc);
+    };
+    (project.runs||[]).forEach(run=>add(run.conduit,"conduit"));
+    (project.links||[]).forEach(link=>add(link.conduit,"conduit"));
+    (project.layout||[]).forEach(item=>{
+      add(item.materials,"material");
+      Object.values(item.connections||{}).forEach(connections=>(Array.isArray(connections)?connections:[]).forEach(connection=>{
+        add(connection.conduit,"conduit");
+        add(connection.materials,"material");
+      }));
     });
-    return {types:[...types], sizes:[...sizes]};
+    // Include cataloged materials from the project's BOM/used-material summary.
+    add(project.materialSummary,"material");
+    return {types:[...types],sizes:[...sizes]};
   }
   function choosePhoto() {
     return new Promise(resolve => {
