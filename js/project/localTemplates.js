@@ -137,9 +137,12 @@
     const all=read(),names=Object.keys(all).sort();
     if(!names.length){alert("No saved templates in this browser yet.");return;}
     const overlay=document.createElement("div");
-    overlay.className="template-quick-menu";
-    overlay.style.cssText="position:fixed;inset:0;z-index:100090;background:#000b;display:flex;justify-content:center;align-items:flex-start;padding:5vh 16px;overflow:auto";
-    overlay.innerHTML='<section style="width:min(1000px,100%);background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:20px;box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:15px"></div></section>';
+    overlay.className="visual-template-library-page";
+    overlay.setAttribute("role","dialog");
+    overlay.setAttribute("aria-modal","true");
+    overlay.setAttribute("aria-label","Visual Template Library");
+    overlay.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;box-sizing:border-box;z-index:2147483000;background:#0b1220;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:clamp(14px,3vw,32px);";
+    overlay.innerHTML='<section style="width:100%;max-width:1600px;min-height:calc(100vh - 64px);box-sizing:border-box;margin:0 auto;background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:clamp(14px,2vw,28px);box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:15px"></div></section>';
     document.body.appendChild(overlay);templateMenu=overlay;
     overlay.querySelector("[data-close]").onclick=closeTemplateMenu;
     overlay.addEventListener("click",e=>{if(e.target===overlay)closeTemplateMenu()});
@@ -148,9 +151,9 @@
     for(const name of names){
       const record=all[name],tags=conduitTags(record.project||{});
       const card=document.createElement("article");
-      card.style.cssText="background:#0c1728;border:1px solid #334155;border-radius:10px;padding:10px;display:grid;gap:9px";
+      card.style.cssText="background:#0c1728;border:1px solid #334155;border-radius:10px;padding:14px;display:grid;gap:11px;align-content:start";
       const img=document.createElement("div");
-      img.style.cssText="height:150px;background:#233348;border-radius:7px;display:grid;place-items:center;overflow:hidden;color:#94a3b8";
+      img.style.cssText="height:220px;background:#233348;border-radius:7px;display:grid;place-items:center;overflow:hidden;color:#94a3b8";
       img.textContent="No photo attached";
       const blob=await getPhoto(name).catch(()=>null);
       if(blob){
@@ -162,7 +165,7 @@
       const heading=document.createElement("strong");heading.textContent=name;
       const details=document.createElement("small");details.style.color="#aabbd0";
       details.textContent=(record.project?.runs?.length||0)+" runs · "+(tags.types.join(" / ")||"Conduit unclassified")+" · "+(tags.sizes.join(" / ")||"Size unclassified");
-      const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px";
+      const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
       const use=document.createElement("button");use.textContent="Use Template";use.onclick=()=>loadTemplate(name,record);
       const attach=document.createElement("button");attach.textContent=blob?"Replace Photo":"Attach Photo";
       attach.onclick=async()=>{
