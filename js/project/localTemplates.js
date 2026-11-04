@@ -179,7 +179,7 @@
     overlay.setAttribute("aria-modal","true");
     overlay.setAttribute("aria-label","Visual Template Library");
     overlay.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;box-sizing:border-box;z-index:2147483000;background:#0b1220;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:clamp(14px,3vw,32px);";
-    overlay.innerHTML='<section style="width:100%;max-width:1600px;min-height:calc(100vh - 64px);box-sizing:border-box;margin:0 auto;background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:clamp(14px,2vw,28px);box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button data-tab="project" type="button">Project Templates</button><button data-tab="blank" type="button">Blank Templates</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><select data-group-filter style="padding:10px;background:#0f172a;color:white"><option value="">All template groups</option></select><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:15px"></div></section>';
+    overlay.innerHTML='<section style="width:100%;max-width:1600px;min-height:calc(100vh - 64px);box-sizing:border-box;margin:0 auto;background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:clamp(14px,2vw,28px);box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button data-tab="project" type="button">Project Templates</button><button data-tab="blank" type="button">Blank Templates</button><button data-tab="saved" type="button">Saved Projects</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><select data-group-filter style="padding:10px;background:#0f172a;color:white"><option value="">All template groups</option></select><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-project-status style="display:none;margin:8px 0;color:#aabbd0"></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:15px"></div></section>';
     document.body.appendChild(overlay);templateMenu=overlay;
     overlay.querySelector("[data-close]").onclick=closeTemplateMenu;
     overlay.addEventListener("click",e=>{if(e.target===overlay)closeTemplateMenu()});
@@ -188,6 +188,51 @@
     [...new Set(names.map(n=>String(all[n].group||"Uncategorized").trim()))].sort().forEach(group=>{const option=document.createElement("option");option.value=group;option.textContent=group;groupFilter.appendChild(option);});
     const grid=overlay.querySelector("[data-grid]");
     const cards=[];
+    let savedProjectsLoaded=false;
+    const projectStatus=overlay.querySelector("[data-project-status]");
+    async function showSavedProjects(){
+      if(savedProjectsLoaded)return;
+      savedProjectsLoaded=true;
+      projectStatus.textContent="Loading saved projects...";
+      try{
+        const projects=await getProjects();
+        if(!Array.isArray(projects))throw Error("Invalid project list");
+        if(!projects.length)projectStatus.textContent=(typeof getProjectsLoadError==="function"&&getProjectsLoadError())||"No saved projects found.";
+        else projectStatus.textContent=projects.length+" saved projects · Attach a photo to create a local visual template (original project remains unchanged).";
+        projects.forEach(project=>{
+          const card=document.createElement("article");card.style.cssText="background:#0c1728;border:1px solid #334155;border-radius:10px;padding:16px;display:grid;gap:10px;align-content:start";
+          const heading=document.createElement("strong");heading.textContent=project.jobName||"Untitled Project";
+          const subtitle=document.createElement("small");subtitle.style.color="#aabbd0";subtitle.textContent=[project.address,project.model].filter(Boolean).join(" · ")||"Saved project";
+          const button=document.createElement("button");button.type="button";button.textContent="Attach Photo & Make Template";
+          button.onclick=async()=>{
+            const file=await choosePhoto();if(!file)return;
+            button.disabled=true;button.textContent="Saving...";
+            try{
+              let snapshot=project.project;
+              if(typeof snapshot==="string")snapshot=JSON.parse(snapshot);
+              if(!snapshot||!Array.isArray(snapshot.runs)){
+                const loaded=await loadProject(project.jobName,project.address);
+                if(!loaded?.success||!loaded?.found||!loaded.project)throw Error("Could not retrieve the full project");
+                snapshot=typeof loaded.project==="string"?JSON.parse(loaded.project):loaded.project;
+              }
+              const group=String(project.model||"PROJECT").trim().toUpperCase();
+              const name=String(project.jobName||"Saved Project").trim();
+              const key="project:"+Date.now()+":"+Math.random().toString(36).slice(2,9);
+              const copy=structuredClone(snapshot);copy.id="";copy.jobName="";copy.address="";copy.model=name;
+              await putPhoto(key,file);
+              const latest=read();latest[key]={project:copy,group,templateName:name,templateType:"project",sourceProjectId:String(project.projectId||""),savedAt:new Date().toISOString()};
+              localStorage.setItem(KEY,JSON.stringify(latest));
+              alert("Created visual template from "+name+". Open Project Templates to see it.");
+              button.textContent="Photo Attached / Template Created";
+            }catch(err){alert("Could not create template: "+err.message);button.disabled=false;button.textContent="Attach Photo & Make Template";}
+          };
+          card.append(heading,subtitle,button);grid.append(card);
+          cards.push({name:project.jobName||"",group:project.model||"",templateType:"saved",tags:{types:[],sizes:[]},card});
+        });
+        update();
+      }catch(err){projectStatus.textContent="Unable to load saved projects: "+err.message;}
+    }
+
     for(const name of names){
       const record=all[name],tags=conduitTags(record.project||{}),templateType=record.templateType==="project"?"project":"blank";
       const card=document.createElement("article");
@@ -241,12 +286,16 @@
       cards.push({name,group:record.group||"Uncategorized",templateType,tags,card});
     }
     const update=()=>{
+      projectStatus.style.display=activeTab==="saved"?"block":"none";
+      overlay.querySelector("[data-type]").disabled=activeTab==="saved";
+      overlay.querySelector("[data-size]").disabled=activeTab==="saved";
+      groupFilter.disabled=activeTab==="saved";
       const query=overlay.querySelector("[data-search]").value.toLowerCase();
       const type=overlay.querySelector("[data-type]").value,size=overlay.querySelector("[data-size]").value,group=groupFilter.value;
       cards.forEach(x=>x.card.style.display=x.templateType===activeTab&&(x.name+" "+x.group).toLowerCase().includes(query)&&(!group||x.group===group)&&(!type||x.tags.types.includes(type))&&(!size||x.tags.sizes.includes(size))?"grid":"none");
     };
     overlay.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",update));
-    overlay.querySelectorAll("[data-tab]").forEach(button=>button.onclick=()=>{activeTab=button.dataset.tab;update();});
+    overlay.querySelectorAll("[data-tab]").forEach(button=>button.onclick=()=>{activeTab=button.dataset.tab;if(activeTab==="saved")showSavedProjects();update();});
     const updateTabStyles=()=>overlay.querySelectorAll("[data-tab]").forEach(button=>{const selected=button.dataset.tab===activeTab;button.style.cssText="padding:12px 20px;border-radius:8px;border:1px solid #64748b;cursor:pointer;background:"+(selected?"#2563eb":"#1e293b")+";color:white;font-weight:700";});
     overlay.querySelectorAll("[data-tab]").forEach(button=>button.addEventListener("click",updateTabStyles));
     updateTabStyles();update();
