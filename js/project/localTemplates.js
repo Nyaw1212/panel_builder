@@ -50,11 +50,11 @@
       const c = run.conduit;
       if (!c) return;
       const desc = [c.Description, c.description, c.CatalogNumber, c.catalogNumber, c.Name, c.name].filter(Boolean).join(" ").toUpperCase();
-      if (/\\bEMT\\b/.test(desc)) types.add("EMT");
-      if (/\\bPVC\\b|SCHEDULE\\s*\\d+|\\bSCH\\s*\\d+/.test(desc)) types.add("PVC");
-      if (/LIQUID|SEALTIGHT|\\bL\\/?T\\b|\\bLFNC\\b|\\bLFMC\\b/.test(desc)) types.add("LT");
-      if (/(?:^|[^0-9])(?:1\\s*(?:INCH|IN\\b|["″])|1\\s*[- ]?INCH)/.test(desc)) sizes.add('1"');
-      if (/(?:^|[^0-9])(?:2\\s*(?:INCH|IN\\b|["″])|2\\s*[- ]?INCH)/.test(desc)) sizes.add('2"');
+      if (/\bEMT\b/.test(desc)) types.add("EMT");
+      if (/\bPVC\b|SCHEDULE\s*\d+|\bSCH\s*\d+/.test(desc)) types.add("PVC");
+      if (/LIQUID|SEALTIGHT|\bL\/?T\b|\bLFNC\b|\bLFMC\b/.test(desc)) types.add("LT");
+      if (/(?:^|[^0-9])1\s*(?:INCH|IN\b|["″])/.test(desc)) sizes.add('1"');
+      if (/(?:^|[^0-9])2\s*(?:INCH|IN\b|["″])/.test(desc)) sizes.add('2"');
     });
     return {types:[...types], sizes:[...sizes]};
   }
