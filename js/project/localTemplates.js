@@ -45,7 +45,7 @@
     }); } finally { db.close(); }
   }
   function conduitTags(project) {
-    const types=new Set(), sizes=new Set();
+    const types=new Set(), sizes=new Set(), combinations=new Set();
     const sources=[];
     const add=(value,source)=>{
       if(!value)return;
@@ -69,8 +69,12 @@
       found.forEach(type=>types.add(type));
       // Match 1" and 2" only, not 1/2", 1-1/4", 2-1/2", or 12".
       const sizeText=desc.replace(/\s+/g," ");
-      if(/(?:^|[^0-9/])1\s*(?:"|″|INCH(?:ES)?\b|IN\b)(?!\s*[-/]\s*\d)/.test(sizeText))sizes.add('1"');
-      if(/(?:^|[^0-9/])2\s*(?:"|″|INCH(?:ES)?\b|IN\b)(?!\s*[-/]\s*\d)/.test(sizeText))sizes.add('2"');
+      const detectedSizes=[];
+      if(/(?:^|[^0-9/])1\s*(?:"|″|INCH(?:ES)?\b|IN\b)(?!\s*[-/]\s*\d)/.test(sizeText))detectedSizes.push('1"');
+      if(/(?:^|[^0-9/])2\s*(?:"|″|INCH(?:ES)?\b|IN\b)(?!\s*[-/]\s*\d)/.test(sizeText))detectedSizes.push('2"');
+      detectedSizes.forEach(size=>sizes.add(size));
+      // Pair only when the material identifies one unambiguous type and size.
+      if(found.length===1 && detectedSizes.length===1)combinations.add(detectedSizes[0]+" "+found[0]);
       sources.push(desc);
     };
     (project.runs||[]).forEach(run=>add(run.conduit,"conduit"));
@@ -84,7 +88,7 @@
     });
     // Include cataloged materials from the project's BOM/used-material summary.
     add(project.materialSummary,"material");
-    return {types:[...types],sizes:[...sizes]};
+    return {types:[...types],sizes:[...sizes],combinations:[...combinations].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))};
   }
   function choosePhoto() {
     return new Promise(resolve => {
@@ -109,7 +113,7 @@
     groupInput.value=String(state().model||"").trim().match(/DURACELL|SONNEN|TESLA/i)?.[0]?.toUpperCase()||"";
     input.value = String(state().model || state().jobName || "").trim();
     const tags = conduitTags({runs:typeof serializeRuns==="function"?serializeRuns():[]});
-    overlay.querySelector("[data-tags]").textContent = "Detected conduit: "+(tags.types.join(", ")||"None")+" · Sizes: "+(tags.sizes.join(", ")||"None");
+    overlay.querySelector("[data-tags]").textContent = "Detected conduit: "+(tags.combinations.join(" · ")||"No size/type pairs detected");
     const close=()=>overlay.remove();
     overlay.querySelector("[data-cancel]").onclick=close;
     overlay.addEventListener("click",e=>{if(e.target===overlay)close()});
@@ -201,7 +205,7 @@
       const heading=document.createElement("strong");heading.textContent=record.templateName||name;
       const groupLabel=document.createElement("small");groupLabel.style.cssText="font-weight:700;color:#7dd3fc;letter-spacing:.08em";groupLabel.textContent=record.group||"UNCATEGORIZED";
       const details=document.createElement("small");details.style.color="#aabbd0";
-      details.textContent=(record.project?.runs?.length||0)+" runs · "+(tags.types.join(" / ")||"Conduit unclassified")+" · "+(tags.sizes.join(" / ")||"Size unclassified");
+      details.textContent=(record.project?.runs?.length||0)+" runs · "+(tags.combinations.join(" · ")||"Conduit size/type unclassified");
       const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
       const use=document.createElement("button");use.textContent="Use Template";use.onclick=()=>loadTemplate(name,record);
       const attach=document.createElement("button");attach.textContent=blob?"Replace Photo":"Attach Photo";
