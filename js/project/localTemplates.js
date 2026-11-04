@@ -73,8 +73,12 @@
     const overlay = document.createElement("div");
     overlay.id = "local-template-save-dialog";
     overlay.style.cssText = "position:fixed;inset:0;z-index:100100;background:#000a;display:grid;place-items:center;padding:20px";
-    overlay.innerHTML = '<div style="width:min(440px,95vw);background:#152236;color:#f8fafc;border:1px solid #475569;border-radius:14px;padding:22px;display:grid;gap:13px;box-shadow:0 20px 70px #0008"><strong style="font-size:20px">Save as Visual Template</strong><label>Template name<input data-name style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0f172a;color:white;border:1px solid #64748b;border-radius:7px"></label><div data-tags style="font-size:13px;color:#cbd5e1"></div><label style="font-size:13px">Electrical layout photo (optional, can attach later)<input data-photo type="file" accept="image/*" style="display:block;width:100%;margin-top:8px"></label><div style="display:flex;justify-content:flex-end;gap:10px"><button data-cancel type="button">Cancel</button><button data-save type="button">Save Template</button></div></div>';
+    overlay.innerHTML = '<div style="width:min(440px,95vw);background:#152236;color:#f8fafc;border:1px solid #475569;border-radius:14px;padding:22px;display:grid;gap:13px;box-shadow:0 20px 70px #0008"><strong style="font-size:20px">Save as Visual Template</strong><label>Template group (e.g. DURACELL, SONNEN)<input data-group list="template-groups" placeholder="DURACELL" style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0f172a;color:white;border:1px solid #64748b;border-radius:7px"></label><datalist id="template-groups"></datalist><label>Template name<input data-name style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0f172a;color:white;border:1px solid #64748b;border-radius:7px"></label><div data-tags style="font-size:13px;color:#cbd5e1"></div><label style="font-size:13px">Electrical layout photo (optional, can attach later)<input data-photo type="file" accept="image/*" style="display:block;width:100%;margin-top:8px"></label><div style="display:flex;justify-content:flex-end;gap:10px"><button data-cancel type="button">Cancel</button><button data-save type="button">Save Template</button></div></div>';
     const input = overlay.querySelector("[data-name]");
+    const groupInput=overlay.querySelector("[data-group]");
+    const existingGroups=[...new Set(Object.values(read()).map(record=>String(record.group||"").trim()).filter(Boolean))].sort();
+    overlay.querySelector("#template-groups").replaceChildren(...existingGroups.map(group=>{const option=document.createElement("option");option.value=group;return option;}));
+    groupInput.value=String(state().model||"").trim().match(/DURACELL|SONNEN|TESLA/i)?.[0]?.toUpperCase()||"";
     input.value = String(state().model || state().jobName || "").trim();
     const tags = conduitTags({runs:typeof serializeRuns==="function"?serializeRuns():[]});
     overlay.querySelector("[data-tags]").textContent = "Detected conduit: "+(tags.types.join(", ")||"None")+" · Sizes: "+(tags.sizes.join(", ")||"None");
@@ -82,21 +86,22 @@
     overlay.querySelector("[data-cancel]").onclick=close;
     overlay.addEventListener("click",e=>{if(e.target===overlay)close()});
     overlay.querySelector("[data-save]").onclick=async()=>{
-      const name=input.value.trim();
+      const name=input.value.trim(),group=groupInput.value.trim().toUpperCase();
+      if(!group){alert("Enter a template group (e.g. DURACELL).");return;}
       if(!name){alert("Enter a template name.");return;}
-      const all=read(), existing=Object.keys(all).find(k=>k.toLowerCase()===name.toLowerCase());
+      const all=read(), existing=Object.keys(all).find(k=>(String(all[k].group||"").toUpperCase()===group && k.toLowerCase()===name.toLowerCase()) || (!all[k].group && k.toLowerCase()===name.toLowerCase()));
       if(existing&&!confirm('Replace existing template "'+existing+'"?'))return;
       const button=overlay.querySelector("[data-save]");button.disabled=true;
       try{
         const project={...buildProject(),layout:serializeLayout(),links:serializeLinks(),runs:typeof serializeRuns==="function"?serializeRuns():[],gutters:typeof serializeGutters==="function"?serializeGutters():[]};
         project.id="";project.jobName="";project.address="";project.model=name;
-        const key=existing||name, file=overlay.querySelector("[data-photo]").files?.[0];
+        const key=existing||(Object.hasOwn(all,name)?group+" — "+name:name), file=overlay.querySelector("[data-photo]").files?.[0];
         // Keep existing photo on replacement unless a new one was chosen.
         if(file)await putPhoto(key,file);
-        all[key]={project,savedAt:new Date().toISOString()};
+        all[key]={project,group,templateName:name,savedAt:new Date().toISOString()};
         localStorage.setItem(KEY,JSON.stringify(all));
         state().model=name;label(name);close();
-        alert('Template "'+name+'" saved locally.');
+        alert('Template "'+group+" — "+name+'" saved locally.');
       }catch(err){alert("Unable to save template: "+err.message);button.disabled=false;}
     };
     document.body.appendChild(overlay);input.focus();input.select();
@@ -142,10 +147,12 @@
     overlay.setAttribute("aria-modal","true");
     overlay.setAttribute("aria-label","Visual Template Library");
     overlay.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;box-sizing:border-box;z-index:2147483000;background:#0b1220;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:clamp(14px,3vw,32px);";
-    overlay.innerHTML='<section style="width:100%;max-width:1600px;min-height:calc(100vh - 64px);box-sizing:border-box;margin:0 auto;background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:clamp(14px,2vw,28px);box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:15px"></div></section>';
+    overlay.innerHTML='<section style="width:100%;max-width:1600px;min-height:calc(100vh - 64px);box-sizing:border-box;margin:0 auto;background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:clamp(14px,2vw,28px);box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><select data-group-filter style="padding:10px;background:#0f172a;color:white"><option value="">All template groups</option></select><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:15px"></div></section>';
     document.body.appendChild(overlay);templateMenu=overlay;
     overlay.querySelector("[data-close]").onclick=closeTemplateMenu;
     overlay.addEventListener("click",e=>{if(e.target===overlay)closeTemplateMenu()});
+    const groupFilter=overlay.querySelector("[data-group-filter]");
+    [...new Set(names.map(n=>String(all[n].group||"Uncategorized").trim()))].sort().forEach(group=>{const option=document.createElement("option");option.value=group;option.textContent=group;groupFilter.appendChild(option);});
     const grid=overlay.querySelector("[data-grid]");
     const cards=[];
     for(const name of names){
@@ -162,7 +169,8 @@
         pic.onload=()=>URL.revokeObjectURL(url);
         img.replaceChildren(pic);
       }
-      const heading=document.createElement("strong");heading.textContent=name;
+      const heading=document.createElement("strong");heading.textContent=record.templateName||name;
+      const groupLabel=document.createElement("small");groupLabel.style.cssText="font-weight:700;color:#7dd3fc;letter-spacing:.08em";groupLabel.textContent=record.group||"UNCATEGORIZED";
       const details=document.createElement("small");details.style.color="#aabbd0";
       details.textContent=(record.project?.runs?.length||0)+" runs · "+(tags.types.join(" / ")||"Conduit unclassified")+" · "+(tags.sizes.join(" / ")||"Size unclassified");
       const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
@@ -173,13 +181,13 @@
         try{await putPhoto(name,file);closeTemplateMenu();openTemplateMenu(anchor);}
         catch(e){alert("Could not store photo: "+e.message);}
       };
-      actions.append(use,attach);card.append(img,heading,details,actions);grid.append(card);
-      cards.push({name,tags,card});
+      actions.append(use,attach);card.append(img,groupLabel,heading,details,actions);grid.append(card);
+      cards.push({name,group:record.group||"Uncategorized",tags,card});
     }
     const update=()=>{
       const query=overlay.querySelector("[data-search]").value.toLowerCase();
-      const type=overlay.querySelector("[data-type]").value,size=overlay.querySelector("[data-size]").value;
-      cards.forEach(x=>x.card.style.display=x.name.toLowerCase().includes(query)&&(!type||x.tags.types.includes(type))&&(!size||x.tags.sizes.includes(size))?"grid":"none");
+      const type=overlay.querySelector("[data-type]").value,size=overlay.querySelector("[data-size]").value,group=groupFilter.value;
+      cards.forEach(x=>x.card.style.display=(x.name+" "+x.group).toLowerCase().includes(query)&&(!group||x.group===group)&&(!type||x.tags.types.includes(type))&&(!size||x.tags.sizes.includes(size))?"grid":"none");
     };
     overlay.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",update));
     overlay.querySelector("[data-search]").focus();
