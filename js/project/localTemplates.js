@@ -89,16 +89,16 @@
       const name=input.value.trim(),group=groupInput.value.trim().toUpperCase();
       if(!group){alert("Enter a template group (e.g. DURACELL).");return;}
       if(!name){alert("Enter a template name.");return;}
-      const all=read(), existing=Object.keys(all).find(k=>(String(all[k].group||"").toUpperCase()===group && k.toLowerCase()===name.toLowerCase()) || (!all[k].group && k.toLowerCase()===name.toLowerCase()));
+      const all=read(), existing=Object.keys(all).find(k=>all[k].templateType==="project" && String(all[k].group||"").toUpperCase()===group && String(all[k].templateName||k).toLowerCase()===name.toLowerCase());
       if(existing&&!confirm('Replace existing template "'+existing+'"?'))return;
       const button=overlay.querySelector("[data-save]");button.disabled=true;
       try{
         const project={...buildProject(),layout:serializeLayout(),links:serializeLinks(),runs:typeof serializeRuns==="function"?serializeRuns():[],gutters:typeof serializeGutters==="function"?serializeGutters():[]};
         project.id="";project.jobName="";project.address="";project.model=name;
-        const key=existing||(Object.hasOwn(all,name)?group+" — "+name:name), file=overlay.querySelector("[data-photo]").files?.[0];
+        const key=existing||("project:"+Date.now()+":"+Math.random().toString(36).slice(2,9)), file=overlay.querySelector("[data-photo]").files?.[0];
         // Keep existing photo on replacement unless a new one was chosen.
         if(file)await putPhoto(key,file);
-        all[key]={project,group,templateName:name,savedAt:new Date().toISOString()};
+        all[key]={project,group,templateName:name,templateType:"project",savedAt:new Date().toISOString()};
         localStorage.setItem(KEY,JSON.stringify(all));
         state().model=name;label(name);close();
         alert('Template "'+group+" — "+name+'" saved locally.');
@@ -147,16 +147,17 @@
     overlay.setAttribute("aria-modal","true");
     overlay.setAttribute("aria-label","Visual Template Library");
     overlay.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;box-sizing:border-box;z-index:2147483000;background:#0b1220;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:clamp(14px,3vw,32px);";
-    overlay.innerHTML='<section style="width:100%;max-width:1600px;min-height:calc(100vh - 64px);box-sizing:border-box;margin:0 auto;background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:clamp(14px,2vw,28px);box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><select data-group-filter style="padding:10px;background:#0f172a;color:white"><option value="">All template groups</option></select><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:15px"></div></section>';
+    overlay.innerHTML='<section style="width:100%;max-width:1600px;min-height:calc(100vh - 64px);box-sizing:border-box;margin:0 auto;background:#142136;color:#f8fafc;border:1px solid #475569;border-radius:15px;padding:clamp(14px,2vw,28px);box-shadow:0 20px 70px #0009"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px"><strong style="font-size:23px">Visual Template Library</strong><button data-close type="button">✕ Close</button></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button data-tab="project" type="button">Project Templates</button><button data-tab="blank" type="button">Blank Templates</button></div><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:15px"><select data-group-filter style="padding:10px;background:#0f172a;color:white"><option value="">All template groups</option></select><input data-search placeholder="Search templates..." style="flex:1;min-width:190px;padding:10px;border-radius:7px;background:#0f172a;color:white;border:1px solid #64748b"><select data-type style="padding:10px;background:#0f172a;color:white"><option value="">All conduit types</option><option>EMT</option><option>PVC</option><option>LT</option></select><select data-size style="padding:10px;background:#0f172a;color:white"><option value="">Both sizes</option><option value="1&#34;">1"</option><option value="2&#34;">2"</option></select></div><div data-grid style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:15px"></div></section>';
     document.body.appendChild(overlay);templateMenu=overlay;
     overlay.querySelector("[data-close]").onclick=closeTemplateMenu;
     overlay.addEventListener("click",e=>{if(e.target===overlay)closeTemplateMenu()});
+    let activeTab="project";
     const groupFilter=overlay.querySelector("[data-group-filter]");
     [...new Set(names.map(n=>String(all[n].group||"Uncategorized").trim()))].sort().forEach(group=>{const option=document.createElement("option");option.value=group;option.textContent=group;groupFilter.appendChild(option);});
     const grid=overlay.querySelector("[data-grid]");
     const cards=[];
     for(const name of names){
-      const record=all[name],tags=conduitTags(record.project||{});
+      const record=all[name],tags=conduitTags(record.project||{}),templateType=record.templateType==="project"?"project":"blank";
       const card=document.createElement("article");
       card.style.cssText="background:#0c1728;border:1px solid #334155;border-radius:10px;padding:14px;display:grid;gap:11px;align-content:start";
       const img=document.createElement("div");
@@ -185,9 +186,10 @@
       edit.onclick=()=>{
         const panel=document.createElement("div");
         panel.style.cssText="position:fixed;inset:0;z-index:2147483100;background:#000b;display:grid;place-items:center;padding:16px";
-        panel.innerHTML='<div style="width:min(440px,96vw);background:#17263b;border:1px solid #64748b;border-radius:12px;padding:20px;display:grid;gap:12px;color:#f8fafc"><strong style="font-size:20px">Edit Template Details</strong><label>Template Group<input data-edit-group list="edit-template-groups" style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0b1627;color:white;border:1px solid #64748b;border-radius:6px"></label><datalist id="edit-template-groups"></datalist><label>Template Name<input data-edit-name style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0b1627;color:white;border:1px solid #64748b;border-radius:6px"></label><small style="color:#aabbd0">Your layout, material runs, and attached photo will not change.</small><div style="display:flex;gap:10px;justify-content:flex-end"><button data-cancel>Cancel</button><button data-confirm>Save Changes</button></div></div>';
+        panel.innerHTML='<div style="width:min(440px,96vw);background:#17263b;border:1px solid #64748b;border-radius:12px;padding:20px;display:grid;gap:12px;color:#f8fafc"><strong style="font-size:20px">Edit Template Details</strong><label>Template Type<select data-edit-kind style="display:block;width:100%;padding:10px;background:#0b1627;color:white"><option value="blank">Blank Template</option><option value="project">Project Template</option></select></label><label>Template Group<input data-edit-group list="edit-template-groups" style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0b1627;color:white;border:1px solid #64748b;border-radius:6px"></label><datalist id="edit-template-groups"></datalist><label>Template Name<input data-edit-name style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0b1627;color:white;border:1px solid #64748b;border-radius:6px"></label><small style="color:#aabbd0">Your layout, material runs, and attached photo will not change.</small><div style="display:flex;gap:10px;justify-content:flex-end"><button data-cancel>Cancel</button><button data-confirm>Save Changes</button></div></div>';
         const groupField=panel.querySelector("[data-edit-group]"),nameField=panel.querySelector("[data-edit-name]");
         groupField.value=record.group||"";nameField.value=record.templateName||name;
+        panel.querySelector("[data-edit-kind]").value=templateType;
         [...new Set(Object.values(read()).map(item=>String(item.group||"").trim()).filter(Boolean))].forEach(group=>{const option=document.createElement("option");option.value=group;panel.querySelector("#edit-template-groups").appendChild(option);});
         panel.querySelector("[data-cancel]").onclick=()=>panel.remove();
         panel.addEventListener("click",e=>{if(e.target===panel)panel.remove()});
@@ -196,7 +198,7 @@
           if(!group||!newName){alert("Enter both a group and template name.");return;}
           const latest=read();
           if(!latest[name]){alert("Template no longer exists. Refresh the library.");return;}
-          latest[name]={...latest[name],group,templateName:newName};
+          latest[name]={...latest[name],group,templateName:newName,templateType:panel.querySelector("[data-edit-kind]").value};
           try{localStorage.setItem(KEY,JSON.stringify(latest));}
           catch(e){alert("Unable to update template: "+e.message);return;}
           panel.remove();closeTemplateMenu();openTemplateMenu(openButton);
@@ -204,14 +206,18 @@
         document.body.appendChild(panel);groupField.focus();
       };
       actions.append(use,attach,edit);card.append(img,groupLabel,heading,details,actions);grid.append(card);
-      cards.push({name,group:record.group||"Uncategorized",tags,card});
+      cards.push({name,group:record.group||"Uncategorized",templateType,tags,card});
     }
     const update=()=>{
       const query=overlay.querySelector("[data-search]").value.toLowerCase();
       const type=overlay.querySelector("[data-type]").value,size=overlay.querySelector("[data-size]").value,group=groupFilter.value;
-      cards.forEach(x=>x.card.style.display=(x.name+" "+x.group).toLowerCase().includes(query)&&(!group||x.group===group)&&(!type||x.tags.types.includes(type))&&(!size||x.tags.sizes.includes(size))?"grid":"none");
+      cards.forEach(x=>x.card.style.display=x.templateType===activeTab&&(x.name+" "+x.group).toLowerCase().includes(query)&&(!group||x.group===group)&&(!type||x.tags.types.includes(type))&&(!size||x.tags.sizes.includes(size))?"grid":"none");
     };
     overlay.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",update));
+    overlay.querySelectorAll("[data-tab]").forEach(button=>button.onclick=()=>{activeTab=button.dataset.tab;update();});
+    const updateTabStyles=()=>overlay.querySelectorAll("[data-tab]").forEach(button=>{const selected=button.dataset.tab===activeTab;button.style.cssText="padding:12px 20px;border-radius:8px;border:1px solid #64748b;cursor:pointer;background:"+(selected?"#2563eb":"#1e293b")+";color:white;font-weight:700";});
+    overlay.querySelectorAll("[data-tab]").forEach(button=>button.addEventListener("click",updateTabStyles));
+    updateTabStyles();update();
     overlay.querySelector("[data-search]").focus();
   };
   openButton?.addEventListener("click", () => openTemplateMenu(openButton));
