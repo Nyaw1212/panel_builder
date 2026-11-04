@@ -181,7 +181,29 @@
         try{await putPhoto(name,file);closeTemplateMenu();openTemplateMenu(anchor);}
         catch(e){alert("Could not store photo: "+e.message);}
       };
-      actions.append(use,attach);card.append(img,groupLabel,heading,details,actions);grid.append(card);
+      const edit=document.createElement("button");edit.type="button";edit.textContent="Edit Details";
+      edit.onclick=()=>{
+        const panel=document.createElement("div");
+        panel.style.cssText="position:fixed;inset:0;z-index:2147483100;background:#000b;display:grid;place-items:center;padding:16px";
+        panel.innerHTML='<div style="width:min(440px,96vw);background:#17263b;border:1px solid #64748b;border-radius:12px;padding:20px;display:grid;gap:12px;color:#f8fafc"><strong style="font-size:20px">Edit Template Details</strong><label>Template Group<input data-edit-group list="edit-template-groups" style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0b1627;color:white;border:1px solid #64748b;border-radius:6px"></label><datalist id="edit-template-groups"></datalist><label>Template Name<input data-edit-name style="display:block;width:100%;box-sizing:border-box;margin-top:5px;padding:10px;background:#0b1627;color:white;border:1px solid #64748b;border-radius:6px"></label><small style="color:#aabbd0">Your layout, material runs, and attached photo will not change.</small><div style="display:flex;gap:10px;justify-content:flex-end"><button data-cancel>Cancel</button><button data-confirm>Save Changes</button></div></div>';
+        const groupField=panel.querySelector("[data-edit-group]"),nameField=panel.querySelector("[data-edit-name]");
+        groupField.value=record.group||"";nameField.value=record.templateName||name;
+        [...new Set(Object.values(read()).map(item=>String(item.group||"").trim()).filter(Boolean))].forEach(group=>{const option=document.createElement("option");option.value=group;panel.querySelector("#edit-template-groups").appendChild(option);});
+        panel.querySelector("[data-cancel]").onclick=()=>panel.remove();
+        panel.addEventListener("click",e=>{if(e.target===panel)panel.remove()});
+        panel.querySelector("[data-confirm]").onclick=()=>{
+          const group=groupField.value.trim().toUpperCase(),newName=nameField.value.trim();
+          if(!group||!newName){alert("Enter both a group and template name.");return;}
+          const latest=read();
+          if(!latest[name]){alert("Template no longer exists. Refresh the library.");return;}
+          latest[name]={...latest[name],group,templateName:newName};
+          try{localStorage.setItem(KEY,JSON.stringify(latest));}
+          catch(e){alert("Unable to update template: "+e.message);return;}
+          panel.remove();closeTemplateMenu();openTemplateMenu(openButton);
+        };
+        document.body.appendChild(panel);groupField.focus();
+      };
+      actions.append(use,attach,edit);card.append(img,groupLabel,heading,details,actions);grid.append(card);
       cards.push({name,group:record.group||"Uncategorized",tags,card});
     }
     const update=()=>{
