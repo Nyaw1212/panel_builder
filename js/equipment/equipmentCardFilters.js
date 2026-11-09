@@ -98,7 +98,7 @@ function getSelectedBreakerSize() {
 function setSelectedBreakerFamily(family) {
   const normalized = String(family || "").toUpperCase();
 
-  if (!["BR", "CHP", "CSR"].includes(normalized)) {
+  if (!["BR", "CHP", "CSR", "POLARIS"].includes(normalized)) {
     return;
   }
 
