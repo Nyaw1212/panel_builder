@@ -1326,7 +1326,17 @@ function openMDPMaterialPicker(equipment) {
   openPickerModal(
     "Choose MDP Preset",
     presets,
-    preset => applyMDPPreset(preset.presetCode),
+    preset => {
+      const applied = applyMDPPreset(preset.presetCode);
+
+      // The picker closes immediately after its selection callback. Queue the
+      // panel editor so it opens against the newly applied MDP afterward.
+      if (applied && typeof openPanelCircuitEditor === "function") {
+        requestAnimationFrame(() => openPanelCircuitEditor(equipment));
+      }
+
+      return applied;
+    },
     {
       headerAction: {
         label: "⚡ Configure breakers",
