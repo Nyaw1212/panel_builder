@@ -83,13 +83,14 @@ function renderBreakerLibrary(container, components) {
     typeof getSelectedBreakerFamily === "function"
       ? getSelectedBreakerFamily()
       : "BR";
+  const polarisMode = selectedFamily === "POLARIS";
 
   const controls = document.createElement("div");
   controls.className = "panel-circuit-controls";
   controls.innerHTML = `
-    <div class="panel-circuit-filter-label">BREAKER TYPE</div>
+    <div class="panel-circuit-filter-label">COMPONENT TYPE</div>
     <div class="breaker-family-filters">
-      ${["BR", "CHP", "CSR"].map(family => `
+      ${["BR", "CHP", "CSR", "POLARIS"].map(family => `
         <button
           type="button"
           class="breaker-family-filter ${
@@ -100,7 +101,9 @@ function renderBreakerLibrary(container, components) {
       `).join("")}
     </div>
     <div class="panel-circuit-help">
-      Select an empty panel slot, then click a breaker card to install it.
+      ${polarisMode
+        ? "Click a Polaris tap to add it below the Main. It does not use a breaker slot."
+        : "Select an empty panel slot, then click a breaker card to install it."}
     </div>
   `;
 
@@ -113,7 +116,12 @@ function renderBreakerLibrary(container, components) {
 
   const filtered = components
     .filter(material => {
-      if (getBreakerFamily(material) !== selectedFamily) {
+      if (
+        polarisMode
+          ? typeof isPanelPolarisTapMaterial !== "function" ||
+            !isPanelPolarisTapMaterial(material)
+          : getBreakerFamily(material) !== selectedFamily
+      ) {
         return false;
       }
 
@@ -144,6 +152,7 @@ function renderBreakerLibrary(container, components) {
   grid.className = "panel-breaker-card-grid";
 
   filtered.forEach(material => {
+    const isTap = polarisMode;
     const amp = getBreakerAmperage(material);
     const poles = getBreakerPoleCount(material);
     const image = getPanelBreakerImage(material);
@@ -155,7 +164,7 @@ function renderBreakerLibrary(container, components) {
 
     card.type = "button";
     card.className = "panel-breaker-card";
-    card.title = `Install ${material.CatalogNumber}`;
+    card.title = `${isTap ? "Add" : "Install"} ${material.CatalogNumber}`;
     card.innerHTML = `
       ${image ? `
         <img
@@ -165,13 +174,13 @@ function renderBreakerLibrary(container, components) {
         >
       ` : `
         <span class="panel-breaker-card__image panel-breaker-card__image--empty">
-          ${escapePanelText(selectedFamily)}
+          ${escapePanelText(isTap ? "TAP" : selectedFamily)}
         </span>
       `}
       <span class="panel-breaker-card__info">
         <strong>${escapePanelText(material.CatalogNumber)}</strong>
         <span>${escapePanelText(material.Description || material.Type || "")}</span>
-        <small>${amp ? `${amp}A` : ""} • ${poles}P</small>
+        <small>${isTap ? "Panel distribution tap" : `${amp ? `${amp}A` : ""} • ${poles}P`}</small>
       </span>
       ${favorite > 0 ? `
         <span
@@ -189,18 +198,22 @@ function renderBreakerLibrary(container, components) {
       };
     }
 
-    card.draggable = true;
-    card.ondragstart = event => {
-      card.classList.add("dragging");
-      setPanelBreakerDragData(event, {
-        kind: "library",
-        catalogNumber: material.CatalogNumber
-      });
-    };
-    card.ondragend = () => {
-      card.classList.remove("dragging");
-    };
-    card.onclick = () => addEquipmentComponent(material);
+    card.draggable = !isTap;
+    if (!isTap) {
+      card.ondragstart = event => {
+        card.classList.add("dragging");
+        setPanelBreakerDragData(event, {
+          kind: "library",
+          catalogNumber: material.CatalogNumber
+        });
+      };
+      card.ondragend = () => {
+        card.classList.remove("dragging");
+      };
+    }
+    card.onclick = () => isTap
+      ? addPanelTap(material)
+      : addEquipmentComponent(material);
     grid.appendChild(card);
   });
 
@@ -210,7 +223,7 @@ function renderBreakerLibrary(container, components) {
     const empty = document.createElement("div");
     empty.className = "panel-circuit-empty";
     empty.textContent =
-      `No ${selectedFamily} breakers found in the MML.`;
+      `No ${selectedFamily} ${polarisMode ? "taps" : "breakers"} found in the MML.`;
     container.appendChild(empty);
   }
 }
@@ -463,7 +476,83 @@ function renderPanelboard(container, equipment) {
       '<span class="panel-main-empty">Click a CSR breaker to install</span>';
   }
 
+  renderPanelTapSection(board, equipment);
   container.appendChild(board);
+}
+
+function renderPanelTapSection(board, equipment) {
+  const taps = typeof getPanelTapComponents === "function"
+    ? getPanelTapComponents(equipment)
+    : [];
+  const totalQuantity = taps.reduce(
+    (total, tap) => total + Math.max(1, Number(tap?.qty || 1)),
+    0
+  );
+  const section = document.createElement("section");
+
+  section.className = "panel-tap-section";
+  section.innerHTML = `
+    <header class="panel-tap-heading">
+      <span>TAPS / DISTRIBUTION</span>
+      <small>${totalQuantity ? `${totalQuantity} tap${totalQuantity === 1 ? "" : "s"}` : "None"}</small>
+    </header>
+    <div class="panel-tap-list"></div>
+  `;
+
+  const list = section.querySelector(".panel-tap-list");
+
+  if (!taps.length) {
+    list.innerHTML = `
+      <div class="panel-tap-empty">
+        Choose <strong>POLARIS</strong> on the left, then click a tap to add it.
+      </div>
+    `;
+    board.appendChild(section);
+    return;
+  }
+
+  taps.forEach(tap => {
+    const material = findPanelMaterial(
+      tap.catalogNumber || tap.CatalogNumber
+    ) || tap;
+    const image = getPanelBreakerImage(material);
+    const row = document.createElement("article");
+
+    row.className = "panel-tap-item";
+    row.innerHTML = `
+      ${image ? `<img src="${escapePanelText(image)}" alt="">` : ""}
+      <div class="panel-tap-info">
+        <strong>${escapePanelText(tap.catalogNumber || tap.CatalogNumber || "Polaris tap")}</strong>
+        <small>${escapePanelText(material.Description || tap.description || "Polaris distribution tap")}</small>
+      </div>
+      <div class="panel-tap-quantity" aria-label="Polaris tap quantity">
+        <button type="button" data-action="decrease" aria-label="Remove one tap">−</button>
+        <strong>${Math.max(1, Number(tap.qty || 1))}</strong>
+        <button type="button" data-action="increase" aria-label="Add one tap">+</button>
+      </div>
+      <button type="button" class="panel-tap-remove" aria-label="Remove Polaris tap">×</button>
+    `;
+
+    row.querySelector("img")?.addEventListener("error", event => {
+      event.currentTarget.style.display = "none";
+    });
+    row.querySelector("[data-action='decrease']")?.addEventListener(
+      "click",
+      () => adjustPanelTapQuantity(tap.id, -1)
+    );
+    row.querySelector("[data-action='increase']")?.addEventListener(
+      "click",
+      () => adjustPanelTapQuantity(tap.id, 1)
+    );
+    row.querySelector(".panel-tap-remove")?.addEventListener(
+      "click",
+      () => adjustPanelTapQuantity(tap.id, -Math.max(1, Number(tap.qty || 1)))
+    );
+
+    list.appendChild(row);
+  });
+
+  board.appendChild(section);
 }
 
 function renderEquipmentComponents() {
