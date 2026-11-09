@@ -24,6 +24,10 @@ function renderBOM() {
 
         `;
 
+        if (typeof window.updateToolbarMaterialTotal === "function") {
+            window.updateToolbarMaterialTotal();
+        }
+
         return;
 
     }
@@ -67,6 +71,10 @@ function renderBOM() {
         `).join("")}
 
     `;
+
+    if (typeof window.updateToolbarMaterialTotal === "function") {
+        window.updateToolbarMaterialTotal();
+    }
 
 }
 
