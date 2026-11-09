@@ -269,7 +269,22 @@
       const details=document.createElement("small");details.style.color="#aabbd0";
       details.textContent=(record.project?.runs?.length||0)+" runs · "+(tags.combinations.join(" · ")||"Conduit size/type unclassified");
       const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;flex-wrap:wrap";
-      const use=document.createElement("button");use.textContent="Use Template";use.onclick=()=>loadTemplate(name,record);
+      const useTemplate=()=>loadTemplate(name,record);
+      const use=document.createElement("button");use.textContent="Use Template";use.onclick=useTemplate;
+      // The layout photo is the primary visual choice. Clicking it loads the
+      // same template as the explicit button below; photo maintenance stays
+      // on the separate Replace/Attach Photo button.
+      img.style.cursor="pointer";
+      img.title="Use this template";
+      img.setAttribute("role","button");
+      img.setAttribute("tabindex","0");
+      img.setAttribute("aria-label","Use template "+(record.templateName||name));
+      img.addEventListener("click",useTemplate);
+      img.addEventListener("keydown",event=>{
+        if(event.key!=="Enter"&&event.key!==" ")return;
+        event.preventDefault();
+        useTemplate();
+      });
       const attach=document.createElement("button");attach.textContent=blob?"Replace Photo":"Attach Photo";
       attach.onclick=async()=>{
         const file=await choosePhoto();if(!file)return;
