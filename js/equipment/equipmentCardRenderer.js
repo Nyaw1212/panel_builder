@@ -148,13 +148,27 @@ function renderBreakerLibrary(container, components) {
       );
     });
 
+  if (polarisMode) {
+    renderPolarisTapLibrary(container, filtered);
+  }
+  else {
+    renderBreakerRatingMatrix(container, filtered, selectedFamily);
+  }
+
+  if (!filtered.length) {
+    const empty = document.createElement("div");
+    empty.className = "panel-circuit-empty";
+    empty.textContent =
+      `No ${selectedFamily} ${polarisMode ? "taps" : "breakers"} found in the MML.`;
+    container.appendChild(empty);
+  }
+}
+
+function renderPolarisTapLibrary(container, materials) {
   const grid = document.createElement("div");
   grid.className = "panel-breaker-card-grid";
 
-  filtered.forEach(material => {
-    const isTap = polarisMode;
-    const amp = getBreakerAmperage(material);
-    const poles = getBreakerPoleCount(material);
+  materials.forEach(material => {
     const image = getPanelBreakerImage(material);
     const favorite = Math.max(
       0,
@@ -164,7 +178,7 @@ function renderBreakerLibrary(container, components) {
 
     card.type = "button";
     card.className = "panel-breaker-card";
-    card.title = `${isTap ? "Add" : "Install"} ${material.CatalogNumber}`;
+    card.title = `Add ${material.CatalogNumber}`;
     card.innerHTML = `
       ${image ? `
         <img
@@ -174,13 +188,13 @@ function renderBreakerLibrary(container, components) {
         >
       ` : `
         <span class="panel-breaker-card__image panel-breaker-card__image--empty">
-          ${escapePanelText(isTap ? "TAP" : selectedFamily)}
+          TAP
         </span>
       `}
       <span class="panel-breaker-card__info">
         <strong>${escapePanelText(material.CatalogNumber)}</strong>
         <span>${escapePanelText(material.Description || material.Type || "")}</span>
-        <small>${isTap ? "Panel distribution tap" : `${amp ? `${amp}A` : ""} • ${poles}P`}</small>
+        <small>Panel distribution tap</small>
       </span>
       ${favorite > 0 ? `
         <span
@@ -198,34 +212,99 @@ function renderBreakerLibrary(container, components) {
       };
     }
 
-    card.draggable = !isTap;
-    if (!isTap) {
-      card.ondragstart = event => {
-        card.classList.add("dragging");
-        setPanelBreakerDragData(event, {
-          kind: "library",
-          catalogNumber: material.CatalogNumber
-        });
-      };
-      card.ondragend = () => {
-        card.classList.remove("dragging");
-      };
-    }
-    card.onclick = () => isTap
-      ? addPanelTap(material)
-      : addEquipmentComponent(material);
+    card.draggable = false;
+    card.onclick = () => addPanelTap(material);
     grid.appendChild(card);
   });
 
   container.appendChild(grid);
+}
 
-  if (!filtered.length) {
-    const empty = document.createElement("div");
-    empty.className = "panel-circuit-empty";
-    empty.textContent =
-      `No ${selectedFamily} ${polarisMode ? "taps" : "breakers"} found in the MML.`;
-    container.appendChild(empty);
-  }
+function renderBreakerRatingMatrix(container, materials, family) {
+  const byRating = new Map();
+
+  materials.forEach(material => {
+    const rating = Math.max(0, Number(getBreakerAmperage(material) || 0));
+    const poles = Math.max(1, Math.min(4, Number(getBreakerPoleCount(material) || 1)));
+
+    if (!byRating.has(rating)) {
+      byRating.set(rating, new Map());
+    }
+
+    const byPole = byRating.get(rating);
+    if (!byPole.has(poles)) {
+      byPole.set(poles, []);
+    }
+
+    byPole.get(poles).push(material);
+  });
+
+  const matrix = document.createElement("table");
+  matrix.className = "panel-breaker-matrix";
+  matrix.innerHTML = `
+    <thead>
+      <tr>
+        <th scope="col">Rating</th>
+        ${[1, 2, 3, 4].map(poles => `<th scope="col">${poles}P</th>`).join("")}
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+
+  const body = matrix.querySelector("tbody");
+  [...byRating.keys()]
+    .sort((first, second) => second - first)
+    .forEach(rating => {
+      const row = document.createElement("tr");
+      const byPole = byRating.get(rating);
+      const label = document.createElement("th");
+
+      label.scope = "row";
+      label.textContent = rating ? `${rating}A` : "—";
+      row.appendChild(label);
+
+      [1, 2, 3, 4].forEach(poles => {
+        const cell = document.createElement("td");
+        const choices = (byPole.get(poles) || [])
+          .sort((first, second) => String(first.CatalogNumber || "").localeCompare(
+            String(second.CatalogNumber || "")
+          ));
+
+        choices.forEach(material => {
+          const favorite = Math.max(0, Math.min(Number(material.Favorite || 0), 5));
+          const button = document.createElement("button");
+
+          button.type = "button";
+          button.className = "panel-breaker-matrix-choice";
+          button.draggable = true;
+          button.title = `Install ${material.CatalogNumber}${material.Description ? ` — ${material.Description}` : ""}`;
+          button.innerHTML = `
+            <span>${escapePanelText(material.CatalogNumber || family)}</span>
+            ${favorite ? `<small>${"★".repeat(favorite)}</small>` : ""}
+          `;
+          button.ondragstart = event => {
+            button.classList.add("dragging");
+            setPanelBreakerDragData(event, {
+              kind: "library",
+              catalogNumber: material.CatalogNumber
+            });
+          };
+          button.ondragend = () => button.classList.remove("dragging");
+          button.onclick = () => addEquipmentComponent(material);
+          cell.appendChild(button);
+        });
+
+        if (!choices.length) {
+          cell.innerHTML = '<span class="panel-breaker-matrix-empty">—</span>';
+        }
+
+        row.appendChild(cell);
+      });
+
+      body.appendChild(row);
+    });
+
+  container.appendChild(matrix);
 }
 
 function renderPanelSlotCell(equipment, side, index) {
