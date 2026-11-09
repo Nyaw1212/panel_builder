@@ -938,6 +938,106 @@ function getCanvasItemRatingLabel(item) {
   return ratingMatch ? `${ratingMatch[1]}A` : "";
 }
 
+function isCanvasDisconnect(item) {
+  const type = [
+    item?.data?.NodeType,
+    item?.data?.Type,
+    item?.data?.Category
+  ].join(" ").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+
+  return (
+    type.includes("LDISC") ||
+    type.includes("HDISC") ||
+    type.includes("DISCONNECT")
+  );
+}
+
+function isCanvasFuseMaterial(material) {
+  if (!material) return false;
+
+  // Disconnect presets map each selected fuse to a slot. This is the most
+  // reliable saved-project signal, including when a fuse description changes.
+  if (material.disconnectFuseSlot !== undefined) return true;
+
+  const text = [
+    material.NodeType,
+    material.nodeType,
+    material.Type,
+    material.type,
+    material.Description,
+    material.description,
+    material.CatalogNumber,
+    material.catalogNumber
+  ].join(" ").toUpperCase();
+
+  if (/\bFUSE\b/.test(text)) return true;
+
+  const catalogNumber = String(
+    material.catalogNumber || material.CatalogNumber || ""
+  ).trim().toUpperCase();
+
+  if (!catalogNumber || typeof getMaterials !== "function") return false;
+
+  const catalogItems = getMaterials();
+  const catalogItem = (Array.isArray(catalogItems) ? catalogItems : []).find(item =>
+    String(item?.CatalogNumber || "").trim().toUpperCase() === catalogNumber
+  );
+
+  return String(catalogItem?.NodeType || "").trim().toUpperCase() === "FUSE";
+}
+
+function getCanvasDisconnectFuseCount(item) {
+  if (!isCanvasDisconnect(item)) return 0;
+
+  return Math.min(
+    2,
+    (item?.materials || []).reduce((count, material) => {
+      if (!isCanvasFuseMaterial(material)) return count;
+
+      return count + Math.max(1, Number(material?.qty) || 1);
+    }, 0)
+  );
+}
+
+function createCanvasFuseIndicator(fuseCount) {
+  const indicator = document.createElement("div");
+  const label = fuseCount === 1 ? "FUSED" : `FUSED ×${fuseCount}`;
+
+  indicator.className = "canvas-fuse-indicator";
+  indicator.title = `${label} disconnect`;
+  indicator.setAttribute("aria-label", `${label} disconnect`);
+  indicator.style.display = "inline-flex";
+  indicator.style.alignItems = "center";
+  indicator.style.justifyContent = "center";
+  indicator.style.gap = "2px";
+  indicator.style.minHeight = "17px";
+  indicator.style.padding = "1px 4px";
+  indicator.style.border = "1px solid #a16207";
+  indicator.style.borderRadius = "3px";
+  indicator.style.color = "#422006";
+  indicator.style.background = "#fde68a";
+  indicator.style.fontSize = "8px";
+  indicator.style.fontWeight = "800";
+  indicator.style.lineHeight = "1";
+  indicator.style.letterSpacing = ".04em";
+  indicator.style.pointerEvents = "none";
+
+  const fuses = Array.from(
+    { length: fuseCount },
+    () => `
+      <svg width="19" height="12" viewBox="0 0 38 24" aria-hidden="true">
+        <path d="M1 12h7m22 0h7" stroke="#422006" stroke-width="3" stroke-linecap="round"/>
+        <rect x="8" y="3" width="22" height="18" rx="4" fill="#f59e0b" stroke="#422006" stroke-width="2"/>
+        <path d="M13 12h12" stroke="#fff7cc" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    `
+  ).join("");
+
+  indicator.innerHTML = `${fuses}<span>${label}</span>`;
+
+  return indicator;
+}
+
 function drawPlacedItems() {
   const drawn = new Set();
 
@@ -1099,6 +1199,13 @@ function drawPlacedItems() {
     //----------------------------------
 
     const ratingLabel = getCanvasItemRatingLabel(item);
+    const fuseCount = getCanvasDisconnectFuseCount(item);
+    const fuseIndicator = fuseCount
+      ? createCanvasFuseIndicator(fuseCount)
+      : null;
+
+    card.dataset.fused = String(Boolean(fuseCount));
+    card.dataset.fuseCount = String(fuseCount);
 
     if (ratingLabel) {
       const rating = document.createElement("div");
@@ -1129,6 +1236,10 @@ function drawPlacedItems() {
     //----------------------------------
 
     card.appendChild(img);
+
+    if (fuseIndicator) {
+      card.appendChild(fuseIndicator);
+    }
 
     card.appendChild(code);
 
