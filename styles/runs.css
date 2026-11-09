@@ -614,6 +614,32 @@
     font-weight: 800;
 }
 
+.run-order-input {
+    width: 32px;
+    height: 25px;
+    flex: 0 0 32px;
+    padding: 0 3px;
+    border: 1px solid #31557d;
+    border-radius: 5px;
+    background: #10203a;
+    color: #e0f2fe;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.run-order-input:focus {
+    outline: none;
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, .18);
+}
+
+.run-order-input::-webkit-inner-spin-button,
+.run-order-input::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+}
+
 .run-name-input {
     width: 100%;
     min-width: 0;
