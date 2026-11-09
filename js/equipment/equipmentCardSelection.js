@@ -73,6 +73,12 @@ function getPanelPlacedComponents(equipment) {
   );
 }
 
+function getPanelTapComponents(equipment) {
+  return (equipment?.materials || []).filter(
+    entry => entry?.panelAccessory?.section === "tap"
+  );
+}
+
 function findPanelMaterial(catalogNumber) {
   return (getMaterials() || []).find(
     material =>
@@ -241,6 +247,89 @@ function addEquipmentComponent(material) {
   return true;
 }
 
+function refreshPanelAccessoryBOM() {
+  if (typeof renderBOM === "function") {
+    renderBOM();
+  }
+}
+
+function addPanelTap(material) {
+  const equipment = getCurrentEquipment();
+
+  if (
+    !equipment ||
+    !material ||
+    typeof isPanelPolarisTapMaterial !== "function" ||
+    !isPanelPolarisTapMaterial(material)
+  ) {
+    return false;
+  }
+
+  if (!Array.isArray(equipment.materials)) {
+    equipment.materials = [];
+  }
+
+  const catalogNumber = String(material.CatalogNumber || "").trim();
+  const existing = getPanelTapComponents(equipment).find(entry =>
+    String(entry?.catalogNumber || entry?.CatalogNumber || "").trim() ===
+      catalogNumber
+  );
+
+  if (existing) {
+    existing.qty = Math.max(1, Number(existing.qty || 1)) + 1;
+  }
+  else {
+    equipment.materials.push({
+      id: crypto.randomUUID(),
+      catalogNumber,
+      description: material.Description || "",
+      inventoryCategory: material.InventoryCategory || "",
+      qty: 1,
+      panelAccessory: {
+        section: "tap",
+        type: "POLARIS"
+      }
+    });
+  }
+
+  capturePanelCircuitHistory("Polaris tap added");
+  refreshPanelAccessoryBOM();
+  refreshEquipmentCardModal();
+  return true;
+}
+
+function adjustPanelTapQuantity(componentId, amount) {
+  const equipment = getCurrentEquipment();
+  if (!equipment || !Array.isArray(equipment.materials)) {
+    return false;
+  }
+
+  const tap = equipment.materials.find(entry =>
+    entry?.id === componentId &&
+    entry?.panelAccessory?.section === "tap"
+  );
+
+  if (!tap) return false;
+
+  const quantity = Math.max(0, Number(tap.qty || 1) + Number(amount || 0));
+
+  if (quantity === 0) {
+    equipment.materials = equipment.materials.filter(
+      entry => entry !== tap
+    );
+  }
+  else {
+    tap.qty = quantity;
+  }
+
+  capturePanelCircuitHistory(
+    quantity === 0 ? "Polaris tap removed" : "Polaris tap quantity changed"
+  );
+  refreshPanelAccessoryBOM();
+  refreshEquipmentCardModal();
+  return true;
+}
+
 function placeEquipmentComponentAt(
   material,
   side,
@@ -360,6 +449,7 @@ function resetPanelCircuitSelection() {
 window.getPanelSideCapacity = getPanelSideCapacity;
 window.ensurePresetMainBreakerSlot = ensurePresetMainBreakerSlot;
 window.getPanelPlacedComponents = getPanelPlacedComponents;
+window.getPanelTapComponents = getPanelTapComponents;
 window.findPanelMaterial = findPanelMaterial;
 window.getPanelSlotOccupant = getPanelSlotOccupant;
 window.selectPanelSlot = selectPanelSlot;
@@ -367,6 +457,8 @@ window.getSelectedPanelSlot = getSelectedPanelSlot;
 window.selectFirstAvailablePanelSlot = selectFirstAvailablePanelSlot;
 window.canPlacePanelBreaker = canPlacePanelBreaker;
 window.addEquipmentComponent = addEquipmentComponent;
+window.addPanelTap = addPanelTap;
+window.adjustPanelTapQuantity = adjustPanelTapQuantity;
 window.placeEquipmentComponentAt = placeEquipmentComponentAt;
 window.moveEquipmentComponent = moveEquipmentComponent;
 window.removeEquipmentComponent = removeEquipmentComponent;
