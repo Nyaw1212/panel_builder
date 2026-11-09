@@ -2234,12 +2234,30 @@ function isSameFittingSize(material, size) {
 
     if (!size) return true;
 
-    const materialSize = normalizeFittingValue(material?.Size)
+    const normalizeSize = value => normalizeFittingValue(value)
+        .replace(/INCH(?:ES)?\.?/g, "")
+        .replace(/["″]/g, "")
         .replace(/\s+/g, "");
-    const selectedSize = normalizeFittingValue(size)
-        .replace(/\s+/g, "");
+    const materialSize = normalizeSize(material?.Size);
+    const selectedSize = normalizeSize(size);
 
-    return !materialSize || materialSize === selectedSize;
+    // Size is authoritative when MML provides it. Some older MML fitting
+    // rows leave Size blank but clearly state (for example) 2" EMT in their
+    // description. Do not let those rows leak into the 1" picker.
+    if (materialSize) return materialSize === selectedSize;
+
+    const describedSizes = new Set();
+    const text = [material?.Description, material?.Type]
+        .filter(Boolean)
+        .join(" ");
+    const sizePattern = /(?:^|[^0-9/.-])(\d+(?:-\d+\/\d+)?|\d+\/\d+)\s*(?:"|″|IN(?:CH(?:ES)?)?\.?)(?=$|[^A-Z0-9])/gi;
+    let match;
+
+    while ((match = sizePattern.exec(text))) {
+        describedSizes.add(normalizeSize(match[1]));
+    }
+
+    return !describedSizes.size || describedSizes.has(selectedSize);
 
 }
 
@@ -3602,8 +3620,18 @@ function renderRunFittingModal(run, materials, options = {}) {
         summaryTop: previousSummary?.scrollTop || 0
     };
     const catalogLookup = new Map();
+    const availableSizeOptions = Array.isArray(options.sizeOptions)
+        ? options.sizeOptions
+        : [];
+    const selectedSizes = availableSizeOptions.length
+        ? (Array.isArray(options.selectedSizes) && options.selectedSizes.length
+            ? options.selectedSizes.filter(size => availableSizeOptions.some(option => option.size === size))
+            : availableSizeOptions.map(option => option.size))
+        : [run.conduit.Size];
+    options.selectedSizes = selectedSizes;
     const selectedFittings = getRunFittings(run)
         .filter(fitting => Number(fitting?.qty || 0) > 0)
+        .filter(fitting => selectedSizes.some(size => isSameFittingSize(fitting, size)))
         .sort((a, b) => String(a?.CatalogNumber || "").localeCompare(
             String(b?.CatalogNumber || "")
         ));
@@ -3628,15 +3656,6 @@ function renderRunFittingModal(run, materials, options = {}) {
             `;
         }).join("")
         : `<p class="fitting-summary-empty">Click a fitting image to add it here.</p>`;
-    const availableSizeOptions = Array.isArray(options.sizeOptions)
-        ? options.sizeOptions
-        : [];
-    const selectedSizes = availableSizeOptions.length
-        ? (Array.isArray(options.selectedSizes) && options.selectedSizes.length
-            ? options.selectedSizes.filter(size => availableSizeOptions.some(option => option.size === size))
-            : availableSizeOptions.map(option => option.size))
-        : [run.conduit.Size];
-    options.selectedSizes = selectedSizes;
     const displayedSizes = selectedSizes.join(", ") || "None";
     const fittingContext = options.context
         ? `${options.context} · Sizes`
