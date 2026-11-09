@@ -1058,7 +1058,22 @@ function drawPlacedItems() {
 
     code.className = "canvas-code";
 
-    code.textContent = item.data.CatalogNumber;
+    const canvasType = [
+      item.data?.NodeType,
+      item.data?.Type,
+      item.data?.Category
+    ].join(" ").toUpperCase();
+    const presetCode = String(item.preset || "").trim();
+    const isGutter =
+      canvasType.includes("GUTTER") ||
+      canvasType.includes("WWAY");
+
+    // GUTTER PRESETS have meaningful, compact names (G2–G6). Use that
+    // canvas label instead of the longer MML catalog number such as A8848RT.
+    code.textContent =
+      isGutter && presetCode
+        ? presetCode
+        : item.data.CatalogNumber;
 
     code.style.textAlign = "center";
     code.style.fontSize = "11px";
