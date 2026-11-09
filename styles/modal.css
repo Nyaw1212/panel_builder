@@ -3042,6 +3042,95 @@ PANEL BREAKER CARD LIBRARY
     box-shadow: 0 5px 14px rgba(37, 99, 235, .24);
 }
 
+/* Breakers use a rating-by-pole matrix. Polaris remains an accessory card list. */
+.panel-breaker-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid var(--v2-border);
+    border-radius: 8px;
+    background: #111c2f;
+    color: var(--v2-text);
+}
+
+.panel-breaker-matrix th,
+.panel-breaker-matrix td {
+    min-width: 104px;
+    padding: 8px;
+    border-right: 1px solid rgba(148, 163, 184, .18);
+    border-bottom: 1px solid rgba(148, 163, 184, .18);
+    text-align: center;
+    vertical-align: middle;
+}
+
+.panel-breaker-matrix tr > :last-child {
+    border-right: 0;
+}
+
+.panel-breaker-matrix tbody tr:last-child > * {
+    border-bottom: 0;
+}
+
+.panel-breaker-matrix thead th {
+    background: #1b3457;
+    color: #dbeafe;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.panel-breaker-matrix tbody > tr > th {
+    min-width: 78px;
+    background: #172b49;
+    color: #e2e8f0;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.panel-breaker-matrix td {
+    height: 46px;
+    background: rgba(15, 23, 42, .45);
+}
+
+.panel-breaker-matrix-choice {
+    width: 100%;
+    min-height: 31px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin: 2px 0;
+    padding: 5px 7px;
+    border: 1px solid #475569;
+    border-radius: 5px;
+    background: linear-gradient(145deg, #313b49, #1c2531);
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: grab;
+}
+
+.panel-breaker-matrix-choice:hover,
+.panel-breaker-matrix-choice:focus {
+    outline: none;
+    border-color: var(--v2-blue-light);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, .15);
+}
+
+.panel-breaker-matrix-choice:active {
+    cursor: grabbing;
+}
+
+.panel-breaker-matrix-choice small {
+    color: #fbbf24;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+.panel-breaker-matrix-empty {
+    color: #64748b;
+}
+
 .panel-breaker-card-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
