@@ -2026,6 +2026,37 @@ function saveRunsDraft() {
 
 }
 
+function moveRunToPosition(runId, requestedPosition, render) {
+
+    const runs = getEditableRuns();
+    const sourceIndex = runs.findIndex(run =>
+        String(run?.id || "") === String(runId || "")
+    );
+
+    if (sourceIndex < 0 || !runs.length) return false;
+
+    const requestedIndex = Math.round(Number(requestedPosition || 0)) - 1;
+    const targetIndex = Math.max(
+        0,
+        Math.min(runs.length - 1, Number.isFinite(requestedIndex)
+            ? requestedIndex
+            : sourceIndex)
+    );
+
+    if (sourceIndex === targetIndex) return targetIndex;
+
+    const [movedRun] = runs.splice(sourceIndex, 1);
+    runs.splice(targetIndex, 0, movedRun);
+
+    captureRunsHistory("Run order updated");
+    saveRunsDraft();
+    if (typeof renderBOM === "function") renderBOM();
+    render();
+
+    return targetIndex;
+
+}
+
 function bindRunRowReordering(container, rowSelector, render) {
 
     if (!container) return;
@@ -2041,6 +2072,7 @@ function bindRunRowReordering(container, rowSelector, render) {
 
     rows.forEach(row => {
         const handle = row.querySelector("[data-action='reorder-run']");
+        const orderInput = row.querySelector("[data-action='run-order']");
         const runId = String(row.dataset.runId || "");
 
         handle?.addEventListener("dragstart", event => {
@@ -2051,6 +2083,39 @@ function bindRunRowReordering(container, rowSelector, render) {
         });
 
         handle?.addEventListener("dragend", clearDragState);
+
+        const applyEnteredOrder = () => {
+            const runs = getEditableRuns();
+            const sourceIndex = runs.findIndex(run =>
+                String(run?.id || "") === runId
+            );
+            if (sourceIndex < 0) return;
+
+            const requested = Math.round(Number(orderInput?.value || 0));
+            const position = Math.max(
+                1,
+                Math.min(runs.length, Number.isFinite(requested)
+                    ? requested
+                    : sourceIndex + 1)
+            );
+            const result = moveRunToPosition(runId, position, render);
+
+            // When the run was already in place, keep the number valid even
+            // though no re-render was needed.
+            if (result === sourceIndex && orderInput) {
+                orderInput.value = String(position);
+            }
+        };
+
+        orderInput?.addEventListener("focus", event => {
+            requestAnimationFrame(() => event.target.select());
+        });
+        orderInput?.addEventListener("keydown", event => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            applyEnteredOrder();
+        });
+        orderInput?.addEventListener("change", applyEnteredOrder);
 
         row.addEventListener("dragover", event => {
             if (!draggedRunId || draggedRunId === runId) return;
@@ -2082,16 +2147,10 @@ function bindRunRowReordering(container, rowSelector, render) {
 
             if (sourceIndex < 0 || targetIndex < 0) return;
 
-            const [movedRun] = runs.splice(sourceIndex, 1);
             const insertionIndex = sourceIndex < targetIndex
-                ? targetIndex - 1
-                : targetIndex;
-            runs.splice(insertionIndex, 0, movedRun);
-
-            captureRunsHistory("Run order updated");
-            saveRunsDraft();
-            if (typeof renderBOM === "function") renderBOM();
-            render();
+                ? targetIndex
+                : targetIndex + 1;
+            moveRunToPosition(sourceId, insertionIndex, render);
         });
     });
 
@@ -2500,7 +2559,7 @@ function renderRunMaterialsModal() {
                                 <div class="run-name">
                                     <div class="run-name-line">
                                         <button class="run-reorder-handle" type="button" draggable="true" data-action="reorder-run" title="Drag to reorder run ${index + 1}" aria-label="Drag to reorder run ${index + 1}">⠿</button>
-                                        <span class="run-number" aria-label="Run ${index + 1}">${index + 1}</span>
+                                        <input class="run-order-input" type="number" min="1" max="${runs.length}" step="1" inputmode="numeric" value="${index + 1}" data-action="run-order" title="Enter a run position" aria-label="Run ${index + 1} position">
                                         <strong>${runModalEscape(run.name || `Run ${index + 1}`)}</strong>
                                     </div>
                                     <div class="canvas-component-previews">
@@ -2698,7 +2757,7 @@ function renderRunsModal() {
                                 <div class="run-name">
                                     <div class="run-name-line">
                                         <button class="run-reorder-handle" type="button" draggable="true" data-action="reorder-run" title="Drag to reorder run ${index + 1}" aria-label="Drag to reorder run ${index + 1}">⠿</button>
-                                        <span class="run-number" aria-label="Run ${index + 1}">${index + 1}</span>
+                                        <input class="run-order-input" type="number" min="1" max="${runs.length}" step="1" inputmode="numeric" value="${index + 1}" data-action="run-order" title="Enter a run position" aria-label="Run ${index + 1} position">
                                         <input
                                             class="run-name-input"
                                             type="text"
