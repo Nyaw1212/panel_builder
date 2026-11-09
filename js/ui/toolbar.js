@@ -410,14 +410,19 @@ function updateToolbarMaterialTotal() {
 }
 
 function createToolbarMaterialTotal(toolbar) {
-    if (!toolbar || document.getElementById("toolbarMaterialTotal")) return;
+    if (!toolbar) return;
 
-    const total = document.createElement("div");
-    total.id = "toolbarMaterialTotal";
-    total.className = "toolbar-material-total";
-    total.title = "Live total of the current BOM materials";
-    total.innerHTML = "<span>Total Amount</span><strong>$0.00</strong>";
-    toolbar.appendChild(total);
+    let total = document.getElementById("toolbarMaterialTotal");
+
+    if (!total) {
+        total = document.createElement("div");
+        total.id = "toolbarMaterialTotal";
+        total.className = "toolbar-material-total";
+        total.title = "Live total of the current BOM materials";
+        total.innerHTML = "<span>Total Amount</span><strong>$0.00</strong>";
+        toolbar.appendChild(total);
+    }
+
     updateToolbarMaterialTotal();
 }
 
