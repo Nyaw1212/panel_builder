@@ -344,6 +344,83 @@ function createThemePicker(toolbar) {
     applyPanelBuilderTheme(savedTheme, { persist: false });
 }
 
+function getToolbarMaterialUnitPrice(item, priceByCatalog) {
+    const catalogNumber = String(
+        item?.CatalogNumber || item?.catalogNumber || ""
+    ).trim().toUpperCase();
+    const catalogItem = priceByCatalog.get(catalogNumber) || {};
+    const rawPrice = [
+        item?.Price,
+        item?.price,
+        item?.UnitPrice,
+        item?.unitPrice,
+        catalogItem.Price,
+        catalogItem.price,
+        catalogItem.UnitPrice,
+        catalogItem.unitPrice
+    ].find(value =>
+        value !== null &&
+        value !== undefined &&
+        String(value).trim() !== ""
+    );
+
+    const price = Number(
+        String(rawPrice ?? 0).replace(/[^0-9.-]/g, "")
+    );
+
+    return Number.isFinite(price) ? price : 0;
+}
+
+function getToolbarMaterialTotal() {
+    if (typeof generateBOM !== "function") return 0;
+
+    const catalog = typeof getMaterials === "function"
+        ? getMaterials()
+        : [];
+    const priceByCatalog = new Map(
+        (Array.isArray(catalog) ? catalog : [])
+            .map(item => [
+                String(item?.CatalogNumber || "").trim().toUpperCase(),
+                item
+            ])
+            .filter(([catalogNumber]) => Boolean(catalogNumber))
+    );
+    const materials = generateBOM()?.fittings || [];
+
+    return materials.reduce((total, item) => {
+        const quantity = Number(item?.Qty ?? item?.qty ?? 0);
+        if (!Number.isFinite(quantity) || quantity <= 0) return total;
+
+        return total + quantity * getToolbarMaterialUnitPrice(
+            item,
+            priceByCatalog
+        );
+    }, 0);
+}
+
+function updateToolbarMaterialTotal() {
+    const value = document.querySelector("#toolbarMaterialTotal strong");
+    if (!value) return;
+
+    const total = getToolbarMaterialTotal();
+    value.textContent = total.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD"
+    });
+}
+
+function createToolbarMaterialTotal(toolbar) {
+    if (!toolbar || document.getElementById("toolbarMaterialTotal")) return;
+
+    const total = document.createElement("div");
+    total.id = "toolbarMaterialTotal";
+    total.className = "toolbar-material-total";
+    total.title = "Live total of the current BOM materials";
+    total.innerHTML = "<span>Total Amount</span><strong>$0.00</strong>";
+    toolbar.appendChild(total);
+    updateToolbarMaterialTotal();
+}
+
 //----------------------------------
 // Toolbar
 //----------------------------------
@@ -388,7 +465,14 @@ function initializeToolbar() {
     const manualRouteButton =
         document.getElementById("manualRouteButton");
 
+    createToolbarMaterialTotal(toolbar);
     createThemePicker(toolbar);
+
+    const total = document.getElementById("toolbarMaterialTotal");
+    if (total) {
+        const themePicker = toolbar.querySelector(".theme-picker");
+        if (themePicker) themePicker.style.marginLeft = "0";
+    }
 
     //----------------------------------
     // New
@@ -561,3 +645,4 @@ function initializeToolbar() {
 
 window.applyPanelBuilderTheme = applyPanelBuilderTheme;
 window.initializeToolbar = initializeToolbar;
+window.updateToolbarMaterialTotal = updateToolbarMaterialTotal;
