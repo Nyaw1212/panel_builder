@@ -2284,10 +2284,16 @@ function getRunQuickConduitChoices() {
     const choices = new Map();
 
     (Array.isArray(materials) ? materials : []).forEach(material => {
+        const nodeType = String(material?.NodeType || "").trim().toUpperCase();
+        const color = String(material?.Color || "").trim().toUpperCase();
+        const description = String(material?.Description || "").toUpperCase();
         const type = getRunQuickConduitType(material);
         const size = getRunQuickConduitSize(material);
 
         if (
+            // Match the original conduit picker exactly: PIPE entries plus
+            // the catalog's special Liquidtight records.
+            (nodeType !== "PIPE" && !(color === "LT" && description.includes("MET L/T"))) ||
             !RUN_QUICK_CONDUIT_TYPES.includes(type) ||
             !RUN_QUICK_CONDUIT_SIZES.includes(size)
         ) {
