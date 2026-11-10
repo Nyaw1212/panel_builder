@@ -563,6 +563,35 @@ Text
         0 1px 3px rgba(0,0,0,.8);
 
 }
+
+/* Compact live panel summary. A normal 2P breaker stays short (20A), while
+   1P and 3P breakers are labeled with their pole suffix (20A1P / 20A3P). */
+#grid .cell .panel-card .canvas-panel-breakers {
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 3px;
+    max-width: 100%;
+    margin-top: 3px;
+    pointer-events: none;
+
+}
+
+#grid .cell .panel-card .canvas-panel-breaker {
+
+    padding: 2px 5px;
+    border: 1px solid rgba(134, 239, 172, .58);
+    border-radius: 4px;
+    color: #bbf7d0;
+    background: rgba(20, 83, 45, .58);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.1;
+    text-shadow: 0 1px 3px rgba(0,0,0,.8);
+    white-space: nowrap;
+
+}
 /*=====================================
 LIBRARY SIDEBAR — V2 DARK OVERRIDE
 =====================================*/
