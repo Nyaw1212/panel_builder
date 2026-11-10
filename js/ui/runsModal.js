@@ -2248,6 +2248,124 @@ function getRunMaterialLabel(material, emptyLabel) {
 
 }
 
+// The Material Runs workspace only needs the six standard field conduit
+// choices. Keeping this list on the row removes an extra picker step while
+// still reading the actual catalog material from MML.
+const RUN_QUICK_CONDUIT_TYPES = ["EMT", "PVC", "LT"];
+const RUN_QUICK_CONDUIT_SIZES = ['1"', '2"'];
+
+function getRunQuickConduitType(material) {
+
+    const color = String(material?.Color || "").trim().toUpperCase();
+    const description = String(material?.Description || "").toUpperCase();
+
+    if (color === "EMT" || description.includes(" EMT ")) return "EMT";
+    if (color === "PVC" || description.includes(" PVC ")) return "PVC";
+    if (color === "LT" || description.includes(" L/T")) return "LT";
+
+    return "";
+
+}
+
+function getRunQuickConduitSize(material) {
+
+    return String(material?.Size || "")
+        .trim()
+        .replace(/\s+/g, "")
+        .replace("1-/1/2", "1-1/2");
+
+}
+
+function getRunQuickConduitChoices() {
+
+    const materials = typeof getMaterials === "function"
+        ? getMaterials()
+        : [];
+    const choices = new Map();
+
+    (Array.isArray(materials) ? materials : []).forEach(material => {
+        const type = getRunQuickConduitType(material);
+        const size = getRunQuickConduitSize(material);
+
+        if (
+            !RUN_QUICK_CONDUIT_TYPES.includes(type) ||
+            !RUN_QUICK_CONDUIT_SIZES.includes(size)
+        ) {
+            return;
+        }
+
+        const key = `${type}:${size}`;
+        const current = choices.get(key);
+
+        if (!current || Number(material?.Favorite || 0) > Number(current?.Favorite || 0)) {
+            choices.set(key, material);
+        }
+    });
+
+    // Two rows by three columns: each size is a row, with EMT/PVC/LT across.
+    return RUN_QUICK_CONDUIT_SIZES.flatMap(size =>
+        RUN_QUICK_CONDUIT_TYPES.map(type => ({
+            key: `${type}:${size}`,
+            type,
+            size,
+            material: choices.get(`${type}:${size}`) || null
+        }))
+    );
+
+}
+
+function getRunQuickConduitKey(material) {
+
+    const type = getRunQuickConduitType(material);
+    const size = getRunQuickConduitSize(material);
+
+    return type && size ? `${type}:${size}` : "";
+
+}
+
+function renderRunQuickConduitPicker(run, choices) {
+
+    const selectedKey = getRunQuickConduitKey(run?.conduit);
+
+    return `
+        <div class="run-quick-conduit-grid" role="group" aria-label="Select conduit">
+            ${choices.map(choice => {
+                const material = choice.material;
+                const selected = selectedKey === choice.key;
+                const catalog = String(
+                    material?.PickerCardCode ||
+                    material?.CatalogNumber ||
+                    `${choice.type}${choice.size.replace(/\D/g, "")}`
+                ).trim();
+                const description = String(material?.Description || "").trim();
+
+                return material ? `
+                    <button
+                        class="run-quick-conduit-choice ${selected ? "is-selected" : ""}"
+                        type="button"
+                        data-action="quick-conduit"
+                        data-conduit-catalog="${runModalEscape(material.CatalogNumber || "")}"
+                        title="${runModalEscape([catalog, description].filter(Boolean).join(" — "))}"
+                        aria-pressed="${selected}"
+                    >
+                        <img src="${runModalEscape(getFittingImage(material))}" alt="" loading="lazy">
+                        <span>
+                            <strong>${runModalEscape(catalog)}</strong>
+                            <small>${runModalEscape(choice.size)} ${runModalEscape(choice.type)}</small>
+                        </span>
+                    </button>
+                ` : `
+                    <span class="run-quick-conduit-choice is-unavailable" title="No ${choice.type} ${choice.size} conduit is in MML">
+                        <strong>${runModalEscape(choice.type)}</strong>
+                        <small>${runModalEscape(choice.size)}</small>
+                    </span>
+                `;
+            }).join("")}
+        </div>
+    `;
+
+}
+
 function getRunWireLabel(wires) {
 
     const selection = Array.isArray(wires)
@@ -2747,6 +2865,15 @@ function renderRunsModal() {
     const runs = getEditableRuns();
     const gutters = getEditableGutters();
     const canvasTags = getCanvasTagOptions();
+    const quickConduitChoices = getRunQuickConduitChoices();
+    const quickConduitByCatalog = new Map(
+        quickConduitChoices
+            .filter(choice => choice.material?.CatalogNumber)
+            .map(choice => [
+                String(choice.material.CatalogNumber).trim(),
+                choice.material
+            ])
+    );
 
     overlay.innerHTML = `
         <section class="runs-dialog runs-workspace" role="dialog" aria-modal="true" aria-labelledby="runsModalTitle">
@@ -2820,9 +2947,7 @@ function renderRunsModal() {
                                 </div>
                                 <div class="run-conduit-field">
                                     <div class="run-conduit-picker">
-                                        <button class="run-material-button" type="button" data-action="conduit" title="Select conduit">
-                                            ${runModalEscape(getRunMaterialLabel(run.conduit, "Select conduit"))}
-                                        </button>
+                                        ${renderRunQuickConduitPicker(run, quickConduitChoices)}
                                         ${run.conduit ? `
                                             <button class="run-conduit-clear" type="button" data-action="clear-conduit" title="Remove conduit" aria-label="Remove conduit">&times;</button>
                                         ` : ""}
@@ -3086,10 +3211,22 @@ function renderRunsModal() {
     overlay.querySelectorAll(".run-row").forEach(row => {
         const runId = row.dataset.runId;
 
-        row.querySelector("[data-action='conduit']")?.addEventListener(
-            "click",
-            () => openRunMaterialPicker(runId, "conduit")
-        );
+        row.querySelectorAll("[data-action='quick-conduit']").forEach(button => {
+            button.addEventListener("click", () => {
+                const run = findRun(runId);
+                const catalog = String(button.dataset.conduitCatalog || "").trim();
+                const material = quickConduitByCatalog.get(catalog);
+
+                if (!run || !material) return;
+
+                run.conduit = structuredClone(material);
+                delete run._autoHoleStrapsDisabled;
+                captureRunsHistory("Run conduit selected");
+                saveRunsDraft();
+                refreshRunsBOM();
+                renderRunsModal();
+            });
+        });
 
         row.querySelector("[data-action='clear-conduit']")?.addEventListener(
             "click",
