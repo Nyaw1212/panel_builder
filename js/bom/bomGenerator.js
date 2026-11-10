@@ -33,6 +33,7 @@ function getFittingBOM() {
     const seenEquipment = new Set();
     const primaryEquipmentCatalogs = new Set(
         (Array.isArray(layout) ? layout : [])
+            .filter(item => item?.isExisting !== true)
             .map(item => String(
                 item?.data?.CatalogNumber || item?.data?.catalogNumber || ""
             ).trim().toUpperCase())
@@ -43,6 +44,12 @@ function getFittingBOM() {
 
         if (!item?.id || seenEquipment.has(item.id)) return;
         seenEquipment.add(item.id);
+
+        // Existing equipment stays on the canvas and keeps all of its
+        // connections, but its own card and preset add-ons are not new
+        // material for this project's BOM. Link and Run materials are
+        // collected separately below and remain included.
+        if (item.isExisting === true) return;
 
         const itemMaterials = Array.isArray(item.materials)
             ? item.materials
