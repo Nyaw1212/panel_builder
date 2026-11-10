@@ -43,8 +43,8 @@ const MaterialDebugPanelV2 = (() => {
           type="button"
           class="material-debug-panel-v2__used-materials"
           data-action="used-materials"
-          aria-label="Generate Used Materials spreadsheet"
-          title="Generate Used Materials spreadsheet"
+          aria-label="Generate and download Used Materials as Excel"
+          title="Generate and download Used Materials (.xlsx)"
         >
           Used
         </button>
