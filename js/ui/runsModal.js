@@ -1819,32 +1819,55 @@ function refreshRunsBOM() {
 
 }
 
-function clearAllRunConduitAndFittings() {
+function clearAllRunConduit() {
 
     const runs = getEditableRuns();
-    const gutters = getEditableGutters();
-    const affectedRuns = runs.filter(run =>
-        run?.conduit ||
-        (Array.isArray(run?.fittings) && run.fittings.length)
-    );
-    const affectedGutters = gutters.filter(gutter =>
-        Array.isArray(gutter?.fittings) && gutter.fittings.length
-    );
 
-    if (!affectedRuns.length && !affectedGutters.length) {
-        alert("There are no conduit or fittings to remove.");
+    if (!runs.some(run => run?.conduit)) {
+        alert("There is no conduit to remove.");
         return;
     }
 
     const confirmed = window.confirm(
-        "Remove all conduit and fittings from every run and gutter?\n\n" +
-        "Wire selections and lengths will stay unchanged."
+        "Remove conduit from every run?\n\n" +
+        "Fittings, wire selections, and lengths will stay unchanged."
     );
 
     if (!confirmed) return;
 
     runs.forEach(run => {
         run.conduit = null;
+    });
+
+    captureRunsHistory("All run conduit removed");
+    refreshRunsBOM();
+    renderRunsModal();
+
+}
+
+function clearAllRunFittings() {
+
+    const runs = getEditableRuns();
+    const gutters = getEditableGutters();
+    const hasFittings = runs.some(run =>
+        Array.isArray(run?.fittings) && run.fittings.length
+    ) || gutters.some(gutter =>
+        Array.isArray(gutter?.fittings) && gutter.fittings.length
+    );
+
+    if (!hasFittings) {
+        alert("There are no fittings to remove.");
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "Remove all fittings from every run and gutter?\n\n" +
+        "Conduit, wire selections, and lengths will stay unchanged."
+    );
+
+    if (!confirmed) return;
+
+    runs.forEach(run => {
         run.fittings = [];
     });
 
@@ -1852,7 +1875,54 @@ function clearAllRunConduitAndFittings() {
         gutter.fittings = [];
     });
 
-    captureRunsHistory("All conduit and fittings removed");
+    captureRunsHistory("All run and gutter fittings removed");
+    refreshRunsBOM();
+    renderRunsModal();
+
+}
+
+function clearAllRunConduitFittingsAndLengths() {
+
+    const runs = getEditableRuns();
+    const gutters = getEditableGutters();
+    const hasRunData = runs.some(run =>
+        run?.conduit ||
+        (Array.isArray(run?.fittings) && run.fittings.length) ||
+        Number(run?.length || 0) > 0 ||
+        (run?.conduitLength !== "" &&
+            run?.conduitLength !== null &&
+            run?.conduitLength !== undefined)
+    );
+    const hasGutterData = gutters.some(gutter =>
+        (Array.isArray(gutter?.fittings) && gutter.fittings.length) ||
+        Number(gutter?.length || 0) > 0
+    );
+
+    if (!hasRunData && !hasGutterData) {
+        alert("There are no conduit, fittings, or lengths to clear.");
+        return;
+    }
+
+    const confirmed = window.confirm(
+        "Clear all conduit, fittings, and lengths from every run and gutter?\n\n" +
+        "Wire selections and canvas links will stay unchanged."
+    );
+
+    if (!confirmed) return;
+
+    runs.forEach(run => {
+        run.conduit = null;
+        run.fittings = [];
+        run.length = 0;
+        delete run.conduitLength;
+    });
+
+    gutters.forEach(gutter => {
+        gutter.fittings = [];
+        gutter.length = 0;
+    });
+
+    captureRunsHistory("All run conduit, fittings, and lengths cleared");
     refreshRunsBOM();
     renderRunsModal();
 
@@ -2922,11 +2992,17 @@ function renderRunsModal() {
                 <button id="addRunButton" class="runs-add" type="button">+ Add Run</button>
                 <button id="addLinkRunButton" class="runs-add" type="button">+ Run from Link</button>
                 <button id="addGutterButton" class="runs-add" type="button">+ Add Gutter</button>
-                <button id="clearAllRunMaterialsButton" class="runs-clear-materials" type="button">
-                    Clear conduit &amp; fittings
+                <button id="clearAllRunConduitButton" class="runs-clear-materials" type="button">
+                    Clear conduit
+                </button>
+                <button id="clearAllRunFittingsButton" class="runs-clear-materials" type="button">
+                    Clear fittings
                 </button>
                 <button id="resetAllRunLengthsButton" class="runs-clear-materials" type="button">
                     Reset lengths
+                </button>
+                <button id="clearAllRunRouteDataButton" class="runs-clear-materials" type="button">
+                    Clear conduit, fittings &amp; lengths
                 </button>
                 <button id="measurePhotoRunsButton" class="runs-add" type="button">📷 Measure Photo</button>
                 <div class="runs-rule">Wire BOM = 0 ft for zero-length runs; otherwise run length + 4 ft</div>
@@ -2949,9 +3025,14 @@ function renderRunsModal() {
         closeRunsModal
     );
 
-    overlay.querySelector("#clearAllRunMaterialsButton")?.addEventListener(
+    overlay.querySelector("#clearAllRunConduitButton")?.addEventListener(
         "click",
-        clearAllRunConduitAndFittings
+        clearAllRunConduit
+    );
+
+    overlay.querySelector("#clearAllRunFittingsButton")?.addEventListener(
+        "click",
+        clearAllRunFittings
     );
 
     overlay.querySelector("#measurePhotoRunsButton")?.addEventListener("click", () => window.openPhotoMeasureRuns?.());
@@ -2959,6 +3040,11 @@ function renderRunsModal() {
     overlay.querySelector("#resetAllRunLengthsButton")?.addEventListener(
         "click",
         resetAllRunLengths
+    );
+
+    overlay.querySelector("#clearAllRunRouteDataButton")?.addEventListener(
+        "click",
+        clearAllRunConduitFittingsAndLengths
     );
 
     bindRunRowReordering(
