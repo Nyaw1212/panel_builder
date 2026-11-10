@@ -461,6 +461,9 @@ function initializeToolbar() {
     const runMaterialsButton =
         document.getElementById("runMaterialsButton");
 
+    const vanFittingPrototypeButton =
+        document.getElementById("vanFittingPrototypeButton");
+
     const projectPhotosButton =
         document.getElementById("projectPhotosButton");
 
@@ -592,6 +595,17 @@ function initializeToolbar() {
             else {
                 console.error("Conduit & Fittings modal was not loaded.");
                 alert("Conduit & Fittings is still loading. Please refresh the page, then try again.");
+            }
+        });
+    }
+
+    if (vanFittingPrototypeButton) {
+        vanFittingPrototypeButton.addEventListener("click", () => {
+            if (typeof window.openVanFittingPrototype === "function") {
+                window.openVanFittingPrototype();
+            }
+            else {
+                alert("VAN Fitting Guess is still loading. Please refresh the page, then try again.");
             }
         });
     }
