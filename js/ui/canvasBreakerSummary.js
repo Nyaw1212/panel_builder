@@ -112,12 +112,17 @@
         .map(entry => `${entry.label}${entry.quantity > 1 ? ` × ${entry.quantity}` : ""}`)
         .join(" · ")}`;
       summary.style.cssText = [
+        "position:absolute",
+        "left:50%",
+        "bottom:-34px",
+        "z-index:40",
         "display:flex",
         "flex-wrap:wrap",
         "justify-content:center",
-        "gap:3px",
-        "max-width:100%",
-        "margin-top:3px",
+        "gap:5px",
+        "width:max-content",
+        "max-width:calc(100% + 50px)",
+        "transform:translateX(-50%)",
         "pointer-events:none"
       ].join(";");
 
@@ -127,14 +132,14 @@
           ? `${entry.label} ×${entry.quantity}`
           : entry.label;
         badge.style.cssText = [
-          "padding:2px 5px",
+          "padding:3px 8px",
           "border:1px solid rgba(134,239,172,.58)",
-          "border-radius:4px",
+          "border-radius:5px",
           "color:#bbf7d0",
-          "background:rgba(20,83,45,.58)",
-          "font-size:10px",
+          "background:rgba(20,83,45,.86)",
+          "font-size:16px",
           "font-weight:800",
-          "line-height:1.1",
+          "line-height:1.15",
           "white-space:nowrap",
           "text-shadow:0 1px 3px rgba(0,0,0,.8)"
         ].join(";");
