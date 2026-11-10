@@ -1793,6 +1793,7 @@ function syncHoleStrapFittings(){
         const fittings=getRunFittings(run);
         // Only replace entries created by this automatic rule. Manual fittings remain untouched.
         for(let i=fittings.length-1;i>=0;i--)if(fittings[i]?._autoHoleStrap)fittings.splice(i,1);
+        if(run?._autoHoleStrapsDisabled)return;
         const size=String(run?.conduit?.Size||"").trim().replace(/["″\s]/g,"");
         const code=String(settings.bySize?.[size]||"").trim().toUpperCase();
         const feet=Number(run?.conduitLength??run?.length??0);
@@ -1869,6 +1870,7 @@ function clearAllRunFittings() {
 
     runs.forEach(run => {
         run.fittings = [];
+        run._autoHoleStrapsDisabled = true;
     });
 
     gutters.forEach(gutter => {
@@ -1914,6 +1916,7 @@ function clearAllRunConduitFittingsAndLengths() {
         run.conduit = null;
         run.fittings = [];
         run.length = 0;
+        run._autoHoleStrapsDisabled = true;
         delete run.conduitLength;
     });
 
@@ -3551,6 +3554,7 @@ async function openRunMaterialPicker(runId, materialType, returnTo = "runs") {
             if (!run) return;
 
             run[materialType] = structuredClone(item);
+            delete run._autoHoleStrapsDisabled;
 
             captureRunsHistory(
                 "Run conduit selected"
