@@ -2332,12 +2332,19 @@ function getRunQuickConduitKey(material) {
 function renderRunQuickConduitPicker(run, choices) {
 
     const selectedKey = getRunQuickConduitKey(run?.conduit);
+    const selectedCatalog = String(
+        run?.conduit?.CatalogNumber || run?.conduit?.catalogNumber || ""
+    ).trim().toUpperCase();
 
     return `
         <div class="run-quick-conduit-grid" role="group" aria-label="Select conduit">
             ${choices.map(choice => {
                 const material = choice.material;
-                const selected = selectedKey === choice.key;
+                const materialCatalog = String(
+                    material?.CatalogNumber || material?.catalogNumber || ""
+                ).trim().toUpperCase();
+                const selected = Boolean(selectedCatalog && materialCatalog &&
+                    selectedCatalog === materialCatalog) || selectedKey === choice.key;
                 const catalog = String(
                     material?.PickerCardCode ||
                     material?.CatalogNumber ||
@@ -3227,6 +3234,11 @@ function renderRunsModal() {
 
                 run.conduit = structuredClone(material);
                 delete run._autoHoleStrapsDisabled;
+                row.querySelectorAll("[data-action='quick-conduit']").forEach(choice => {
+                    const isSelected = choice === button;
+                    choice.classList.toggle("is-selected", isSelected);
+                    choice.setAttribute("aria-pressed", String(isSelected));
+                });
                 captureRunsHistory("Run conduit selected");
                 saveRunsDraft();
                 refreshRunsBOM();
