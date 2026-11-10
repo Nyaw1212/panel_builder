@@ -192,6 +192,7 @@ function deserializeProject(project) {
 
         item.rotation = Number(savedItem.rotation || 0);
         item.preset = savedItem.preset || "";
+        item.isExisting = savedItem.isExisting === true;
 
         if (!item.connections) {
             throw new Error(
