@@ -961,6 +961,82 @@ function getCanvasItemRatingLabel(item) {
   return ratingMatch ? `${ratingMatch[1]}A` : "";
 }
 
+function getCanvasBreakerAmperage(material, catalogNumber) {
+  if (typeof getBreakerAmperage === "function") {
+    const configuredAmperage = Number(getBreakerAmperage(material));
+
+    if (configuredAmperage > 0) return configuredAmperage;
+  }
+
+  const direct = Number(
+    material?.Amperage ??
+    material?.Amps ??
+    material?.Amp ??
+    material?.AMP ??
+    material?.Rating
+  );
+
+  if (Number.isFinite(direct) && direct > 0) {
+    return Math.round(direct);
+  }
+
+  const text = [
+    material?.Description,
+    material?.Size,
+    material?.CatalogNumber,
+    catalogNumber
+  ].join(" ");
+  const match = text.match(/(?:^|\D)(\d{1,4})\s*(?:A|AMP(?:ERE)?S?)(?:\D|$)/i);
+
+  if (match) return Number(match[1]);
+
+  const breakerCatalogMatch = String(catalogNumber || "")
+    .trim()
+    .toUpperCase()
+    .match(/^(?:BR|CHP|CHF|CSR)([1-4])(\d{2,4})/);
+
+  return breakerCatalogMatch ? Number(breakerCatalogMatch[2]) : 0;
+}
+
+function getCanvasPanelBreakerSummary(item) {
+  const materials = typeof getMaterials === "function"
+    ? getMaterials()
+    : [];
+  const materialsByCatalog = new Map(
+    (Array.isArray(materials) ? materials : []).map(material => [
+      String(material?.CatalogNumber || "").trim().toUpperCase(),
+      material
+    ])
+  );
+  const grouped = new Map();
+
+  (Array.isArray(item?.materials) ? item.materials : []).forEach(entry => {
+    if (entry?.panelSlot?.section !== "branch") return;
+
+    const catalogNumber = String(
+      entry?.catalogNumber || entry?.CatalogNumber || ""
+    ).trim();
+    const material = materialsByCatalog.get(catalogNumber.toUpperCase()) || entry;
+    const amperage = getCanvasBreakerAmperage(material, catalogNumber);
+
+    if (!amperage) return;
+
+    const poles = Math.max(1, Number(
+      entry?.panelSlot?.span ||
+      material?.Poles ||
+      material?.Pole ||
+      2
+    ));
+    const label = poles === 2
+      ? `${amperage}A`
+      : `${amperage}A${poles}P`;
+
+    grouped.set(label, (grouped.get(label) || 0) + 1);
+  });
+
+  return Array.from(grouped, ([label, quantity]) => ({ label, quantity }));
+}
+
 function drawPlacedItems() {
   const drawn = new Set();
 
@@ -1001,6 +1077,11 @@ function drawPlacedItems() {
         .replace(/[^A-Z0-9]/gi, "")
         .toUpperCase() === "LDISC"
     );
+
+    const panelBreakerSummary = getCanvasPanelBreakerSummary(item);
+    card.dataset.breakerSummary = panelBreakerSummary
+      .map(entry => `${entry.label} x${entry.quantity}`)
+      .join(", ");
 
     card.style.position = "absolute";
     card.style.left = "0";
@@ -1141,6 +1222,28 @@ function drawPlacedItems() {
     card.appendChild(code);
 
     card.appendChild(desc);
+
+    if (panelBreakerSummary.length) {
+      const summary = document.createElement("div");
+
+      summary.className = "canvas-panel-breakers";
+      summary.title = `Installed breakers: ${panelBreakerSummary
+        .map(entry => `${entry.label}${entry.quantity > 1 ? ` × ${entry.quantity}` : ""}`)
+        .join(" · ")}`;
+      summary.setAttribute("aria-label", summary.title);
+
+      panelBreakerSummary.forEach(entry => {
+        const badge = document.createElement("span");
+
+        badge.className = "canvas-panel-breaker";
+        badge.textContent = entry.quantity > 1
+          ? `${entry.label} ×${entry.quantity}`
+          : entry.label;
+        summary.appendChild(badge);
+      });
+
+      card.appendChild(summary);
+    }
 
     //----------------------------------
     // Enable Drag
