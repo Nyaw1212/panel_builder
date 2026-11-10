@@ -249,6 +249,22 @@ async function saveCurrentProject(options = {}) {
 // Generate Used Materials
 //----------------------------------
 
+function getUsedMaterialsXlsxUrl(spreadsheetId) {
+
+    const id = String(spreadsheetId || "").trim();
+
+    if (!id) {
+        return "";
+    }
+
+    // This is Google Sheets' native Excel export, so the downloaded file
+    // remains a real .xlsx workbook rather than a CSV renamed as Excel.
+    return `https://docs.google.com/spreadsheets/d/${
+        encodeURIComponent(id)
+    }/export?format=xlsx`;
+
+}
+
 function promptUsedMaterialsProjectDetails(project) {
 
     return new Promise(resolve => {
@@ -450,7 +466,8 @@ async function generateUsedMaterials() {
         state = getProjectState();
     }
 
-    // Open the tab inside the click event so the browser does not block it.
+    // Open the tab inside the click event so the browser does not block the
+    // eventual Excel download after the async save completes.
     const usedMaterialsWindow =
         typeof window !== "undefined" &&
         typeof window.open === "function"
@@ -484,9 +501,13 @@ async function generateUsedMaterials() {
                 result.usedMaterials.spreadsheetUrl || ""
             );
 
-            if (usedMaterialsWindow && project.usedMaterialsSpreadsheetUrl) {
+            const xlsxUrl = getUsedMaterialsXlsxUrl(
+                project.usedMaterialsSpreadsheetId
+            );
+
+            if (usedMaterialsWindow && xlsxUrl) {
                 usedMaterialsWindow.location.replace(
-                    project.usedMaterialsSpreadsheetUrl
+                    xlsxUrl
                 );
             }
         }
