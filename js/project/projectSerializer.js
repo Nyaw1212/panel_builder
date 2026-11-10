@@ -202,6 +202,12 @@ function serializeItem(item) {
     result.preset = item.preset;
   }
 
+  // Missing means New, which preserves compatibility with every existing
+  // project while keeping saved JSON compact.
+  if (item.isExisting === true) {
+    result.isExisting = true;
+  }
+
   if (Array.isArray(item.materials) && item.materials.length) {
     result.materials = compactCatalogList(item.materials);
   }
