@@ -192,6 +192,13 @@ function refreshEquipmentCardModal() {
 
     renderEquipmentComponents();
 
+    // Panel Circuit Configuration updates the equipment material entries in
+    // place. Redraw the canvas too, so its compact breaker summary always
+    // matches the currently installed branch breakers.
+    if (typeof drawCanvas === "function") {
+        drawCanvas();
+    }
+
 }
 
 //----------------------------------
