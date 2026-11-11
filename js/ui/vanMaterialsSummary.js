@@ -40,6 +40,30 @@
         ).trim().toUpperCase() === "VAN";
     }
 
+    function materialImage(material, size = 54) {
+        const catalog = catalogNumber(material);
+        const driveId = String(material?.DriveFileID || "").trim();
+        const local = catalog
+            ? `images/materials/${encodeURIComponent(catalog)}.png`
+            : "";
+        const source = driveId && typeof window.getDriveImageUrl === "function"
+            ? window.getDriveImageUrl(driveId, size)
+            : local;
+
+        if (!source) {
+            return `<span class="van-material-image is-empty">No image</span>`;
+        }
+
+        return `<span class="van-material-image">
+            <img
+                src="${escapeHtml(source)}"
+                alt=""
+                data-fallback="${escapeHtml(local)}"
+                onerror="if(this.dataset.fallback && !this.dataset.fallbackUsed){this.dataset.fallbackUsed='1';this.src=this.dataset.fallback;}else{this.closest('.van-material-image').classList.add('is-empty');this.remove();}"
+            >
+        </span>`;
+    }
+
     function sourceRows() {
         const rows = new Map();
         const containers = [
@@ -198,8 +222,8 @@
                 </header>
                 <div class="van-summary-toolbar">
                     <label>
-                        <span>Add VAN material</span>
-                        <input id="vanSummarySearch" type="search" value="${escapeHtml(searchText)}" placeholder="Search catalog or description…">
+                        <span>+ Add VAN material</span>
+                        <input id="vanSummarySearch" type="search" value="${escapeHtml(searchText)}" placeholder="Type 2+ letters, then click a result to add it…">
                     </label>
                     <button id="vanSummaryReset" class="van-summary-reset" type="button">Reset all summary changes</button>
                 </div>
@@ -207,17 +231,23 @@
                     <div class="van-summary-results">
                         ${addResults.map(material => `
                             <button type="button" class="van-summary-add-result" data-catalog="${escapeHtml(catalogNumber(material))}">
+                                ${materialImage(material, 46)}
                                 <strong>${escapeHtml(catalogNumber(material))}</strong>
                                 <span>${escapeHtml(material.Description || material.description || "")}</span>
                                 <em>Add 1</em>
                             </button>
                         `).join("")}
                     </div>
-                ` : ""}
+                ` : searchText.trim().length >= 2 ? `
+                    <div class="van-summary-search-hint">No VAN catalog materials matched “${escapeHtml(searchText)}”.</div>
+                ` : `
+                    <div class="van-summary-search-hint">Search MML above, then click a result to add it to the final VAN BOM.</div>
+                `}
                 <div class="van-summary-table-wrap">
                     <table class="van-summary-table">
                         <thead>
                             <tr>
+                                <th></th>
                                 <th>Material</th>
                                 <th>From template</th>
                                 <th>Adjustment</th>
@@ -229,6 +259,7 @@
                         <tbody>
                             ${rows.length ? rows.map(row => `
                                 <tr data-catalog="${escapeHtml(row.catalog)}">
+                                    <td>${materialImage(row.material)}</td>
                                     <td><strong>${escapeHtml(row.catalog)}</strong><small>${escapeHtml(row.material.Description || row.material.description || "")}</small></td>
                                     <td>${row.sourceQty}</td>
                                     <td class="${row.adjustment > 0 ? "positive" : row.adjustment < 0 ? "negative" : ""}">${row.adjustment > 0 ? "+" : ""}${row.adjustment || "—"}</td>
@@ -241,7 +272,7 @@
                                     <td><button type="button" class="van-remove-all" title="Set final quantity to zero">×</button></td>
                                 </tr>
                             `).join("") : `
-                                <tr><td colspan="6" class="van-summary-empty">No run or gutter fittings yet. Search above to add a VAN material.</td></tr>
+                                <tr><td colspan="7" class="van-summary-empty">No run or gutter fittings yet. Search above to add a VAN material.</td></tr>
                             `}
                         </tbody>
                     </table>
@@ -345,12 +376,15 @@
             .van-summary-toolbar input { width:100%; box-sizing:border-box; border:1px solid #456d9b; border-radius:5px; padding:9px 10px; background:#071120; color:#fff; }
             .van-summary-reset { border:1px solid #9a5c68; border-radius:5px; padding:9px 12px; background:#331923; color:#ffdce2; cursor:pointer; }
             .van-summary-results { display:flex; flex-wrap:wrap; gap:7px; max-height:130px; overflow:auto; padding:10px 22px; border-bottom:1px solid #29496f; }
-            .van-summary-add-result { display:grid; grid-template-columns:auto 1fr auto; gap:9px; align-items:center; border:1px solid #3e668f; border-radius:5px; padding:7px 9px; background:#10213d; color:#eaf3ff; cursor:pointer; text-align:left; }
+            .van-summary-add-result { display:grid; grid-template-columns:46px auto 1fr auto; gap:9px; align-items:center; border:1px solid #3e668f; border-radius:5px; padding:7px 9px; background:#10213d; color:#eaf3ff; cursor:pointer; text-align:left; }
             .van-summary-add-result span { color:#b8c9dc; font-size:11px; } .van-summary-add-result em { color:#58dc93; font-style:normal; font-size:11px; font-weight:700; }
-            .van-summary-table-wrap { overflow:auto; padding:0 22px; } .van-summary-table { width:100%; border-collapse:collapse; min-width:920px; }
+            .van-summary-search-hint { padding:9px 22px; color:#91a8c4; font-size:12px; border-bottom:1px solid #29496f; }
+            .van-summary-table-wrap { overflow:auto; padding:0 22px; } .van-summary-table { width:100%; border-collapse:collapse; min-width:980px; }
             .van-summary-table th { position:sticky; top:0; background:#17345a; color:#cfe2ff; text-align:left; font-size:12px; letter-spacing:.04em; padding:11px 9px; }
             .van-summary-table td { border-bottom:1px solid #1d385c; padding:10px 9px; vertical-align:middle; font-size:13px; }
             .van-summary-table td strong, .van-summary-table td small { display:block; } .van-summary-table td small { color:#a9bed7; margin-top:3px; max-width:350px; }
+            .van-material-image { display:flex; align-items:center; justify-content:center; width:54px; height:54px; overflow:hidden; border:1px solid #355a84; border-radius:5px; background:#fff; }
+            .van-material-image img { width:100%; height:100%; object-fit:contain; } .van-material-image.is-empty { background:#10203a; color:#829bb9; font-size:9px; text-align:center; }
             .van-summary-table .positive { color:#66e3a0; font-weight:700; } .van-summary-table .negative { color:#ff999d; font-weight:700; }
             .van-summary-table input { width:56px; padding:6px; text-align:center; border:1px solid #4777aa; border-radius:4px; background:#071120; color:#fff; }
             .van-qty-step, .van-remove-all { border:1px solid #426891; border-radius:4px; min-width:28px; height:28px; background:#162b48; color:#fff; cursor:pointer; font-weight:700; }
