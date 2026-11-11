@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 41281)
-Total output lines: 4352
-
 //----------------------------------
 // Free-form Material Runs
 //----------------------------------
@@ -2182,7 +2179,139 @@ function bindRunRowReordering(container, rowSelector, render) {
 
             if (!sourceId || sourceId === runId) return;
 
-            const runs = getEditableRuns(…1281 tokens truncated…          key: `${type}:${size}`,
+            const runs = getEditableRuns();
+            const sourceIndex = runs.findIndex(run => String(run?.id || "") === sourceId);
+            const targetIndex = runs.findIndex(run => String(run?.id || "") === runId);
+
+            if (sourceIndex < 0 || targetIndex < 0) return;
+
+            const [movedRun] = runs.splice(sourceIndex, 1);
+            const insertionIndex = sourceIndex < targetIndex
+                ? targetIndex - 1
+                : targetIndex;
+            runs.splice(insertionIndex, 0, movedRun);
+
+            captureRunsHistory("Run order updated");
+            saveRunsDraft();
+            if (typeof renderBOM === "function") renderBOM();
+            render();
+        });
+    });
+
+}
+
+function formatRunFeet(value) {
+
+    const number = Number(value || 0);
+
+    if (!Number.isFinite(number)) return "0";
+
+    return Number.isInteger(number)
+        ? String(number)
+        : String(Number(number.toFixed(2)));
+
+}
+
+// A run's wire route always uses its full length. Conduit can optionally stop
+// at a shared junction (for example, the stem of a Y). Older runs have no
+// override, so their conduit continues to use the full wire route.
+function getRunConduitLength(run) {
+
+    const fallback = Math.max(0, Number(run?.length || 0));
+    const override = run?.conduitLength;
+
+    if (override === "" || override === null || override === undefined) {
+        return fallback;
+    }
+
+    const value = Number(override);
+
+    return Number.isFinite(value) && value >= 0
+        ? value
+        : fallback;
+
+}
+
+function getRunMaterialLabel(material, emptyLabel) {
+
+    if (!material) return emptyLabel;
+
+    const catalog = String(
+        material.CatalogNumber || material.catalogNumber || ""
+    ).trim();
+
+    const description = String(material.Description || "").trim();
+
+    return [catalog, description]
+        .filter(Boolean)
+        .join(" — ") || emptyLabel;
+
+}
+
+// The Material Runs workspace only needs the six standard field conduit
+// choices. Keeping this list on the row removes an extra picker step while
+// still reading the actual catalog material from MML.
+const RUN_QUICK_CONDUIT_TYPES = ["EMT", "PVC", "LT"];
+const RUN_QUICK_CONDUIT_SIZES = ['1"', '2"'];
+
+function getRunQuickConduitType(material) {
+
+    const color = String(material?.Color || "").trim().toUpperCase();
+    const description = String(material?.Description || "").toUpperCase();
+
+    if (color === "EMT" || description.includes(" EMT ")) return "EMT";
+    if (color === "PVC" || description.includes(" PVC ")) return "PVC";
+    if (color === "LT" || description.includes(" L/T")) return "LT";
+
+    return "";
+
+}
+
+function getRunQuickConduitSize(material) {
+
+    return String(material?.Size || "")
+        .trim()
+        .replace(/\s+/g, "")
+        .replace("1-/1/2", "1-1/2");
+
+}
+
+function getRunQuickConduitChoices() {
+
+    const materials = typeof getMaterials === "function"
+        ? getMaterials()
+        : [];
+    const choices = new Map();
+
+    (Array.isArray(materials) ? materials : []).forEach(material => {
+        const nodeType = String(material?.NodeType || "").trim().toUpperCase();
+        const color = String(material?.Color || "").trim().toUpperCase();
+        const description = String(material?.Description || "").toUpperCase();
+        const type = getRunQuickConduitType(material);
+        const size = getRunQuickConduitSize(material);
+
+        if (
+            // Match the original conduit picker exactly: PIPE entries plus
+            // the catalog's special Liquidtight records.
+            (nodeType !== "PIPE" && !(color === "LT" && description.includes("MET L/T"))) ||
+            !RUN_QUICK_CONDUIT_TYPES.includes(type) ||
+            !RUN_QUICK_CONDUIT_SIZES.includes(size)
+        ) {
+            return;
+        }
+
+        const key = `${type}:${size}`;
+        const current = choices.get(key);
+
+        if (!current || Number(material?.Favorite || 0) > Number(current?.Favorite || 0)) {
+            choices.set(key, material);
+        }
+    });
+
+    // Two rows by three columns: each size is a row, with EMT/PVC/LT across.
+    return RUN_QUICK_CONDUIT_SIZES.flatMap(size =>
+        RUN_QUICK_CONDUIT_TYPES.map(type => ({
+            key: `${type}:${size}`,
             type,
             size,
             material: choices.get(`${type}:${size}`) || null
@@ -2200,43 +2329,9 @@ function getRunQuickConduitKey(material) {
 
 }
 
-function getResolvedRunQuickConduitKey(material, choices) {
-
-    const savedCatalog = String(
-        material?.CatalogNumber || material?.catalogNumber || ""
-    ).trim().toUpperCase();
-
-    // The normal case: a saved choice already has the exact same catalog.
-    const catalogChoice = (choices || []).find(choice =>
-        String(
-            choice?.material?.CatalogNumber ||
-            choice?.material?.catalogNumber ||
-            ""
-        ).trim().toUpperCase() === savedCatalog
-    );
-
-    if (catalogChoice) return catalogChoice.key;
-
-    // Older template records sometimes only store the catalog reference.
-    // Resolve it against MML before falling back to the saved fields.
-    const catalogMaterial = (typeof getMaterials === "function"
-        ? getMaterials()
-        : []
-    ).find(item => String(
-        item?.CatalogNumber || item?.catalogNumber || ""
-    ).trim().toUpperCase() === savedCatalog);
-
-    const key = getRunQuickConduitKey(catalogMaterial || material);
-    return (choices || []).some(choice => choice.key === key) ? key : "";
-
-}
-
 function renderRunQuickConduitPicker(run, choices) {
 
-    const selectedKey = getResolvedRunQuickConduitKey(
-        run?.conduit,
-        choices
-    );
+    const selectedKey = getRunQuickConduitKey(run?.conduit);
     const selectedCatalog = String(
         run?.conduit?.CatalogNumber || run?.conduit?.catalogNumber || ""
     ).trim().toUpperCase();
@@ -2269,7 +2364,7 @@ function renderRunQuickConduitPicker(run, choices) {
                         <img src="${runModalEscape(getFittingImage(material))}" alt="" loading="lazy">
                         <span>
                             <strong>${runModalEscape(catalog)}</strong>
-                            <small>${selected ? "✓ Selected · " : ""}${runModalEscape(choice.size)} ${runModalEscape(choice.type)}</small>
+                            <small>${runModalEscape(choice.size)} ${runModalEscape(choice.type)}</small>
                         </span>
                     </button>
                 ` : `
