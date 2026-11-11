@@ -161,6 +161,45 @@
             .sort((a, b) => a.catalog.localeCompare(b.catalog));
     }
 
+    function summaryTable(rows, emptyMessage) {
+        return `
+            <div class="van-summary-table-wrap">
+                <table class="van-summary-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Material</th>
+                            <th>From template</th>
+                            <th>Adjustment</th>
+                            <th>Final VAN Qty</th>
+                            <th>Used on</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.length ? rows.map(row => `
+                            <tr data-catalog="${escapeHtml(row.catalog)}">
+                                <td>${materialImage(row.material)}</td>
+                                <td><strong>${escapeHtml(row.catalog)}</strong><small>${escapeHtml(row.material.Description || row.material.description || "")}</small></td>
+                                <td>${row.sourceQty}</td>
+                                <td class="${row.adjustment > 0 ? "positive" : row.adjustment < 0 ? "negative" : ""}">${row.adjustment > 0 ? "+" : ""}${row.adjustment || "—"}</td>
+                                <td>
+                                    <button type="button" class="van-qty-step" data-change="-1" aria-label="Remove one">−</button>
+                                    <input class="van-final-qty" type="number" min="0" step="1" value="${row.finalQty}" aria-label="Final VAN quantity for ${escapeHtml(row.catalog)}">
+                                    <button type="button" class="van-qty-step" data-change="1" aria-label="Add one">+</button>
+                                </td>
+                                <td>${row.usedOn.length ? escapeHtml(row.usedOn.join(", ")) : "Manual summary item"}</td>
+                                <td><button type="button" class="van-remove-all" title="Set final quantity to zero">×</button></td>
+                            </tr>
+                        `).join("") : `
+                            <tr><td colspan="7" class="van-summary-empty">${escapeHtml(emptyMessage)}</td></tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
     function saveTargetQuantity(row, rawValue) {
         const target = Math.max(0, Number(rawValue) || 0);
         const entries = typeof window.getVanMaterialAdjustments === "function"
@@ -320,6 +359,8 @@
     function render() {
         const host = ensureOverlay();
         const rows = summaryRows();
+        const templateRows = rows.filter(row => row.sourceQty > 0);
+        const addedRows = rows.filter(row => row.sourceQty === 0);
 
         host.innerHTML = `
             <section class="van-summary-dialog" role="dialog" aria-modal="true" aria-labelledby="vanSummaryTitle">
@@ -335,40 +376,14 @@
                     <span class="van-summary-add-note">Common fittings only · ranked from previous PROJECT_BOM use</span>
                     <button id="vanSummaryReset" class="van-summary-reset" type="button">Reset all summary changes</button>
                 </div>
-                <div class="van-summary-table-wrap">
-                    <table class="van-summary-table">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>Material</th>
-                                <th>From template</th>
-                                <th>Adjustment</th>
-                                <th>Final VAN Qty</th>
-                                <th>Used on</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rows.length ? rows.map(row => `
-                                <tr data-catalog="${escapeHtml(row.catalog)}">
-                                    <td>${materialImage(row.material)}</td>
-                                    <td><strong>${escapeHtml(row.catalog)}</strong><small>${escapeHtml(row.material.Description || row.material.description || "")}</small></td>
-                                    <td>${row.sourceQty}</td>
-                                    <td class="${row.adjustment > 0 ? "positive" : row.adjustment < 0 ? "negative" : ""}">${row.adjustment > 0 ? "+" : ""}${row.adjustment || "—"}</td>
-                                    <td>
-                                        <button type="button" class="van-qty-step" data-change="-1" aria-label="Remove one">−</button>
-                                        <input class="van-final-qty" type="number" min="0" step="1" value="${row.finalQty}" aria-label="Final VAN quantity for ${escapeHtml(row.catalog)}">
-                                        <button type="button" class="van-qty-step" data-change="1" aria-label="Add one">+</button>
-                                    </td>
-                                    <td>${row.usedOn.length ? escapeHtml(row.usedOn.join(", ")) : "Manual summary item"}</td>
-                                    <td><button type="button" class="van-remove-all" title="Set final quantity to zero">×</button></td>
-                                </tr>
-                            `).join("") : `
-                                <tr><td colspan="7" class="van-summary-empty">No run or gutter fittings yet. Search above to add a VAN material.</td></tr>
-                            `}
-                        </tbody>
-                    </table>
-                </div>
+                <section class="van-summary-section">
+                    <h3>Template materials <span>${templateRows.length}</span></h3>
+                    ${summaryTable(templateRows, "No template fitting materials.")}
+                </section>
+                <section class="van-summary-section van-summary-added-section">
+                    <h3>New added materials <span>${addedRows.length}</span></h3>
+                    ${summaryTable(addedRows, "Use + Add VAN material above to add a manual fitting.")}
+                </section>
                 <footer class="van-summary-footer">
                     <span>${rows.length} material${rows.length === 1 ? "" : "s"} in final VAN fitting BOM</span>
                     <button class="van-summary-done" type="button">Done</button>
@@ -454,6 +469,10 @@
             .van-summary-add-result { display:grid; grid-template-columns:46px auto 1fr auto; gap:9px; align-items:center; border:1px solid #3e668f; border-radius:5px; padding:7px 9px; background:#10213d; color:#eaf3ff; cursor:pointer; text-align:left; }
             .van-summary-add-result span { color:#b8c9dc; font-size:11px; } .van-summary-add-result em { color:#58dc93; font-style:normal; font-size:11px; font-weight:700; }
             .van-summary-search-hint { padding:9px 22px; color:#91a8c4; font-size:12px; border-bottom:1px solid #29496f; }
+            .van-summary-section { padding:0 0 14px; } .van-summary-section + .van-summary-section { border-top:2px solid #31567f; padding-top:12px; }
+            .van-summary-section h3 { display:flex; justify-content:space-between; align-items:center; margin:0; padding:11px 22px 8px; color:#dceaff; font-size:14px; letter-spacing:.03em; }
+            .van-summary-section h3 span { min-width:24px; border-radius:10px; padding:2px 8px; background:#23466f; color:#9fe9ee; text-align:center; font-size:11px; }
+            .van-summary-added-section h3 { color:#9ee9bc; } .van-summary-added-section h3 span { background:#1f5b49; color:#b5ffd3; }
             .van-summary-table-wrap { overflow:auto; padding:0 22px; } .van-summary-table { width:100%; border-collapse:collapse; min-width:980px; }
             .van-summary-table th { position:sticky; top:0; background:#17345a; color:#cfe2ff; text-align:left; font-size:12px; letter-spacing:.04em; padding:11px 9px; }
             .van-summary-table td { border-bottom:1px solid #1d385c; padding:10px 9px; vertical-align:middle; font-size:13px; }
