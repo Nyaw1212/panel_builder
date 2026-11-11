@@ -295,8 +295,11 @@
         });
         host.querySelector("#vanSummarySearch")?.addEventListener("input", event => {
             searchText = event.target.value;
+            const caret = event.target.selectionStart ?? searchText.length;
             render();
-            host.querySelector("#vanSummarySearch")?.focus();
+            const search = host.querySelector("#vanSummarySearch");
+            search?.focus();
+            search?.setSelectionRange(caret, caret);
         });
 
         host.querySelectorAll(".van-summary-add-result").forEach(button => {
