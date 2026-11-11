@@ -30,7 +30,11 @@ const projectState = {
 
     runs: [],
 
-    gutters: []
+    gutters: [],
+
+    // Manual VAN fitting changes made from the Material Runs summary.  These
+    // are deltas, so the original per-run fitting selections stay intact.
+    vanMaterialAdjustments: []
 
 };
 
@@ -131,6 +135,10 @@ function setProjectState(project) {
         ? structuredClone(project.gutters)
         : [];
 
+    projectState.vanMaterialAdjustments = Array.isArray(project.vanMaterialAdjustments)
+        ? structuredClone(project.vanMaterialAdjustments)
+        : [];
+
 }
 
 //----------------------------------
@@ -166,6 +174,8 @@ function clearProjectState() {
     projectState.runs = [];
 
     projectState.gutters = [];
+
+    projectState.vanMaterialAdjustments = [];
 
 }
 
@@ -206,6 +216,26 @@ function setProjectGutters(gutters) {
 }
 
 //----------------------------------
+// VAN Material Summary Adjustments
+//----------------------------------
+
+function getVanMaterialAdjustments() {
+
+    return Array.isArray(projectState.vanMaterialAdjustments)
+        ? projectState.vanMaterialAdjustments
+        : [];
+
+}
+
+function setVanMaterialAdjustments(adjustments) {
+
+    projectState.vanMaterialAdjustments = Array.isArray(adjustments)
+        ? structuredClone(adjustments)
+        : [];
+
+}
+
+//----------------------------------
 // Expose
 //----------------------------------
 
@@ -224,3 +254,5 @@ window.getProjectRuns = getProjectRuns;
 window.setProjectRuns = setProjectRuns;
 window.getProjectGutters = getProjectGutters;
 window.setProjectGutters = setProjectGutters;
+window.getVanMaterialAdjustments = getVanMaterialAdjustments;
+window.setVanMaterialAdjustments = setVanMaterialAdjustments;

@@ -245,6 +245,8 @@ function getFittingBOM() {
 
     });
 
+    applyVanMaterialAdjustments(map);
+
     return Object.values(map)
 
         .sort((a, b) =>
@@ -257,6 +259,46 @@ function getFittingBOM() {
 
         );
 
+}
+
+//----------------------------------
+// Manual VAN Summary Changes
+//----------------------------------
+
+function applyVanMaterialAdjustments(map) {
+
+    const adjustments = typeof getVanMaterialAdjustments === "function"
+        ? getVanMaterialAdjustments()
+        : [];
+
+    (Array.isArray(adjustments) ? adjustments : []).forEach(entry => {
+        const material = entry?.material ?? entry;
+        const catalogNumber = String(
+            material?.CatalogNumber || material?.catalogNumber || ""
+        ).trim();
+        const change = Number(entry?.qty ?? entry?.Qty ?? entry?.adjustment ?? 0);
+
+        if (!catalogNumber || !Number.isFinite(change) || !change) return;
+
+        if (!map[catalogNumber]) {
+            if (change <= 0) return;
+
+            map[catalogNumber] = {
+                ...structuredClone(material),
+                CatalogNumber: catalogNumber,
+                Qty: 0
+            };
+        }
+
+        map[catalogNumber].Qty = Math.max(
+            0,
+            Number(map[catalogNumber].Qty || 0) + change
+        );
+
+        if (!map[catalogNumber].Qty) {
+            delete map[catalogNumber];
+        }
+    });
 }
 
 //----------------------------------

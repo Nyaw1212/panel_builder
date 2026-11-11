@@ -98,6 +98,11 @@ function buildProject() {
         gutters:
             typeof serializeGutters === "function"
                 ? serializeGutters()
+                : [],
+
+        vanMaterialAdjustments:
+            typeof serializeVanMaterialAdjustments === "function"
+                ? serializeVanMaterialAdjustments()
                 : []
 
     };

@@ -512,6 +512,30 @@ function serializeMaterialSummary() {
 }
 
 //----------------------------------
+// VAN Material Summary Adjustments
+//----------------------------------
+
+function serializeVanMaterialAdjustments() {
+  const adjustments = typeof getVanMaterialAdjustments === "function"
+    ? getVanMaterialAdjustments()
+    : [];
+
+  return (Array.isArray(adjustments) ? adjustments : [])
+    .map(entry => {
+      const material = entry?.material ?? entry;
+      const qty = Number(entry?.qty ?? entry?.Qty ?? entry?.adjustment ?? 0);
+
+      if (!material || !Number.isFinite(qty) || !qty) return null;
+
+      return {
+        material: compactCatalogRecord(material),
+        qty
+      };
+    })
+    .filter(Boolean);
+}
+
+//----------------------------------
 // Project
 //----------------------------------
 function serializeProjectCore() {
@@ -537,6 +561,7 @@ function serializeProjectCore() {
     links: serializeLinks(),
     runs: serializeRuns(),
     gutters: serializeGutters(),
+    vanMaterialAdjustments: serializeVanMaterialAdjustments(),
     materialSummary: serializeMaterialSummary()
   };
 }
@@ -571,6 +596,7 @@ window.serializeLinks = serializeLinks;
 window.serializeRuns = serializeRuns;
 window.serializeGutters = serializeGutters;
 window.serializeMaterialSummary = serializeMaterialSummary;
+window.serializeVanMaterialAdjustments = serializeVanMaterialAdjustments;
 window.serializeProjectCore = serializeProjectCore;
 window.serializeProject = serializeProject;
 window.serializeProjectHistory = serializeProjectHistory;

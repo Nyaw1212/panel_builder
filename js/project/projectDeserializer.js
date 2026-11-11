@@ -18,6 +18,26 @@ function deserializeProject(project) {
             : [];
     }
 
+    if (typeof setVanMaterialAdjustments === "function") {
+        const adjustments = Array.isArray(project.vanMaterialAdjustments)
+            ? project.vanMaterialAdjustments.map(entry => {
+                const material = entry?.material ?? entry;
+                const qty = Number(entry?.qty ?? entry?.Qty ?? entry?.adjustment ?? 0);
+
+                if (!material || !Number.isFinite(qty) || !qty) return null;
+
+                return {
+                    material: typeof hydrateCatalogRecord === "function"
+                        ? hydrateCatalogRecord(material)
+                        : structuredClone(material),
+                    qty
+                };
+            }).filter(entry => entry?.material?.CatalogNumber)
+            : [];
+
+        setVanMaterialAdjustments(adjustments);
+    }
+
     //----------------------------------
     // Clear Existing
     //----------------------------------
