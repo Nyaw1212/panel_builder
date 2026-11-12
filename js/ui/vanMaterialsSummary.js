@@ -161,43 +161,45 @@
             .sort((a, b) => a.catalog.localeCompare(b.catalog));
     }
 
-    function summaryTable(rows, emptyMessage) {
+    function summaryCards(rows, emptyMessage) {
         return `
-            <div class="van-summary-table-wrap">
-                <table class="van-summary-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>Material</th>
-                            <th>From template</th>
-                            <th>Adjustment</th>
-                            <th>Final VAN Qty</th>
-                            <th>Used on</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows.length ? rows.map(row => `
-                            <tr data-catalog="${escapeHtml(row.catalog)}">
-                                <td>${materialImage(row.material)}</td>
-                                <td><strong>${escapeHtml(row.catalog)}</strong><small>${escapeHtml(row.material.Description || row.material.description || "")}</small></td>
-                                <td>${row.sourceQty}</td>
-                                <td class="${row.adjustment > 0 ? "positive" : row.adjustment < 0 ? "negative" : ""}">${row.adjustment > 0 ? "+" : ""}${row.adjustment || "—"}</td>
-                                <td>
-                                    <button type="button" class="van-qty-step" data-change="-1" aria-label="Remove one">−</button>
-                                    <input class="van-final-qty" type="number" min="0" step="1" value="${row.finalQty}" aria-label="Final VAN quantity for ${escapeHtml(row.catalog)}">
-                                    <button type="button" class="van-qty-step" data-change="1" aria-label="Add one">+</button>
-                                </td>
-                                <td>${row.usedOn.length ? escapeHtml(row.usedOn.join(", ")) : "Manual summary item"}</td>
-                                <td><button type="button" class="van-remove-all" title="Set final quantity to zero">×</button></td>
-                            </tr>
-                        `).join("") : `
-                            <tr><td colspan="7" class="van-summary-empty">${escapeHtml(emptyMessage)}</td></tr>
-                        `}
-                    </tbody>
-                </table>
+            <div class="van-material-grid">
+                ${rows.length ? rows.map(row => `
+                    <article class="van-material-card" data-catalog="${escapeHtml(row.catalog)}">
+                        <div class="van-card-image">${materialImage(row.material, 160)}</div>
+                        <div class="van-card-topline">
+                            <span class="van-card-source ${row.sourceQty ? "is-template" : "is-added"}">${row.sourceQty ? "Template" : "New added"}</span>
+                            <span class="van-card-change ${row.adjustment > 0 ? "positive" : row.adjustment < 0 ? "negative" : ""}">${row.adjustment ? `${row.adjustment > 0 ? "+" : ""}${row.adjustment}` : "No change"}</span>
+                        </div>
+                        <strong title="${escapeHtml(row.catalog)}">${escapeHtml(row.catalog)}</strong>
+                        <small class="van-card-description" title="${escapeHtml(row.material.Description || row.material.description || "")}">${escapeHtml(row.material.Description || row.material.description || "No description")}</small>
+                        <small class="van-card-runs" title="${escapeHtml(row.usedOn.join(", "))}">${row.usedOn.length ? `${row.usedOn.length} run${row.usedOn.length === 1 ? "" : "s"}` : "Manual summary item"}</small>
+                        <div class="van-card-qty">
+                            <button type="button" class="van-qty-step" data-change="-1" aria-label="Remove one">−</button>
+                            <input class="van-final-qty" type="number" min="0" step="1" value="${row.finalQty}" aria-label="Final VAN quantity for ${escapeHtml(row.catalog)}">
+                            <button type="button" class="van-qty-step" data-change="1" aria-label="Add one">+</button>
+                            <button type="button" class="van-remove-all" title="Set final quantity to zero">×</button>
+                        </div>
+                    </article>
+                `).join("") : `
+                    <div class="van-summary-empty">${escapeHtml(emptyMessage)}</div>
+                `}
             </div>
         `;
+    }
+
+    function finalSummaryList(rows) {
+        const finalRows = rows.filter(row => row.finalQty > 0);
+        return finalRows.length ? finalRows.map(row => `
+            <article class="van-final-summary-item">
+                ${materialImage(row.material, 64)}
+                <div>
+                    <strong>${escapeHtml(row.catalog)}</strong>
+                    <small>${escapeHtml(row.material.Description || row.material.description || "")}</small>
+                </div>
+                <b>${row.finalQty}</b>
+            </article>
+        `).join("") : `<p class="van-final-summary-empty">No VAN materials yet.</p>`;
     }
 
     function saveTargetQuantity(row, rawValue) {
@@ -376,16 +378,22 @@
                     <span class="van-summary-add-note">Common fittings only · ranked from previous PROJECT_BOM use</span>
                     <button id="vanSummaryReset" class="van-summary-reset" type="button">Reset all summary changes</button>
                 </div>
-                <main class="van-summary-body">
-                    <section class="van-summary-section">
-                        <h3>Template materials <span>${templateRows.length}</span></h3>
-                        ${summaryTable(templateRows, "No template fitting materials.")}
-                    </section>
-                    <section class="van-summary-section van-summary-added-section">
-                        <h3>New added materials <span>${addedRows.length}</span></h3>
-                        ${summaryTable(addedRows, "Use + Add VAN material above to add a manual fitting.")}
-                    </section>
-                </main>
+                <div class="van-summary-content">
+                    <main class="van-summary-catalog">
+                        <section class="van-summary-section">
+                            <h3>Template materials <span>${templateRows.length}</span></h3>
+                            ${summaryCards(templateRows, "No template fitting materials.")}
+                        </section>
+                        <section class="van-summary-section van-summary-added-section">
+                            <h3>New added materials <span>${addedRows.length}</span></h3>
+                            ${summaryCards(addedRows, "Use + Add VAN material above to add a manual fitting.")}
+                        </section>
+                    </main>
+                    <aside class="van-final-summary" aria-label="Final VAN material summary">
+                        <header><h3>Final VAN BOM</h3><span>${rows.filter(row => row.finalQty > 0).length} items</span></header>
+                        <div class="van-final-summary-list">${finalSummaryList(rows)}</div>
+                    </aside>
+                </div>
                 <footer class="van-summary-footer">
                     <span>${rows.length} material${rows.length === 1 ? "" : "s"} in final VAN fitting BOM</span>
                     <button class="van-summary-done" type="button">Done</button>
@@ -403,7 +411,7 @@
             refreshBOM();
             render();
         });
-        host.querySelectorAll("tbody tr[data-catalog]").forEach(element => {
+        host.querySelectorAll("[data-catalog]").forEach(element => {
             const row = rows.find(item => item.catalog === element.dataset.catalog);
             if (!row) return;
             const input = element.querySelector(".van-final-qty");
@@ -471,22 +479,43 @@
             .van-summary-add-result { display:grid; grid-template-columns:46px auto 1fr auto; gap:9px; align-items:center; border:1px solid #3e668f; border-radius:5px; padding:7px 9px; background:#10213d; color:#eaf3ff; cursor:pointer; text-align:left; }
             .van-summary-add-result span { color:#b8c9dc; font-size:11px; } .van-summary-add-result em { color:#58dc93; font-style:normal; font-size:11px; font-weight:700; }
             .van-summary-search-hint { padding:9px 22px; color:#91a8c4; font-size:12px; border-bottom:1px solid #29496f; }
-            .van-summary-body { flex:1 1 auto; min-height:0; overflow:auto; padding:0 0 16px; }
-            .van-summary-section { padding:0 0 12px; } .van-summary-section + .van-summary-section { border-top:2px solid #31567f; padding-top:12px; }
+            .van-summary-content { display:grid; grid-template-columns:minmax(0,1fr) 270px; flex:1 1 auto; min-height:0; }
+            .van-summary-catalog { min-height:0; overflow:auto; padding:0 0 16px; }
+            .van-summary-section { padding:0 0 14px; } .van-summary-section + .van-summary-section { border-top:2px solid #31567f; padding-top:12px; }
             .van-summary-section h3 { display:flex; justify-content:space-between; align-items:center; margin:0; padding:11px 22px 8px; color:#dceaff; font-size:14px; letter-spacing:.03em; }
             .van-summary-section h3 span { min-width:24px; border-radius:10px; padding:2px 8px; background:#23466f; color:#9fe9ee; text-align:center; font-size:11px; }
             .van-summary-added-section h3 { color:#9ee9bc; } .van-summary-added-section h3 span { background:#1f5b49; color:#b5ffd3; }
-            .van-summary-table-wrap { overflow-x:auto; padding:0 22px; } .van-summary-table { width:100%; border-collapse:collapse; min-width:980px; }
-            .van-summary-table th { position:sticky; top:0; z-index:1; background:#17345a; color:#cfe2ff; text-align:left; font-size:12px; letter-spacing:.04em; padding:11px 9px; }
-            .van-summary-table td { border-bottom:1px solid #1d385c; padding:9px; vertical-align:middle; font-size:13px; }
-            .van-summary-table tbody tr:hover { background:rgba(37,99,160,.14); }
-            .van-summary-table td strong, .van-summary-table td small { display:block; } .van-summary-table td small { color:#a9bed7; margin-top:3px; max-width:350px; }
+            .van-material-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(154px,1fr)); gap:10px; padding:0 22px; }
+            .van-material-card { display:grid; grid-template-rows:132px auto auto auto auto auto; gap:5px; min-width:0; padding:8px; border:1px solid #355b86; border-radius:7px; background:#0d1d34; color:#edf6ff; }
+            .van-material-card:hover { border-color:#59d6df; background:#102844; }
+            .van-card-image { display:grid; min-height:0; overflow:hidden; place-items:center; border-radius:5px; background:#071120; }
+            .van-card-image .van-material-image { width:100%; height:100%; border:0; border-radius:0; }
+            .van-card-topline { display:flex; align-items:center; justify-content:space-between; gap:5px; min-width:0; }
+            .van-card-source, .van-card-change { overflow:hidden; padding:2px 5px; border-radius:4px; font-size:10px; font-weight:800; text-overflow:ellipsis; white-space:nowrap; }
+            .van-card-source.is-template { color:#a9e8ff; background:#173d60; } .van-card-source.is-added { color:#b5ffd3; background:#1c5947; }
+            .van-card-change { color:#aebed0; background:#13243c; } .van-card-change.positive { color:#70e8a7; } .van-card-change.negative { color:#ffabb2; }
+            .van-material-card > strong { overflow:hidden; color:#f3f8ff; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
+            .van-card-description { display:-webkit-box; min-height:29px; overflow:hidden; color:#aebfd3; font-size:10px; line-height:1.35; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+            .van-card-runs { overflow:hidden; color:#74d7e6; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+            .van-card-qty { display:grid; grid-template-columns:28px minmax(0,1fr) 28px 28px; gap:4px; align-items:center; }
+            .van-card-qty input { width:100%; min-width:0; box-sizing:border-box; padding:6px 3px; border:1px solid #4777aa; border-radius:4px; background:#071120; color:#fff; font-weight:800; text-align:center; }
+            .van-qty-step, .van-remove-all { border:1px solid #426891; border-radius:4px; min-width:28px; height:28px; background:#162b48; color:#fff; cursor:pointer; font-weight:700; }
+            .van-remove-all { color:#ffb2bd; border-color:#80515e; }
+            .van-final-summary { display:grid; grid-template-rows:auto minmax(0,1fr); min-width:0; border-left:1px solid #29496f; background:rgba(5,15,29,.6); }
+            .van-final-summary header { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:13px 14px 11px; border-bottom:1px solid #29496f; }
+            .van-final-summary h3 { margin:0; color:#bae6fd; font-size:13px; text-transform:uppercase; }
+            .van-final-summary header span { color:#8da6c2; font-size:11px; }
+            .van-final-summary-list { display:grid; align-content:start; gap:8px; overflow:auto; padding:10px; }
+            .van-final-summary-item { display:grid; grid-template-columns:48px minmax(0,1fr) auto; gap:8px; align-items:center; padding:6px; border:1px solid rgba(59,197,208,.3); border-radius:6px; background:rgba(9,39,65,.42); }
+            .van-final-summary-item .van-material-image { width:48px; height:48px; }
+            .van-final-summary-item div { display:grid; gap:3px; min-width:0; }
+            .van-final-summary-item strong, .van-final-summary-item small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .van-final-summary-item strong { color:#e0f2fe; font-size:11px; }
+            .van-final-summary-item small { color:#8fa8c4; font-size:9px; }
+            .van-final-summary-item b { min-width:26px; padding:3px 5px; border-radius:4px; color:#a5f3fc; background:rgba(8,145,178,.25); font-size:15px; text-align:center; }
+            .van-final-summary-empty, .van-summary-empty { margin:0; color:#a9bed7; padding:28px !important; text-align:center; }
             .van-material-image { display:flex; align-items:center; justify-content:center; width:54px; height:54px; overflow:hidden; border:1px solid #355a84; border-radius:5px; background:#fff; }
             .van-material-image img { width:100%; height:100%; object-fit:contain; } .van-material-image.is-empty { background:#10203a; color:#829bb9; font-size:9px; text-align:center; }
-            .van-summary-table .positive { color:#66e3a0; font-weight:700; } .van-summary-table .negative { color:#ff999d; font-weight:700; }
-            .van-summary-table input { width:56px; padding:6px; text-align:center; border:1px solid #4777aa; border-radius:4px; background:#071120; color:#fff; }
-            .van-qty-step, .van-remove-all { border:1px solid #426891; border-radius:4px; min-width:28px; height:28px; background:#162b48; color:#fff; cursor:pointer; font-weight:700; }
-            .van-remove-all { color:#ffb2bd; border-color:#80515e; } .van-summary-empty { color:#a9bed7; padding:28px !important; text-align:center; }
             .van-summary-footer { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 22px; border-top:1px solid #29496f; color:#a9bed7; }
             .van-summary-done { min-width:100px; border:1px solid #65a5dd; border-radius:5px; padding:8px 18px; background:#286ca6; color:#fff; cursor:pointer; font-weight:700; }
             .van-picker-overlay { position:fixed; inset:0; z-index:10080; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(1,7,15,.8); }
@@ -508,7 +537,9 @@
                 .van-summary-header { padding:13px 14px 10px; }
                 .van-summary-toolbar { flex-wrap:wrap; gap:9px; padding:10px 14px; }
                 .van-summary-add-note { order:3; flex-basis:100%; }
-                .van-summary-table-wrap { padding:0 14px; }
+                .van-summary-content { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) 180px; }
+                .van-final-summary { border-top:1px solid #29496f; border-left:0; }
+                .van-material-grid { grid-template-columns:repeat(auto-fill,minmax(138px,1fr)); padding:0 14px; }
                 .van-summary-section h3 { padding-left:14px; padding-right:14px; }
                 .van-summary-footer { padding:10px 14px; }
             }
