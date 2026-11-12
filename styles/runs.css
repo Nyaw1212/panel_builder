@@ -1552,3 +1552,44 @@
         grid-template-columns: 18px minmax(52px, auto) 1fr;
     }
 }
+
+/* Full-workspace fitting picker: use the monitor rather than a centered
+   modal so the matrix can show the full set of commonly used fittings. */
+.run-fitting-modal {
+    padding: 8px;
+}
+
+.run-fitting-dialog {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    max-height: calc(100vh - 16px);
+    border-radius: 9px;
+}
+
+.run-fitting-content {
+    grid-template-columns: minmax(0, 1fr) 248px;
+}
+
+.run-fitting-table {
+    min-width: 1450px;
+}
+
+.run-fitting-table tbody th {
+    min-width: 105px;
+}
+
+.fitting-matrix-cell {
+    min-width: 82px;
+}
+
+@media (max-width: 900px) {
+    .run-fitting-modal {
+        padding: 6px;
+    }
+
+    .run-fitting-dialog {
+        width: calc(100vw - 12px);
+        height: calc(100vh - 12px);
+        max-height: calc(100vh - 12px);
+    }
+}
