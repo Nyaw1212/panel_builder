@@ -316,11 +316,13 @@ async function openSelectedProject() {
 
     let savedProject = project.project;
 
-    // A list row can occasionally arrive before its JSON has been parsed.
-    // Load the selected row directly instead of making the search result
-    // unusable in that case.
-    if (!savedProject && typeof loadProject === "function") {
-        const loaded = await loadProject(project.jobName, project.address);
+    // The project list contains only quick metadata. Load the selected full
+    // JSON by its stable ID, rather than retrieving every project up front.
+    if (!savedProject) {
+        const loaded = project.projectId &&
+            typeof loadProjectById === "function"
+            ? await loadProjectById(project.projectId)
+            : await loadProject(project.jobName, project.address);
         savedProject = loaded?.found ? loaded.project : null;
     }
 

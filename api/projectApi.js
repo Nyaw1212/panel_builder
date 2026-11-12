@@ -548,6 +548,13 @@ async function loadProject(jobName, address) {
     });
 }
 
+async function loadProjectById(projectId) {
+    return await apiRequest({
+        action: "loadProjectById",
+        projectId
+    });
+}
+
 //----------------------------------
 // Get Projects
 //----------------------------------
@@ -633,6 +640,7 @@ window.reloadMML = reloadMML;
 window.getPresetsVersion = getPresetsVersion;
 window.saveProject = saveProject;
 window.loadProject = loadProject;
+window.loadProjectById = loadProjectById;
 window.getProjects = getProjects;
 window.deleteProject = deleteProject;
 window.getPresets = getPresets;

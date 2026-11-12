@@ -697,72 +697,57 @@ function saveProject(request) {
 //----------------------------------
 
 function getProjects() {
-
   const sheet = getProjectSheet();
   const lastRow = sheet.getLastRow();
-
   if (lastRow < 2) return [];
 
-  const { headers, map } = ensureProjectHeaders_(sheet);
-
+  const { map } = ensureProjectHeaders_(sheet);
+  const rowCount = lastRow - 1;
   const idColumn = projectColumn_(map, "ProjectID", "Project ID");
   const jobColumn = projectColumn_(map, "JobName", "Job Name");
   const addressColumn = projectColumn_(map, "Address");
   const createdColumn = projectColumn_(map, "Created");
   const modifiedColumn = projectColumn_(map, "Modified");
-  const jsonColumn = projectColumn_(map, "JSON", "Project JSON");
   const modelColumn = projectColumn_(map, "Model");
   const lenderColumn = projectColumn_(map, "Lender");
   const electricianColumn = projectColumn_(map, "Electrician");
 
-  const values = sheet
-    .getRange(2, 1, lastRow - 1, headers.length)
-    .getValues();
+  // The Open dialog needs only metadata. Do not read, parse, and return every
+  // large JSON payload here: projects may contain canvas images, runs, links,
+  // and many JSON chunks. The selected project's full JSON is loaded on demand.
+  function readColumn_(column) {
+    if (!column) return new Array(rowCount).fill("");
+    return sheet.getRange(2, column, rowCount, 1).getValues()
+      .map(function(row) { return row[0]; });
+  }
 
-  return values
-    .map((row, index) => {
-      const project = jsonColumn
-        ? parseProjectJSON(readProjectJsonFromRow_(row, map))
-        : null;
+  const ids = readColumn_(idColumn);
+  const jobNames = readColumn_(jobColumn);
+  const addresses = readColumn_(addressColumn);
+  const created = readColumn_(createdColumn);
+  const modified = readColumn_(modifiedColumn);
+  const models = readColumn_(modelColumn);
+  const lenders = readColumn_(lenderColumn);
+  const electricians = readColumn_(electricianColumn);
 
-      const projectId = idColumn
-        ? String(row[idColumn - 1] || "").trim()
-        : "";
-      const jobName = jobColumn
-        ? String(row[jobColumn - 1] || "").trim()
-        : "";
-      const address = addressColumn
-        ? String(row[addressColumn - 1] || "").trim()
-        : "";
+  return Array.from({ length: rowCount }, function(_, index) {
+    const projectId = String(ids[index] || "").trim();
+    const jobName = String(jobNames[index] || "").trim();
+    const address = String(addresses[index] || "").trim();
 
-      // Older saved projects can predate the ProjectID column. They are still
-      // valid project rows, so list them instead of hiding them from Open.
-      if (!projectId && !jobName && !address && !project) {
-        return null;
-      }
+    if (!projectId && !jobName && !address) return null;
 
-      if (project) {
-        project.model = project.model || (modelColumn ? String(row[modelColumn - 1] || "").trim() : "");
-        project.lender = project.lender || (lenderColumn ? String(row[lenderColumn - 1] || "").trim() : "");
-        project.electrician = project.electrician || (electricianColumn ? String(row[electricianColumn - 1] || "").trim() : "");
-      }
-
-      return {
-        // Use a row-specific temporary key for legacy rows. Their JSON can be
-        // opened directly; the UI also falls back to JobName + Address.
-        projectId: projectId || "legacy-row-" + (index + 2),
-        jobName,
-        address,
-        model: modelColumn ? String(row[modelColumn - 1] || "") : "",
-        lender: lenderColumn ? String(row[lenderColumn - 1] || "") : "",
-        electrician: electricianColumn ? String(row[electricianColumn - 1] || "") : "",
-        created: createdColumn ? row[createdColumn - 1] : null,
-        modified: modifiedColumn ? row[modifiedColumn - 1] : null,
-        project
-      };
-    })
-    .filter(Boolean);
-
+    return {
+      projectId: projectId || "legacy-row-" + (index + 2),
+      jobName: jobName,
+      address: address,
+      model: String(models[index] || ""),
+      lender: String(lenders[index] || ""),
+      electrician: String(electricians[index] || ""),
+      created: created[index] || null,
+      modified: modified[index] || null
+    };
+  }).filter(Boolean);
 }
 
 //----------------------------------

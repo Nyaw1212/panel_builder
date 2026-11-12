@@ -228,7 +228,9 @@
               let snapshot=project.project;
               if(typeof snapshot==="string")snapshot=JSON.parse(snapshot);
               if(!snapshot||!Array.isArray(snapshot.runs)){
-                const loaded=await loadProject(project.jobName,project.address);
+                const loaded=project.projectId&&typeof loadProjectById==="function"
+                  ?await loadProjectById(project.projectId)
+                  :await loadProject(project.jobName,project.address);
                 if(!loaded?.success||!loaded?.found||!loaded.project)throw Error("Could not retrieve the full project");
                 snapshot=typeof loaded.project==="string"?JSON.parse(loaded.project):loaded.project;
               }
