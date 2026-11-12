@@ -3861,7 +3861,11 @@ async function openRunFittingModal(runId, returnTo = "runs") {
             size,
             sourceRuns: []
         })),
-        selectedSizes: [selectedSize]
+        selectedSizes: [selectedSize],
+        // A Run is one conduit path, so only one fitting size should be
+        // active at a time. Gutter fitting selection intentionally remains
+        // multi-size because it can combine several runs.
+        singleSizeSelection: true
     });
 
 }
@@ -4075,6 +4079,19 @@ function renderRunFittingModal(run, materials, options = {}) {
 
     overlay.querySelectorAll(".fitting-size-filter input[type='checkbox']").forEach(input => {
         input.addEventListener("change", () => {
+            if (options.singleSizeSelection === true) {
+                // Do not allow the only selected size to be turned off. A
+                // checked size replaces the previous filter instead.
+                if (!input.checked) {
+                    input.checked = true;
+                    return;
+                }
+
+                options.selectedSizes = [input.value];
+                renderRunFittingModal(run, materials, options);
+                return;
+            }
+
             const nextSizes = [...overlay.querySelectorAll(".fitting-size-filter input[type='checkbox']:checked")]
                 .map(box => box.value);
             if (!nextSizes.length) {
