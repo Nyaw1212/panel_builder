@@ -376,14 +376,16 @@
                     <span class="van-summary-add-note">Common fittings only · ranked from previous PROJECT_BOM use</span>
                     <button id="vanSummaryReset" class="van-summary-reset" type="button">Reset all summary changes</button>
                 </div>
-                <section class="van-summary-section">
-                    <h3>Template materials <span>${templateRows.length}</span></h3>
-                    ${summaryTable(templateRows, "No template fitting materials.")}
-                </section>
-                <section class="van-summary-section van-summary-added-section">
-                    <h3>New added materials <span>${addedRows.length}</span></h3>
-                    ${summaryTable(addedRows, "Use + Add VAN material above to add a manual fitting.")}
-                </section>
+                <main class="van-summary-body">
+                    <section class="van-summary-section">
+                        <h3>Template materials <span>${templateRows.length}</span></h3>
+                        ${summaryTable(templateRows, "No template fitting materials.")}
+                    </section>
+                    <section class="van-summary-section van-summary-added-section">
+                        <h3>New added materials <span>${addedRows.length}</span></h3>
+                        ${summaryTable(addedRows, "Use + Add VAN material above to add a manual fitting.")}
+                    </section>
+                </main>
                 <footer class="van-summary-footer">
                     <span>${rows.length} material${rows.length === 1 ? "" : "s"} in final VAN fitting BOM</span>
                     <button class="van-summary-done" type="button">Done</button>
@@ -454,8 +456,8 @@
         style.id = "vanMaterialsSummaryStyles";
         style.textContent = `
             .van-summary-open-button { background:#176c77 !important; border-color:#3bc5d0 !important; color:#fff !important; }
-            .van-summary-overlay { position:fixed; inset:0; z-index:10070; display:none; align-items:center; justify-content:center; padding:22px; background:rgba(2,8,18,.76); }
-            .van-summary-dialog { width:min(1420px,96vw); max-height:90vh; display:flex; flex-direction:column; overflow:hidden; background:#0b172d; border:1px solid #3a70ab; border-radius:9px; color:#e7f1ff; box-shadow:0 20px 70px rgba(0,0,0,.6); }
+            .van-summary-overlay { position:fixed; inset:0; z-index:10070; display:none; align-items:center; justify-content:center; padding:8px; background:rgba(2,8,18,.82); backdrop-filter:blur(4px); }
+            .van-summary-dialog { width:calc(100vw - 16px); height:calc(100vh - 16px); max-height:calc(100vh - 16px); display:flex; flex-direction:column; overflow:hidden; background:#0b172d; border:1px solid #3a70ab; border-radius:9px; color:#e7f1ff; box-shadow:0 20px 70px rgba(0,0,0,.6); }
             .van-summary-header { display:flex; justify-content:space-between; gap:18px; padding:18px 22px 14px; border-bottom:1px solid #29496f; }
             .van-summary-header h2 { margin:0; font-size:23px; } .van-summary-header p { margin:5px 0 0; color:#9eb6d2; font-size:13px; }
             .van-summary-close { width:34px; height:34px; border:0; border-radius:7px; background:#e52549; color:#fff; font-size:25px; cursor:pointer; }
@@ -469,13 +471,15 @@
             .van-summary-add-result { display:grid; grid-template-columns:46px auto 1fr auto; gap:9px; align-items:center; border:1px solid #3e668f; border-radius:5px; padding:7px 9px; background:#10213d; color:#eaf3ff; cursor:pointer; text-align:left; }
             .van-summary-add-result span { color:#b8c9dc; font-size:11px; } .van-summary-add-result em { color:#58dc93; font-style:normal; font-size:11px; font-weight:700; }
             .van-summary-search-hint { padding:9px 22px; color:#91a8c4; font-size:12px; border-bottom:1px solid #29496f; }
-            .van-summary-section { padding:0 0 14px; } .van-summary-section + .van-summary-section { border-top:2px solid #31567f; padding-top:12px; }
+            .van-summary-body { flex:1 1 auto; min-height:0; overflow:auto; padding:0 0 16px; }
+            .van-summary-section { padding:0 0 12px; } .van-summary-section + .van-summary-section { border-top:2px solid #31567f; padding-top:12px; }
             .van-summary-section h3 { display:flex; justify-content:space-between; align-items:center; margin:0; padding:11px 22px 8px; color:#dceaff; font-size:14px; letter-spacing:.03em; }
             .van-summary-section h3 span { min-width:24px; border-radius:10px; padding:2px 8px; background:#23466f; color:#9fe9ee; text-align:center; font-size:11px; }
             .van-summary-added-section h3 { color:#9ee9bc; } .van-summary-added-section h3 span { background:#1f5b49; color:#b5ffd3; }
-            .van-summary-table-wrap { overflow:auto; padding:0 22px; } .van-summary-table { width:100%; border-collapse:collapse; min-width:980px; }
-            .van-summary-table th { position:sticky; top:0; background:#17345a; color:#cfe2ff; text-align:left; font-size:12px; letter-spacing:.04em; padding:11px 9px; }
-            .van-summary-table td { border-bottom:1px solid #1d385c; padding:10px 9px; vertical-align:middle; font-size:13px; }
+            .van-summary-table-wrap { overflow-x:auto; padding:0 22px; } .van-summary-table { width:100%; border-collapse:collapse; min-width:980px; }
+            .van-summary-table th { position:sticky; top:0; z-index:1; background:#17345a; color:#cfe2ff; text-align:left; font-size:12px; letter-spacing:.04em; padding:11px 9px; }
+            .van-summary-table td { border-bottom:1px solid #1d385c; padding:9px; vertical-align:middle; font-size:13px; }
+            .van-summary-table tbody tr:hover { background:rgba(37,99,160,.14); }
             .van-summary-table td strong, .van-summary-table td small { display:block; } .van-summary-table td small { color:#a9bed7; margin-top:3px; max-width:350px; }
             .van-material-image { display:flex; align-items:center; justify-content:center; width:54px; height:54px; overflow:hidden; border:1px solid #355a84; border-radius:5px; background:#fff; }
             .van-material-image img { width:100%; height:100%; object-fit:contain; } .van-material-image.is-empty { background:#10203a; color:#829bb9; font-size:9px; text-align:center; }
@@ -498,6 +502,16 @@
             .van-picker-card:hover { border-color:#55d4dd; background:#153054; } .van-picker-card .van-material-image { width:100%; height:110px; }
             .van-picker-card strong { font-size:13px; } .van-picker-card span { color:#b5c7dd; font-size:11px; line-height:1.25; }
             .van-picker-card em { color:#64e2a1; font-size:10px; font-style:normal; font-weight:700; } .van-picker-empty { grid-column:1 / -1; padding:36px; color:#a6bbd4; text-align:center; }
+            @media (max-width:900px) {
+                .van-summary-overlay { padding:6px; }
+                .van-summary-dialog { width:calc(100vw - 12px); height:calc(100vh - 12px); max-height:calc(100vh - 12px); }
+                .van-summary-header { padding:13px 14px 10px; }
+                .van-summary-toolbar { flex-wrap:wrap; gap:9px; padding:10px 14px; }
+                .van-summary-add-note { order:3; flex-basis:100%; }
+                .van-summary-table-wrap { padding:0 14px; }
+                .van-summary-section h3 { padding-left:14px; padding-right:14px; }
+                .van-summary-footer { padding:10px 14px; }
+            }
         `;
         document.head.appendChild(style);
     }
