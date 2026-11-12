@@ -3924,7 +3924,38 @@ async function openFittingModalForTarget(target, options = {}) {
 
 }
 
+function ensureFullScreenRunFittingWorkspace() {
+    const styleId = "run-fitting-fullscreen-workspace-style";
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement("style");
+    style.id = styleId;
+    style.textContent = `
+        .run-fitting-modal { padding: 8px; }
+        .run-fitting-dialog {
+            width: calc(100vw - 16px);
+            height: calc(100vh - 16px);
+            max-height: calc(100vh - 16px);
+            border-radius: 9px;
+        }
+        .run-fitting-content { grid-template-columns: minmax(0, 1fr) 248px; }
+        .run-fitting-table { min-width: 1450px; }
+        .run-fitting-table tbody th { min-width: 105px; }
+        .fitting-matrix-cell { min-width: 82px; }
+        @media (max-width: 900px) {
+            .run-fitting-modal { padding: 6px; }
+            .run-fitting-dialog {
+                width: calc(100vw - 12px);
+                height: calc(100vh - 12px);
+                max-height: calc(100vh - 12px);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 function renderRunFittingModal(run, materials, options = {}) {
+    ensureFullScreenRunFittingWorkspace();
 
     const overlay = ensureFittingModal();
     const previousTable = overlay.querySelector(".run-fitting-table-wrap");
