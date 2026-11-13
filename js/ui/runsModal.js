@@ -3942,6 +3942,14 @@ function ensureFullScreenRunFittingWorkspace() {
         .run-fitting-table { min-width: 1450px; }
         .run-fitting-table tbody th { min-width: 105px; }
         .fitting-matrix-cell { min-width: 82px; }
+        .run-fitting-title-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
+        .run-fitting-title-copy { min-width: 0; }
+        .run-fitting-endpoints { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .run-fitting-endpoint { display: grid; grid-template-columns: auto 34px auto; align-items: center; gap: 5px; max-width: 150px; color: #e8f6ff; }
+        .run-fitting-endpoint span { font-size: 8px; font-weight: 800; color: #79b9de; letter-spacing: .06em; }
+        .run-fitting-endpoint img { width: 34px; height: 34px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px; }
+        .run-fitting-endpoint b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+        .run-fitting-endpoint + .run-fitting-endpoint::before { content: "→"; color: #5fc4ff; margin-left: 1px; }
         @media (max-width: 900px) {
             .run-fitting-modal { padding: 6px; }
             .run-fitting-dialog {
@@ -3952,6 +3960,27 @@ function ensureFullScreenRunFittingWorkspace() {
         }
     `;
     document.head.appendChild(style);
+}
+
+function renderRunFittingEndpointPreview(itemId, endpoint) {
+    const item = getCanvasItem(itemId);
+    if (!item) return "";
+
+    const image = getRunCanvasComponentImage(item);
+    const label = String(
+        item.preset ||
+        item.data?.CatalogNumber ||
+        item.data?.Description ||
+        "Equipment"
+    ).trim();
+
+    return `
+        <div class="run-fitting-endpoint" title="${runModalEscape(label)}">
+            <span>${runModalEscape(endpoint)}</span>
+            ${image ? `<img src="${runModalEscape(image)}" alt="">` : ""}
+            <b>${runModalEscape(label)}</b>
+        </div>
+    `;
 }
 
 function renderRunFittingModal(run, materials, options = {}) {
@@ -4058,10 +4087,16 @@ function renderRunFittingModal(run, materials, options = {}) {
     overlay.innerHTML = `
         <section class="run-fitting-dialog" role="dialog" aria-modal="true" aria-labelledby="runFittingTitle">
             <header class="run-fitting-header">
-                <div>
-                    <h2 id="runFittingTitle">${runModalEscape(options.title || `${run.name || "Run"} Fittings`)}</h2>
-                    <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(displayedSizes)}</strong>. ${fittingQuantityMode ? "Qty mode: click an image to set its exact quantity." : "Click an image to add one fitting."}</p>
-                    ${sizeFilter}
+                <div class="run-fitting-title-row">
+                    <div class="run-fitting-title-copy">
+                        <h2 id="runFittingTitle">${runModalEscape(options.title || `${run.name || "Run"} Fittings`)}</h2>
+                        <p>${runModalEscape(fittingContext)}: <strong>${runModalEscape(displayedSizes)}</strong>. ${fittingQuantityMode ? "Qty mode: click an image to set its exact quantity." : "Click an image to add one fitting."}</p>
+                        ${sizeFilter}
+                    </div>
+                    <div class="run-fitting-endpoints" aria-label="Run equipment">
+                        ${renderRunFittingEndpointPreview(run.fromCanvasItemId, "FROM")}
+                        ${renderRunFittingEndpointPreview(run.toCanvasItemId, "TO")}
+                    </div>
                 </div>
                 <label class="fitting-qty-mode" title="Off: add one fitting per click. On: enter an exact quantity after clicking.">
                     <span>Qty mode</span>
